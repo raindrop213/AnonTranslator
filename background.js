@@ -1,3 +1,5 @@
+// background.js
+
 let toggleSwitchState = false; // 默认状态为false
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

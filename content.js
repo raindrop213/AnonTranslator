@@ -1,3 +1,5 @@
+// content.js
+
 // 函数：清理选中的文本，移除<rt>和<ruby>标签
 function cleanSelectedText(selectedText) {
     // 创建一个新的div元素，用于临时存储HTML内容
