@@ -1,23 +1,23 @@
 {
     "manifest_version": 3,
-    "name": "SelectedCopy",
-    "version": "0.1.0",
-    "description": "Selected Text",
+    "name": "Anon",
+    "version": "0.2.1",
+    "description": "Ignore furigana and Copy Japanese text",
     "permissions": ["activeTab", "scripting"],
     "icons": {
-        "16": "images/icon16.png",
-        "48": "images/icon48.png",
-        "128": "images/icon128.png"
+        "16": "img/icon16.png",
+        "48": "img/icon48.png",
+        "128": "img/icon128.png"
     },
     "action": {
         "default_popup": "popup.html"
     },
     "content_scripts":[{
         "matches": ["<all_urls>"],
-        "js": ["content.js"],
+        "js": ["src/content.js"],
         "all_frames": true
     }],
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "src/background.js"
     }
 }

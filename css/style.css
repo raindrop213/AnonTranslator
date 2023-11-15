@@ -1,0 +1,120 @@
+body {
+    margin: 12px; /* 设置外边距 */
+    padding: 3px; /* 设置内边距 */
+}
+
+/* 基本开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 70px;
+    height: 34px;
+  }
+  
+  /* 隐藏默认的checkbox */
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  /* 自定义滑块 */
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+  }
+  
+  input:checked + .slider {
+    background-color: #1c72e2;
+  }
+  
+  input:focus + .slider {
+    box-shadow: 0 0 1px #1c72e2;
+  }
+  
+  input:checked + .slider:before {
+    -webkit-transform: translateX(35px);
+    -ms-transform: translateX(35px);
+    transform: translateX(35px);
+  }
+  
+  /* 圆角滑块 */
+  .slider.round {
+    border-radius: 34px;
+  }
+  
+  .slider.round:before {
+    border-radius: 50%;
+  }
+  
+  /* ON和OFF文字样式 */
+.slider .on,
+.slider .off {
+  color: white;
+  position: absolute;
+  transform: translateY(-50%);
+  top: 50%;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+}
+
+.slider .on {
+  left: 10px;
+  opacity: 0;
+}
+
+.slider .off {
+  right: 10px;
+  opacity: 1;
+}
+
+/* 当开关选中时改变文字的显示 */
+input:checked + .slider .on {
+  opacity: 1;
+}
+
+input:checked + .slider .off {
+  opacity: 0;
+}
+
+/* Setting 字样式 */
+.text-h3 {
+    font-size: 12px; /* 示例：字体大小 */
+    color: #333; /* 示例：字体颜色 */
+}
+
+.text-h1 {
+    font-size: 13px;
+    color: #000000;
+    font-family:Georgia, 'Times New Roman', Times, serif;
+}
+.text-s1 {
+    font-size: 10px;
+    color: #636363;
+}
+
+/* Case 字样式 */
+.text-t3 {
+  font-size: 12px;
+  color: #333;
+  line-height: 22px;
+}

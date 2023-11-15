@@ -2,6 +2,10 @@
 
 // 当页面加载完毕时，请求当前开关状态
 document.addEventListener('DOMContentLoaded', () => {
+    // 读取版本号
+    const version = chrome.runtime.getManifest().version;
+    document.getElementById('extension-version').textContent = `Anon ${version}`;
+
     // 请求 toggle-switch 的当前状态
     chrome.runtime.sendMessage({ action: "requestToggleState" }, (response) => {
         document.getElementById('toggle-switch').checked = response.state;
