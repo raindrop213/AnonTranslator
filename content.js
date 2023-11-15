@@ -3,15 +3,19 @@ function addMouseListener(doc) {
     doc.addEventListener('mouseup', (event) => {
         const selectedText = doc.getSelection().toString();
         if (selectedText) {
-            const x = event.pageX + window.screenX;
-            const y = event.pageY + window.screenY;
-            chrome.runtime.sendMessage({
-                action: 'openPopup',
-                selectedText: selectedText,
-                x: x,
-                y: y,
-                screenWidth: window.innerWidth,
-                screenHeight: window.innerHeight
+            chrome.runtime.sendMessage({ action: "requestToggleState" }, (response) => {
+                if (response.state) { // 检查开关状态
+                    const x = event.pageX + window.screenX;
+                    const y = event.pageY + window.screenY;
+                    chrome.runtime.sendMessage({
+                        action: 'openPopup',
+                        selectedText: selectedText,
+                        x: x,
+                        y: y,
+                        screenWidth: window.innerWidth,
+                        screenHeight: window.innerHeight
+                    });
+                }
             });
         }
     });
