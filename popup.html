@@ -1,0 +1,29 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setting</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>body {width: 78px;height: 150px;}</style>
+</head>
+<body>
+    <div>
+        <label class="switch">
+            <input type="checkbox" id="toggle-switch">
+            <span class="slider round">
+                <span class="on">ON</span>
+                <span class="off">OFF</span>
+            </span>
+        </label>
+        <p class="text-h3">移除注音 <input type="checkbox" id="remove-rt"></p>
+        <p class="text-h3">复制文本 <input type="checkbox" id="copy-to-clipboard"></p>
+    </div>
+    <div>
+        <p class="text-h1" id="extension-version">Anon version</p>
+        <p class="text-s1">By: Raindrop213</p>
+    </div>
+    <script src="src/popup.js"></script>
+    
+</body>
+</html>
