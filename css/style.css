@@ -59,11 +59,11 @@ body {
   
   /* 圆角滑块 */
   .slider.round {
-    border-radius: 34px;
+    border-radius: 5px;
   }
   
   .slider.round:before {
-    border-radius: 50%;
+    border-radius: 3px;
   }
   
   /* ON和OFF文字样式 */
@@ -109,7 +109,7 @@ input:checked + .slider .off {
 }
 .text-s1 {
     font-size: 10px;
-    color: #636363;
+    color: #a8a8a8;
 }
 
 /* Case 字样式 */

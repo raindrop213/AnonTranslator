@@ -1,7 +1,8 @@
-{
+{   
     "manifest_version": 3,
     "name": "Anon",
     "version": "0.2.1",
+    "author": "raindrop213",
     "description": "Ignore furigana and Copy Japanese text",
     "permissions": ["activeTab", "scripting"],
     "icons": {
@@ -12,10 +13,10 @@
     "action": {
         "default_popup": "popup.html"
     },
+    "options_page": "options.html",
     "content_scripts":[{
         "matches": ["<all_urls>"],
-        "js": ["src/content.js"],
-        "all_frames": true
+        "js": ["src/content.js"]
     }],
     "background": {
         "service_worker": "src/background.js"

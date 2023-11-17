@@ -3,6 +3,7 @@
 let toggleSwitchState = false; // 默认状态为false
 let removeRtState = true; // 默认移除rt标签的状态为true
 let copyToClipboardState = true; // 默认开启复制到剪贴板功能
+let caseSwitchState = true; // 默认状态
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
@@ -24,8 +25,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "requestCopyToClipboardState":
             sendResponse({ copyToClipboard: copyToClipboardState });
             break;
+        case "updateCaseSwitch":
+            caseSwitchState = message.caseSwitch;
+            break;
+        case "requestCaseSwitchState":
+            sendResponse({ caseSwitch: caseSwitchState });
+            break;
         case "openPopup":
-            if (toggleSwitchState) {
+            if (toggleSwitchState && caseSwitchState) {
                 const selectedText = message.selectedText;
                 const x = message.x;
                 const y = message.y;
