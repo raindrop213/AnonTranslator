@@ -1,38 +1,45 @@
 // background.js
 
-let toggleSwitchState = false; // 默认状态为false
-let removeRtState = true; // 默认移除rt标签的状态为true
-let copyToClipboardState = true; // 默认开启复制到剪贴板功能
-let caseSwitchState = true; // 默认状态
+
+let toggleState = true;
+let readTextState = true;
+let copyToClipboardState = true;
+let caseSwitchState = true;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
-        case "toggleSwitch":
-            toggleSwitchState = message.state;
+
+        case "updateToggle":
+            toggleState = message.toggle;
             break;
         case "requestToggleState":
-            sendResponse({ state: toggleSwitchState });
+            sendResponse({ toggle: toggleState });
             break;
-        case "updateRemoveRt":
-            removeRtState = message.removeRt;
+
+        case "updateReadText":
+            readTextState = message.readText;
             break;
-        case "requestRemoveRtState":
-            sendResponse({ removeRt: removeRtState });
+        case "requestReadTextState":
+            sendResponse({ readText: readTextState });
             break;
+
         case "updateCopyToClipboard":
             copyToClipboardState = message.copyToClipboard;
             break;
         case "requestCopyToClipboardState":
             sendResponse({ copyToClipboard: copyToClipboardState });
             break;
+
         case "updateCaseSwitch":
             caseSwitchState = message.caseSwitch;
             break;
         case "requestCaseSwitchState":
             sendResponse({ caseSwitch: caseSwitchState });
             break;
+        
+        // 监听弹窗位置
         case "openPopup":
-            if (toggleSwitchState && caseSwitchState) {
+            if (toggleState && caseSwitchState) {
                 const selectedText = message.selectedText;
                 const x = message.x;
                 const y = message.y;

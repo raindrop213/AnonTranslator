@@ -1,0 +1,13 @@
+/* 在这里添加你的CSS样式 */
+body {
+  font-family: Arial, sans-serif;
+  margin: 15px;
+}
+
+label,
+select,
+input,
+button {
+  margin-bottom: 10px;
+  display: block;
+}

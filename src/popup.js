@@ -1,22 +1,24 @@
 // popup.js
 
+// 读取元数据
+const version = chrome.runtime.getManifest().version;
+const named = chrome.runtime.getManifest().name;
+const author = chrome.runtime.getManifest().author;
+document.getElementById('extension-version').textContent = `${named} ${version}`;
+document.getElementById('extension-author').textContent = `By: ${author}`;
+
+
 // 当页面加载完毕时，请求当前开关状态
 document.addEventListener('DOMContentLoaded', () => {
-    // 读取元数据
-    const version = chrome.runtime.getManifest().version;
-    const name = chrome.runtime.getManifest().name;
-    const author = chrome.runtime.getManifest().author;
-    document.getElementById('extension-version').textContent = `${name} ${version}`;
-    document.getElementById('extension-author').textContent = `By: ${author}`;
-
+    
     // 请求 toggle-switch 的当前状态
     chrome.runtime.sendMessage({ action: "requestToggleState" }, (response) => {
-        document.getElementById('toggle-switch').checked = response.state;
+        document.getElementById('toggle-switch').checked = response.toggle;
     });
 
-    // 请求 remove-rt 的当前状态
-    chrome.runtime.sendMessage({ action: "requestRemoveRtState" }, (response) => {
-        document.getElementById('remove-rt').checked = response.removeRt;
+    // 请求 read-text 的当前状态
+    chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
+        document.getElementById('read-text').checked = response.readText;
     });
 
     // 请求 copy-to-clipboard 的当前状态
@@ -31,12 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 监听 toggle-switch 的状态变化
 document.getElementById('toggle-switch').addEventListener('change', function () {
-    chrome.runtime.sendMessage({ action: "toggleSwitch", state: this.checked });
+    chrome.runtime.sendMessage({ action: "updateToggle", toggle: this.checked });
 });
 
-// 监听 remove-rt 的状态变化
-document.getElementById('remove-rt').addEventListener('change', function () {
-    chrome.runtime.sendMessage({ action: "updateRemoveRt", removeRt: this.checked });
+// 监听 read-text 的状态变化
+document.getElementById('read-text').addEventListener('change', function () {
+    chrome.runtime.sendMessage({ action: "updateReadText", readText: this.checked });
 });
 
 // 监听 copy-to-clipboard 的状态变化

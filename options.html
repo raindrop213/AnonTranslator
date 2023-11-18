@@ -1,11 +1,43 @@
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Options</title>
+  <title>Options</title>
+  <link rel="stylesheet" type="text/css" href="css/options.css">
 </head>
 <body>
+  <h1>Text Highlighter and Reader Settings</h1>
+  <form id="settingsForm">
     
+    <div>
+      <h2>Function</h2>
+    </div>
+    <div>
+      <label>
+        Ignore tr<input type="checkbox" id="ignoreRT">
+      </label>
+    </div>
+
+    <div>
+      <h2>WindowsTTS</h2>
+    </div>
+    <div>
+      <label for="voiceName">Voice:</label>
+      <select id="voiceName">
+        <!-- 选项将由 options.js 动态填充 -->
+      </select>
+    </div>
+    <div>
+      <label for="rate">Rate (0 - 2):</label>
+      <input type="range" id="rate" min="0" max="2" step="0.1" value="1">
+    </div>
+    <div>
+      <label for="pitch">Pitch (0 - 2):</label>
+      <input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
+    </div>
+    
+    <br>
+    <button type="submit">Save Settings</button>
+  </form>
+  <script src="src/options.js"></script>
 </body>
 </html>

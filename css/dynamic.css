@@ -1,0 +1,4 @@
+.highlight-border {
+    border: 2px solid greenyellow;
+    transition: border 300ms ease-out;
+}
