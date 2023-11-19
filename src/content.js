@@ -15,15 +15,12 @@ let readingInterval = 200;
 let voicesLoaded = false;
 
 // 目标标签
-let target = ['P', 'H1', 'H2', 'H3', 'DIV', 'RUBY'];
+let target = ['P', 'H1', 'H2', 'H3'];
 
 // 框样式
 let freeFrame = "2px double #E04F95"
 let lastFrame = "2px double #029AD7"
 let frameRadius = "5px"
-
-
-/* ------------------------------声音加载检测 */
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -66,59 +63,95 @@ function applyBlueBorder(tag) {
 
 // 处理点击事件：复制文本并朗读
 function handleClick(event) {
-    if (event.target.nodeName === 'P') {
+    if (target.includes(event.target.nodeName)) {
         applyBlueBorder(event.target);
-        chrome.storage.local.get('ignoreRT', (data) => {
-            let text = cleanText(event.target.outerHTML, data.ignoreRT);
-
-            // 移除两边的空格和缩进
-            text = text.trim();
-
-            // 复制文本
-            chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-                if (response.copyToClipboard) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        console.log("Text copied to clipboard");
-                    }).catch(err => {
-                        console.error('Failed to copy text: ', err);
-                    });
-                }
-            });
-                
-            // 打断当前语音并播放新的语音
-            window.speechSynthesis.cancel();
-            
-            // 朗读文本
-            chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-                if (response.readText) {
-                    chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
-                        const voiceName = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
-                        const rate = data.rate || 1;
-                        const pitch = data.pitch || 1;
-                        const utterance = new SpeechSynthesisUtterance(text);
-
-                        // 设置语音、声调和速度
-                        var voices = window.speechSynthesis.getVoices();
-                        var desiredVoice = voices.find(voice => voice.name === voiceName);
-                        if (desiredVoice) {
-                            utterance.voice = desiredVoice;
-                        }
-                        utterance.pitch = pitch; // 范围从0到2
-                        utterance.rate = rate; // 范围从0.1到10
-                        
-                        // 朗读开始
-                        window.speechSynthesis.speak(utterance);
-                    })
-                }
-            })
-        })
+        processText(event.target);
     }
+}
+
+// 处理文本的逻辑
+function processText(tag) {
+    chrome.storage.local.get('ignoreRT', (data) => {
+        let text = cleanText(tag.outerHTML, data.ignoreRT);
+        text = text.trim(); // 移除两边的空格和缩进
+        copyTextToClipboard(text); // 复制文本
+        readTextAloud(text); // 朗读文本
+    });
+}
+
+
+/* ------------------------------复制和朗读功能的抽象 */
+
+// 复制文本到剪贴板
+function copyTextToClipboard(text, callback) {
+    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+        if (response.copyToClipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log("Text copied to clipboard");
+                if (callback) callback();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    });
+}
+
+
+// 朗读文本
+function readTextAloud(text, callback) {
+    chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
+        if (response.readText) {
+            chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.voice = selectVoice(data.voiceName || 'Microsoft Sayaka - Japanese (Japan)');
+                utterance.pitch = data.pitch || 1;
+                utterance.rate = data.rate || 1;
+
+                utterance.onend = () => {
+                    if (callback) callback();
+                };
+
+                window.speechSynthesis.cancel(); // 打断当前语音
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+    });
+}
+
+// 选择语音
+function selectVoice(voiceName) {
+    var voices = window.speechSynthesis.getVoices();
+    return voices.find(voice => voice.name === voiceName) || voices[0];
+}
+
+
+// 将文本转换为语音
+function speakText(text) {
+    chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
+        const voiceName = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
+        const rate = data.rate || 1;
+        const pitch = data.pitch || 1;
+        const utterance = new SpeechSynthesisUtterance(text);
+        setVoiceAndSpeak(utterance, voiceName, rate, pitch);
+    });
+}
+
+// 设置语音属性并开始朗读
+function setVoiceAndSpeak(utterance, voiceName, rate, pitch) {
+    var voices = window.speechSynthesis.getVoices();
+    var desiredVoice = voices.find(voice => voice.name === voiceName);
+    if (desiredVoice) {
+        utterance.voice = desiredVoice;
+    }
+    utterance.pitch = pitch;
+    utterance.rate = rate;
+    window.speechSynthesis.speak(utterance);
 }
 
 
 /* ------------------------------文本高亮及点击事件绑定 */
 
-// 为 <p> 标签添加红框，并绑定点击事件
+// 为 target 标签添加红框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
     doc.addEventListener('mouseenter', (event) => {
         if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
@@ -148,7 +181,7 @@ function handleArrowKeyPress(event) {
 
         let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
 
-        // 确保新标签是一个 <p>, <h1>, <h2>, 或 <h3> 元素
+        // 确保新标签是一个 target 元素
         while (newTag && !target.includes(newTag.nodeName)) {
             newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
         }
@@ -164,50 +197,11 @@ function handleArrowKeyPress(event) {
 function copyAndReadText(tag, callback) {
     chrome.storage.local.get('ignoreRT', (data) => {
         let text = cleanText(tag.outerHTML, data.ignoreRT);
-
-        // 移除两边的空格和缩进
         text = text.trim();
 
-        // 复制文本
-        chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-            if (response.copyToClipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    console.log("Text copied to clipboard");
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                });
-            }
+        copyTextToClipboard(text, () => {
+            readTextAloud(text, callback);
         });
-            
-        // 打断当前语音并播放新的语音
-        window.speechSynthesis.cancel();
-        
-        // 朗读文本
-        chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-            if (response.readText) {
-                chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
-                    const voiceName = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
-                    const rate = data.rate || 1;
-                    const pitch = data.pitch || 1;
-                    const utterance = new SpeechSynthesisUtterance(text);
-
-                    // 设置语音、声调和速度
-                    var voices = window.speechSynthesis.getVoices();
-                    var desiredVoice = voices.find(voice => voice.name === voiceName);
-                    if (desiredVoice) {
-                        utterance.voice = desiredVoice;
-                    }
-                    utterance.pitch = pitch; // 范围从0到2
-                    utterance.rate = rate; // 范围从0.1到10
-                    
-                    // 设置朗读结束的回调
-                    utterance.onend = callback;
-
-                    // 朗读开始
-                    window.speechSynthesis.speak(utterance);
-                })
-            }
-        })
     });
 }
 
