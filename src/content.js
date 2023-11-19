@@ -1,6 +1,6 @@
 /* content.js */
 
-/* --------------------------------------------全局变量 */
+/* ------------------------------全局变量 */
 
 // 最后点击的 <p> 标签
 let lastClickedPtag = null;
@@ -14,13 +14,16 @@ let readingInterval = 200;
 // 标记声音是否已加载
 let voicesLoaded = false;
 
+// 目标标签
+let target = ['P', 'H1', 'H2', 'H3', 'DIV', 'RUBY'];
+
 // 框样式
 let freeFrame = "2px double #E04F95"
 let lastFrame = "2px double #029AD7"
 let frameRadius = "5px"
 
 
-/* --------------------------------------------声音加载检测 */
+/* ------------------------------声音加载检测 */
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -28,7 +31,7 @@ window.speechSynthesis.onvoiceschanged = function() {
 };
 
 
-/* --------------------------------------------文本清理函数 */
+/* ------------------------------文本清理函数 */
 
 // 清理文本，移除 <rt> 和 <ruby> 标签
 function cleanText(htmlString, ignoreRT) {
@@ -44,7 +47,7 @@ function cleanText(htmlString, ignoreRT) {
 }
 
 
-/* --------------------------------------------辅助函数 */
+/* ------------------------------辅助函数 */
 
 // 为指定标签添加蓝色边框
 function applyBlueBorder(tag) {
@@ -59,7 +62,7 @@ function applyBlueBorder(tag) {
 }
 
 
-/* --------------------------------------------文本点击处理 */
+/* ------------------------------文本点击处理 */
 
 // 处理点击事件：复制文本并朗读
 function handleClick(event) {
@@ -113,12 +116,12 @@ function handleClick(event) {
 }
 
 
-/* --------------------------------------------文本高亮及点击事件绑定 */
+/* ------------------------------文本高亮及点击事件绑定 */
 
 // 为 <p> 标签添加红框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
     doc.addEventListener('mouseenter', (event) => {
-        if (event.target.nodeName === 'P' && !event.target.classList.contains('highlighted')) {
+        if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
             event.target.style.border = freeFrame;
             event.target.style.borderRadius = frameRadius;
             event.target.classList.add('highlighted');
@@ -127,7 +130,7 @@ function highlightAndCopyPtag(doc) {
     }, true);
 
     doc.addEventListener('mouseleave', (event) => {
-        if (event.target.nodeName === 'P') {
+        if (target.includes(event.target.nodeName)) {
             event.target.style.border = "";
             event.target.classList.remove('highlighted');
             event.target.removeEventListener('click', handleClick);
@@ -136,7 +139,7 @@ function highlightAndCopyPtag(doc) {
 }
 
 
-/* --------------------------------------------键盘事件处理 */
+/* ------------------------------键盘事件处理 */
 
 // 处理键盘事件，实现自动阅读的开始和停止
 function handleArrowKeyPress(event) {
@@ -145,8 +148,8 @@ function handleArrowKeyPress(event) {
 
         let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
 
-        // 确保新标签是一个 <p> 元素
-        while (newTag && newTag.nodeName !== 'P') {
+        // 确保新标签是一个 <p>, <h1>, <h2>, 或 <h3> 元素
+        while (newTag && !target.includes(newTag.nodeName)) {
             newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
         }
 
@@ -209,7 +212,7 @@ function copyAndReadText(tag, callback) {
 }
 
 
-/* --------------------------------------------自动阅读控制 */
+/* ------------------------------自动阅读控制 */
 
 // 函数：开始自动阅读
 function startAutoReading() {
@@ -221,10 +224,10 @@ function startAutoReading() {
 
         applyBlueBorder(currentTag);
         copyAndReadText(currentTag, () => {
-            // 设置延迟，然后读取下一个 <p> 标签
+            // 设置延迟，然后读取下一个标签
             setTimeout(() => {
                 currentTag = currentTag.nextElementSibling;
-                while (currentTag && currentTag.nodeName !== 'P') {
+                while (currentTag && !target.includes(currentTag.nodeName)) {
                     currentTag = currentTag.nextElementSibling;
                 }
                 readNext();
@@ -242,7 +245,7 @@ function stopAutoReading() {
 }
 
 
-/* --------------------------------------------事件监听器添加 */
+/* ------------------------------事件监听器添加 */
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
@@ -266,7 +269,7 @@ function addMouseListener(doc) {
 addMouseListener(document);
 
 
-/* --------------------------------------------DOM 变更监听 */
+/* ------------------------------DOM 变更监听 */
 
 // 使用 MutationObserver 监听 DOM 变更
 const observer = new MutationObserver((mutations) => {
