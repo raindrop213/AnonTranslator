@@ -1,25 +1,38 @@
-{   
-    "manifest_version": 3,
-    "name": "Anon",
-    "version": "0.3.0",
-    "author": "raindrop213",
-    "description": "Ignore furigana and Copy Japanese text",
-    "permissions": ["activeTab", "scripting", "clipboardWrite", "tts", "storage"],
-    "icons": {
-        "16": "img/icon16.png",
-        "48": "img/icon48.png",
-        "128": "img/icon128.png"
-    },
-    "action": {
-        "default_popup": "popup.html"
-    },
-    "options_page": "options.html",
-    "content_scripts":[{
-        "matches": ["<all_urls>"],
-        "css": ["css/dynamic.css"],
-        "js": ["src/content.js"]
-    }],
-    "background": {
-        "service_worker": "src/background.js"
+{
+  "manifest_version": 3,
+  "name": "Anon",
+  "version": "0.3.2",
+  "author": "raindrop213",
+  "description": "Ignore furigana and Copy Japanese text",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "tts",
+    "storage",
+    "fileSystem"
+  ],
+  "host_permissions": ["http://127.0.0.1:23456/*","http://localhost:8083/*"],
+
+  "icons": {
+    "16": "img/icon16.png",
+    "48": "img/icon48.png",
+    "128": "img/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["css/dynamic.css"],
+      "js": ["src/content.js"]
     }
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  }
 }
+
+

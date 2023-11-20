@@ -71,39 +71,61 @@ function handleClick(event) {
 
 // 处理文本的逻辑
 function processText(tag) {
-    chrome.storage.local.get('ignoreRT', (data) => {
+    chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
         let text = cleanText(tag.outerHTML, data.ignoreRT);
         text = text.trim(); // 移除两边的空格和缩进
-        copyTextToClipboard(text); // 复制文本
-        readTextAloud(text); // 朗读文本
-    });
-}
-
-
-/* ------------------------------复制和朗读功能的抽象 */
-
-// 复制文本到剪贴板
-function copyTextToClipboard(text, callback) {
-    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-        if (response.copyToClipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log("Text copied to clipboard");
-                if (callback) callback();
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
+        if (data.useVITS) {
+            // 使用 vits_tts 朗读
+            vits_tts(text);
+        } else {
+            // 使用 windows_tts 朗读
+            copyTextToClipboard(text, () => {
+                windows_tts(text);
             });
         }
     });
 }
 
 
-// 朗读文本
-function readTextAloud(text, callback) {
+
+
+/* ------------------------------复制和朗读功能的抽象 */
+
+// 在脚本开始处添加 WebSocket 连接（vits_tts需要用的）
+let socket = null;
+function connectWebSocket() {
+    socket = new WebSocket('ws://localhost:8765');
+    
+    socket.onopen = function(e) {
+      console.log("[WebSocket] Connection established");
+    };
+
+    socket.onerror = function(error) {
+      console.error(`[WebSocket] Error: ${error.message}`);
+    };
+
+    // socket.onclose = function(e) {
+    //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
+    //   setTimeout(connectWebSocket, 5000); // 5秒后重连
+    // };
+}
+
+// 在脚本开始处初始化WebSocket连接
+connectWebSocket();
+
+
+// 朗读文本(windowsTTS)
+function windows_tts(text, callback) {
     chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
         if (response.readText) {
             chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.voice = selectVoice(data.voiceName || 'Microsoft Sayaka - Japanese (Japan)');
+
+                // 找到与用户设置匹配的语音
+                var voices = window.speechSynthesis.getVoices();
+                var selectedVoice = voices.find(voice => voice.name === data.voiceName);
+                utterance.voice = selectedVoice;
+
                 utterance.pitch = data.pitch || 1;
                 utterance.rate = data.rate || 1;
 
@@ -118,23 +140,41 @@ function readTextAloud(text, callback) {
     });
 }
 
-// 选择语音
-function selectVoice(voiceName) {
-    var voices = window.speechSynthesis.getVoices();
-    return voices.find(voice => voice.name === voiceName) || voices[0];
-}
 
+// 朗读文本(vitsTTS)
+function vits_tts(text, callback) {
+    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+        const encodedText = encodeURIComponent(text); // 对文本进行编码
+        const params = new URLSearchParams({
+            id: data.vitsVoice,
+            length: data.length,
+            noise: data.noise,
+            noisew: data.noisew,
+            max: data.max,
+            streaming: data.streaming
+        });
+        const vitsAPI = data.vitsAPI;
+        const clip_url = `${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
+        console.log(clip_url)
 
-// 将文本转换为语音
-function speakText(text) {
-    chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
-        const voiceName = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
-        const rate = data.rate || 1;
-        const pitch = data.pitch || 1;
-        const utterance = new SpeechSynthesisUtterance(text);
-        setVoiceAndSpeak(utterance, voiceName, rate, pitch);
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ url: clip_url }));
+        }
+
+        // 监听WebSocket消息以获取语音流
+        socket.onmessage = function(event) {
+            try {
+                const responseData = JSON.parse(event.data); // 解析返回的数据
+                const length = responseData.length; // 提取时长信息
+                
+                console.log("Received length from WebSocket:", length);
+            } catch (error) {
+                console.error("Error parsing WebSocket response:", error);
+            }
+        };
     });
 }
+
 
 // 设置语音属性并开始朗读
 function setVoiceAndSpeak(utterance, voiceName, rate, pitch) {
@@ -148,6 +188,20 @@ function setVoiceAndSpeak(utterance, voiceName, rate, pitch) {
     window.speechSynthesis.speak(utterance);
 }
 
+
+// 复制文本到剪贴板
+function copyTextToClipboard(text, callback) {
+    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+        if (response.copyToClipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log("Text copied to clipboard");
+                if (callback) callback();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    });
+}
 
 /* ------------------------------文本高亮及点击事件绑定 */
 
@@ -195,13 +249,21 @@ function handleArrowKeyPress(event) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.local.get('ignoreRT', (data) => {
+    chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
+        console.log("copyAndReadText", data.useVITS)
         let text = cleanText(tag.outerHTML, data.ignoreRT);
         text = text.trim();
-
-        copyTextToClipboard(text, () => {
-            readTextAloud(text, callback);
-        });
+        if (data.useVITS) {
+            // 使用 vits_tts
+            copyTextToClipboard(text, () => {
+                vits_tts(text, callback);
+            });
+        } else {
+            // 使用 windows_tts
+            copyTextToClipboard(text, () => {
+                windows_tts(text, callback);
+            });
+        }
     });
 }
 
