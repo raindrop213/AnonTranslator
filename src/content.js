@@ -15,12 +15,13 @@ let readingInterval = 200;
 let voicesLoaded = false;
 
 // 目标标签
-let target = ['P', 'H1', 'H2', 'H3'];
+let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
 // 框样式
-let freeFrame = "2px double #E04F95"
-let lastFrame = "2px double #029AD7"
-let frameRadius = "5px"
+let freeFrame = "1px double #E04F95"
+let lastFrame = "1px double #029AD7"
+let frameRadius = "8px"
+let fade_away =  "75"
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -218,7 +219,9 @@ function highlightAndCopyPtag(doc) {
 
     doc.addEventListener('mouseleave', (event) => {
         if (target.includes(event.target.nodeName)) {
-            event.target.style.border = "";
+            setTimeout(() => {
+                event.target.style.border = "";
+            }, fade_away);
             event.target.classList.remove('highlighted');
             event.target.removeEventListener('click', handleClick);
         }

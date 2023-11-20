@@ -10,7 +10,8 @@ A chrome extension for light novel reading
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
-![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview.png)
+![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview1.gif)
+
 ---
 
 ### **插件安装**
@@ -19,9 +20,11 @@ A chrome extension for light novel reading
 
 
 ### **使用说明**
-1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami) 使用Anki和语素分析。
-2. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
-3. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）
+1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami) 使用Anki和语素分析；
+2. 键盘方向键 【↑】上一句 和 【↓】上一句，并且可以触发复制和朗读；
+3. 空格键【Backspace】一句接一句播放；
+4. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
+5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 
 ### **开发计划**
@@ -30,22 +33,22 @@ A chrome extension for light novel reading
 - EdgeTTS
 - ~~vitsTTS~~
 - ~~自动朗读~~
-- 翻译（DeepL、有道、moji）
-- 日本語形態素解析（MeCab、moji、gpt）
-- 联动 Anki
+- 弹窗-翻译（DeepL、有道、moji）
+- 弹窗-日本語形態素解析（MeCab、moji、gpt）
+- 弹窗-联动Anki
 
 
 ### **资源**
-1. 免费在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】
-2. 免费下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/)
-2. 免费在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】。（需要你会做epub的话可以右键查看页面源码，然后拷贝到epub，快速匹配替换加标签就行了。）
-3. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？）
+1. 免费在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
+2. 免费下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
+3. 免费在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】。（需要你会做epub的话可以右键查看页面源码，然后拷贝到epub，快速匹配替换加标签就行了）；
+4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？）
 
 ---
 
 **其他**
 <details>
-  <summary>vits可用语音</summary>
+  <summary>vits整合包中可用语音</summary>
 [0] ja 綾地寧々;
 [1] ja 因幡めぐる;
 [2] ja 朝武芳乃;
