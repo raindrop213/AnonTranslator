@@ -4,15 +4,8 @@
   "version": "0.3.2",
   "author": "raindrop213",
   "description": "Ignore furigana and Copy Japanese text",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "clipboardWrite",
-    "tts",
-    "storage",
-    "fileSystem"
-  ],
-  "host_permissions": ["http://127.0.0.1:23456/*","http://localhost:8083/*"],
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "tts", "storage"],
+  "host_permissions": ["http://127.0.0.1:23456/*", "http://localhost:8083/*"],
 
   "icons": {
     "16": "img/icon16.png",
@@ -34,5 +27,3 @@
     "service_worker": "src/background.js"
   }
 }
-
-
