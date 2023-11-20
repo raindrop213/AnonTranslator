@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anon",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "raindrop213",
   "description": "Ignore furigana and Copy Japanese text",
   "permissions": ["activeTab", "scripting", "clipboardWrite", "tts", "storage"],
