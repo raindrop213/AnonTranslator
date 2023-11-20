@@ -9,7 +9,7 @@ A chrome extension for light novel reading
 多功能TTS啃生肉，复制到剪切板时去除振假名（Furigana）
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
-
+![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview.png)
 ---
 
 ### **插件安装**
