@@ -31,17 +31,20 @@ window.speechSynthesis.onvoiceschanged = function() {
 
 /* ------------------------------文本模块 */
 
-
 // 清理文本，移除 <rt> 和 <ruby> 标签，并且清除两边空格。
 function cleanText(htmlString, ignoreRT) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 根据 ignoreRT 标志移除 <rt> 标签
+    // 根据 ignoreRT 标志移除 <rt> 标签。
     if (ignoreRT) {
         div.querySelectorAll('rt').forEach(rt => rt.remove());
     }
-    return div.textContent.trim();
+    if (div.textContent.trim()) {
+        return div.textContent.trim();
+    } else {
+        return '-';
+    };
 }
 
 // 复制文本到剪贴板
@@ -59,10 +62,7 @@ function copyTextToClipboard(text, callback) {
     });
 }
 
-
 /* ------------------------------语音模块 */
-
-
 
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
@@ -89,8 +89,6 @@ function windows_tts(text, callback) {
         }
     });
 }
-
-
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
@@ -128,7 +126,6 @@ function vits_tts(text, callback) {
     })
 }
 
-
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
     chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
@@ -136,7 +133,8 @@ function copyAndReadText(tag, callback) {
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
-                vits_tts(text, callback);
+                vits_tts(text, callback)
+                ;
             });
         } else {
             // 使用 windows tts
@@ -202,7 +200,7 @@ function handleArrowKeyPress(event) {
 
 /* ------------------------------用户界面交互模块 */
 
-// 处理点击事件：复制文本并朗读
+// 处理点击事件
 function handleClick(event) {
     if (target.includes(event.target.nodeName)) {
         applyBlueBorder(event.target);
