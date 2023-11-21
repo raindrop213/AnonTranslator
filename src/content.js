@@ -31,7 +31,8 @@ window.speechSynthesis.onvoiceschanged = function() {
 
 /* ------------------------------文本模块 */
 
-// 清理文本，移除 <rt> 和 <ruby> 标签，并且清除两边空格
+
+// 清理文本，移除 <rt> 和 <ruby> 标签，并且清除两边空格。
 function cleanText(htmlString, ignoreRT) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
@@ -40,7 +41,6 @@ function cleanText(htmlString, ignoreRT) {
     if (ignoreRT) {
         div.querySelectorAll('rt').forEach(rt => rt.remove());
     }
-
     return div.textContent.trim();
 }
 
@@ -53,6 +53,7 @@ function copyTextToClipboard(text, callback) {
                 if (callback) callback();
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
+                if (callback) callback();
             });
         }
     });
@@ -61,22 +62,6 @@ function copyTextToClipboard(text, callback) {
 
 /* ------------------------------语音模块 */
 
-
-// 处理文本的逻辑
-function processText(tag) {
-    chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
-        let text = cleanText(tag.outerHTML, data.ignoreRT);
-        if (data.useVITS) {
-            // 使用 vits_tts 朗读
-            vits_tts(text);
-        } else {
-            // 使用 windows_tts 朗读
-            copyTextToClipboard(text, () => {
-                windows_tts(text);
-            });
-        }
-    });
-}
 
 
 // 朗读文本(windowsTTS)
@@ -96,7 +81,7 @@ function windows_tts(text, callback) {
 
                 utterance.onend = () => {
                     if (callback) callback();
-                };
+                }; // 如果callback存在，则创建回调函数callback
 
                 window.speechSynthesis.cancel(); // 打断当前语音
                 window.speechSynthesis.speak(utterance);
@@ -104,6 +89,7 @@ function windows_tts(text, callback) {
         }
     });
 }
+
 
 
 // 朗读文本(vitsTTS)
@@ -120,39 +106,40 @@ function vits_tts(text, callback) {
         });
         const vitsAPI = data.vitsAPI;
         const clip_url = `${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
-        console.log(clip_url)
 
         if (socket.readyState === WebSocket.OPEN) {
+            console.log(`这是新请求：${text}`)
             socket.send(JSON.stringify({ url: clip_url }));
         }
 
         // 监听WebSocket消息以获取语音流
         socket.onmessage = function(event) {
             try {
-                const responseData = JSON.parse(event.data); // 解析返回的数据
-                const length = responseData.length; // 提取时长信息
+                const responseData = JSON.parse(event.data);
                 
-                console.log("Received length from WebSocket:", length);
+                if (responseData.status === "finished") {
+                    console.log("Voice playback finished");
+                    if (callback) callback();
+                }
             } catch (error) {
                 console.error("Error parsing WebSocket response:", error);
             }
         };
-    });
+    })
 }
 
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
     chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
-        console.log("copyAndReadText", data.useVITS)
         let text = cleanText(tag.outerHTML, data.ignoreRT);
         if (data.useVITS) {
-            // 使用 vits_tts
+            // 使用 vits tts
             copyTextToClipboard(text, () => {
                 vits_tts(text, callback);
             });
         } else {
-            // 使用 windows_tts
+            // 使用 windows tts
             copyTextToClipboard(text, () => {
                 windows_tts(text, callback);
             });
@@ -219,7 +206,7 @@ function handleArrowKeyPress(event) {
 function handleClick(event) {
     if (target.includes(event.target.nodeName)) {
         applyBlueBorder(event.target);
-        processText(event.target);
+        copyAndReadText(event.target);
     }
 }
 
@@ -283,7 +270,7 @@ addMouseListener(document);
 
 /* ------------------------------网络通信模块 */
 
-// 在脚本开始处添加 WebSocket 连接（vits_tts需要用的）
+// 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
 let socket = null;
 function connectWebSocket() {
     socket = new WebSocket('ws://localhost:8765');
