@@ -17,10 +17,10 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- []() 从Chrome应用商店安装
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%B5%8B%E8%AF%95%E7%89%88) （等功能完善后再去Chrome应用商店发布）
 - vitsTTS需要额外下载：
   1. [vits-simple-api](https://github.com/Artrajz/vits-simple-api)，下载 release，我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！
-  2. [补丁]()（需要覆盖到 vits-simple-api 根目录下。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！）
+  2. [补丁](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%B5%8B%E8%AF%95%E7%89%88)（需要覆盖到 vits-simple-api 根目录下。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！）
 
 
 ### **使用说明**

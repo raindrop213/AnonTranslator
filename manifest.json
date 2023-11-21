@@ -3,7 +3,7 @@
   "name": "Anon",
   "version": "0.3.3",
   "author": "raindrop213",
-  "description": "Ignore furigana and Copy Japanese text",
+  "description": "Japanese light novel reading tool",
   "permissions": ["activeTab", "scripting", "clipboardWrite", "tts", "storage"],
   "host_permissions": ["http://127.0.0.1:23456/*", "http://localhost:8083/*", "http://localhost:8765/*"],
 
@@ -19,7 +19,6 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "css": ["css/dynamic.css"],
       "js": ["src/content.js"]
     }
   ],
