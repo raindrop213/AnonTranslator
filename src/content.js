@@ -29,9 +29,9 @@ window.speechSynthesis.onvoiceschanged = function() {
 };
 
 
-/* ------------------------------文本清理函数 */
+/* ------------------------------文本模块 */
 
-// 清理文本，移除 <rt> 和 <ruby> 标签
+// 清理文本，移除 <rt> 和 <ruby> 标签，并且清除两边空格
 function cleanText(htmlString, ignoreRT) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
@@ -41,40 +41,31 @@ function cleanText(htmlString, ignoreRT) {
         div.querySelectorAll('rt').forEach(rt => rt.remove());
     }
 
-    return div.textContent;
+    return div.textContent.trim();
+}
+
+// 复制文本到剪贴板
+function copyTextToClipboard(text, callback) {
+    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+        if (response.copyToClipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log("Text copied to clipboard");
+                if (callback) callback();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    });
 }
 
 
-/* ------------------------------辅助函数 */
+/* ------------------------------语音模块 */
 
-// 为指定标签添加蓝色边框
-function applyBlueBorder(tag) {
-    if (lastClickedPtag) {
-        lastClickedPtag.style.border = "";
-        lastClickedPtag.classList.remove('blue-highlighted');
-    }
-    tag.style.border = lastFrame;
-    tag.style.borderRadius = frameRadius;
-    tag.classList.add('blue-highlighted');
-    lastClickedPtag = tag;
-}
-
-
-/* ------------------------------文本点击处理 */
-
-// 处理点击事件：复制文本并朗读
-function handleClick(event) {
-    if (target.includes(event.target.nodeName)) {
-        applyBlueBorder(event.target);
-        processText(event.target);
-    }
-}
 
 // 处理文本的逻辑
 function processText(tag) {
     chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
         let text = cleanText(tag.outerHTML, data.ignoreRT);
-        text = text.trim(); // 移除两边的空格和缩进
         if (data.useVITS) {
             // 使用 vits_tts 朗读
             vits_tts(text);
@@ -86,33 +77,6 @@ function processText(tag) {
         }
     });
 }
-
-
-
-
-/* ------------------------------复制和朗读功能的抽象 */
-
-// 在脚本开始处添加 WebSocket 连接（vits_tts需要用的）
-let socket = null;
-function connectWebSocket() {
-    socket = new WebSocket('ws://localhost:8765');
-    
-    socket.onopen = function(e) {
-      console.log("[WebSocket] Connection established");
-    };
-
-    socket.onerror = function(error) {
-      console.error(`[WebSocket] Error: ${error.message}`);
-    };
-
-    // socket.onclose = function(e) {
-    //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
-    //   setTimeout(connectWebSocket, 5000); // 5秒后重连
-    // };
-}
-
-// 在脚本开始处初始化WebSocket连接
-connectWebSocket();
 
 
 // 朗读文本(windowsTTS)
@@ -177,85 +141,11 @@ function vits_tts(text, callback) {
 }
 
 
-// 设置语音属性并开始朗读
-function setVoiceAndSpeak(utterance, voiceName, rate, pitch) {
-    var voices = window.speechSynthesis.getVoices();
-    var desiredVoice = voices.find(voice => voice.name === voiceName);
-    if (desiredVoice) {
-        utterance.voice = desiredVoice;
-    }
-    utterance.pitch = pitch;
-    utterance.rate = rate;
-    window.speechSynthesis.speak(utterance);
-}
-
-
-// 复制文本到剪贴板
-function copyTextToClipboard(text, callback) {
-    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-        if (response.copyToClipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log("Text copied to clipboard");
-                if (callback) callback();
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-            });
-        }
-    });
-}
-
-/* ------------------------------文本高亮及点击事件绑定 */
-
-// 为 target 标签添加红框，并绑定点击事件
-function highlightAndCopyPtag(doc) {
-    doc.addEventListener('mouseenter', (event) => {
-        if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
-            event.target.style.border = freeFrame;
-            event.target.style.borderRadius = frameRadius;
-            event.target.classList.add('highlighted');
-            event.target.addEventListener('click', handleClick);
-        }
-    }, true);
-
-    doc.addEventListener('mouseleave', (event) => {
-        if (target.includes(event.target.nodeName)) {
-            setTimeout(() => {
-                event.target.style.border = "";
-            }, fade_away);
-            event.target.classList.remove('highlighted');
-            event.target.removeEventListener('click', handleClick);
-        }
-    }, true);
-}
-
-
-/* ------------------------------键盘事件处理 */
-
-// 处理键盘事件，实现自动阅读的开始和停止
-function handleArrowKeyPress(event) {
-    if (lastClickedPtag && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-        stopAutoReading(); // 停止自动阅读
-
-        let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
-
-        // 确保新标签是一个 target 元素
-        while (newTag && !target.includes(newTag.nodeName)) {
-            newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
-        }
-
-        if (newTag) {
-            applyBlueBorder(newTag);
-            copyAndReadText(newTag);
-        }
-    }
-}
-
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
     chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
         console.log("copyAndReadText", data.useVITS)
         let text = cleanText(tag.outerHTML, data.ignoreRT);
-        text = text.trim();
         if (data.useVITS) {
             // 使用 vits_tts
             copyTextToClipboard(text, () => {
@@ -271,7 +161,7 @@ function copyAndReadText(tag, callback) {
 }
 
 
-/* ------------------------------自动阅读控制 */
+/* ------------------------------自动阅读控制模块 */
 
 // 函数：开始自动阅读
 function startAutoReading() {
@@ -303,8 +193,71 @@ function stopAutoReading() {
     window.speechSynthesis.cancel();
 }
 
+// 处理键盘事件，实现自动阅读的开始和停止
+function handleArrowKeyPress(event) {
+    if (lastClickedPtag && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        stopAutoReading(); // 停止自动阅读
 
-/* ------------------------------事件监听器添加 */
+        let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
+
+        // 确保新标签是一个 target 元素
+        while (newTag && !target.includes(newTag.nodeName)) {
+            newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
+        }
+
+        if (newTag) {
+            applyBlueBorder(newTag);
+            copyAndReadText(newTag);
+        }
+    }
+}
+
+
+/* ------------------------------用户界面交互模块 */
+
+// 处理点击事件：复制文本并朗读
+function handleClick(event) {
+    if (target.includes(event.target.nodeName)) {
+        applyBlueBorder(event.target);
+        processText(event.target);
+    }
+}
+
+// 为指定标签添加蓝色边框
+function applyBlueBorder(tag) {
+    if (lastClickedPtag) {
+        lastClickedPtag.style.border = "";
+        lastClickedPtag.classList.remove('blue-highlighted');
+    }
+    tag.style.border = lastFrame;
+    tag.style.borderRadius = frameRadius;
+    tag.classList.add('blue-highlighted');
+    lastClickedPtag = tag;
+}
+
+
+// 为 target 标签添加红框，并绑定点击事件
+function highlightAndCopyPtag(doc) {
+    doc.addEventListener('mouseenter', (event) => {
+        if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
+            event.target.style.border = freeFrame;
+            event.target.style.borderRadius = frameRadius;
+            event.target.classList.add('highlighted');
+            event.target.addEventListener('click', handleClick);
+        }
+    }, true);
+
+    doc.addEventListener('mouseleave', (event) => {
+        if (target.includes(event.target.nodeName)) {
+            setTimeout(() => {
+                event.target.style.border = "";
+            }, fade_away);
+            event.target.classList.remove('highlighted');
+            event.target.removeEventListener('click', handleClick);
+        }
+    }, true);
+}
+
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
@@ -326,6 +279,32 @@ function addMouseListener(doc) {
 
 // 为主文档添加监听器
 addMouseListener(document);
+
+
+/* ------------------------------网络通信模块 */
+
+// 在脚本开始处添加 WebSocket 连接（vits_tts需要用的）
+let socket = null;
+function connectWebSocket() {
+    socket = new WebSocket('ws://localhost:8765');
+    
+    socket.onopen = function(e) {
+      console.log("[WebSocket] Connection established");
+    };
+
+    socket.onerror = function(error) {
+      console.error(`[WebSocket] Error: ${error.message}`);
+    };
+
+    // socket.onclose = function(e) {
+    //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
+    //   setTimeout(connectWebSocket, 5000); // 5秒后重连
+    // };
+}
+
+// 在脚本开始处初始化WebSocket连接
+connectWebSocket();
+
 
 
 /* ------------------------------DOM 变更监听 */
