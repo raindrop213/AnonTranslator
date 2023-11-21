@@ -133,8 +133,7 @@ function copyAndReadText(tag, callback) {
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
-                vits_tts(text, callback)
-                ;
+                vits_tts(text, callback);
             });
         } else {
             // 使用 windows tts
@@ -196,6 +195,11 @@ function handleArrowKeyPress(event) {
         }
     }
 }
+
+
+/* ------------------------------翻译模块模块 */
+
+
 
 
 /* ------------------------------用户界面交互模块 */
