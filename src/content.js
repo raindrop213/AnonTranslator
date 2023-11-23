@@ -17,28 +17,8 @@ let voicesLoaded = false;
 // 目标标签
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
-// 框样式
-let borderWidth;
-let borderStyle;
-let borderRadius;
-let freeBorderColor;
-let selectedBorderColor;
+// 红框消失延迟
 let fade_away =  "75";
-
-// 从存储中获取设置
-chrome.storage.local.get([
-  'borderWidth', 'borderStyle', 'borderRadius', 
-  'freeBorderColor', 'selectedBorderColor'
-], (data) => {
-  // 赋值给全局变量
-  borderWidth = data.borderWidth;
-  borderStyle = data.borderStyle;
-  borderRadius = data.borderRadius;
-  freeBorderColor = data.freeBorderColor;
-  selectedBorderColor = data.selectedBorderColor;
-});
-
-
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -249,7 +229,7 @@ function translate(tag) {
                 // 创建新的翻译 DIV
                 const translationDiv = document.createElement('div');
                 translationDiv.className = 'translation-div';
-                
+
                 if (data.google) {
                     const googleP = document.createElement('div');
                     googleP.textContent = google(text);
