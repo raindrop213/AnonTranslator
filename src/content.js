@@ -28,15 +28,16 @@ window.speechSynthesis.onvoiceschanged = function() {
 
 /* ------------------------------文本模块 */
 
-// 清理文本，移除 <rt> 和 <ruby> 标签，并且清除两边空格。
-function cleanText(htmlString, ignoreRT) {
+// 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
+function cleanText(htmlString, ignoreFurigana) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 根据 ignoreRT 标志移除 <rt> 标签。
-    if (ignoreRT) {
-        div.querySelectorAll('rt').forEach(rt => rt.remove());
+    // 如果设置为忽略振假名（Furigana），则移除 <rt> 和 <rp> 标签。
+    if (ignoreFurigana) {
+        div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
     }
+
     if (div.textContent.trim()) {
         return div.textContent.trim();
     } else {
@@ -58,6 +59,7 @@ function copyTextToClipboard(text, callback) {
         }
     });
 }
+
 
 /* ------------------------------语音模块 */
 
@@ -125,13 +127,13 @@ function vits_tts(text, callback) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.local.get(['ignoreRT', 'useVITS', 'google', 'deepl'], (data) => {
+    chrome.storage.local.get(['ignoreFurigana', 'useVITS', 'google', 'deepl'], (data) => {
         // 仅提取原始标签的内容，不包括翻译部分
         let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
         let translationDivs = originalContent.querySelectorAll('.translation-div');
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
 
-        let text = cleanText(originalContent.outerHTML, data.ignoreRT);
+        let text = cleanText(originalContent.outerHTML, data.ignoreFurigana);
 
         if (data.useVITS) {
             // 使用 vits tts
@@ -203,48 +205,51 @@ function handleArrowKeyPress(event) {
 }
 
 
-/* ------------------------------翻译模块模块 */
+/* ------------------------------翻译模块 */
 
-// 翻译文本
-function google(text) {
-    google_text = 'google: ' + text
-    // 翻译具体过程，之后再写，现在先测试看看
-    return google_text
-}
-
-// 翻译文本
-function deepl(text) {
-    deepl_text = 'deepl: ' + text
-    // 翻译具体过程，之后再写，现在先测试看看
-    return deepl_text
+// 发送消息到背景脚本
+function requestTranslation(text, fromLang, toLang, translator, callback) {
+    chrome.runtime.sendMessage({action: "translate", text: text, from: fromLang, to: toLang, translator: translator}, function(response) {
+        if(response.error) {
+            console.error(translator + '翻译出错: ', response.error);
+            callback(translator + ' Error...');
+        } else {
+            console.log(translator + '结果:', response.translation);
+            callback(response.translation);
+        }
+    });
 }
 
 // 翻译文本并显示结果
 function translate(tag) {
     chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
-        chrome.storage.local.get(['ignoreRT', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
-            let text = cleanText(tag.outerHTML, data.ignoreRT);
+        chrome.storage.local.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
+            let text = cleanText(tag.outerHTML, data.ignoreFurigana);
 
-            if (response.translat && !tag.querySelector('.translation-div')) {
-                // 创建新的翻译 DIV
-                const translationDiv = document.createElement('div');
-                translationDiv.className = 'translation-div';
+            try {
+                if (response.translat && !tag.querySelector('.translation-div')) { // 这行有错误，但能跑我就没管了...求教！
+                    const translationDiv = document.createElement('div');
+                    translationDiv.className = 'translation-div';
 
-                if (data.google) {
-                    const googleP = document.createElement('div');
-                    googleP.textContent = google(text);
-                    googleP.style.color = data.googleColor;
-                    translationDiv.appendChild(googleP);
-                }
-
-                if (data.deepl) {
-                    const deeplP = document.createElement('div');
-                    deeplP.textContent = deepl(text);
-                    deeplP.style.color = data.deeplColor;
-                    translationDiv.appendChild(deeplP);
-                }
-                tag.appendChild(translationDiv);
-            }
+                    if (data.google) {
+                        const googleP = document.createElement('div');
+                        googleP.style.color = data.googleColor;
+                        translationDiv.appendChild(googleP);
+                        requestTranslation(text, data.from, data.to, "Google", (translatedText) => {
+                            googleP.textContent = translatedText;
+                        });
+                    }
+                    if (data.deepl) {
+                        const deeplP = document.createElement('div');
+                        deeplP.style.color = data.deeplColor;
+                        translationDiv.appendChild(deeplP);
+                        requestTranslation(text, data.from, data.to, "Deepl", (translatedText) => {
+                            deeplP.textContent = translatedText;
+                        });
+                    }
+                    tag.appendChild(translationDiv);
+                } 
+            } catch (error) {}
         });
     });
 }

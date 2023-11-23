@@ -1,11 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Anon",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
   "permissions": ["activeTab", "scripting", "clipboardWrite", "tts", "storage"],
-  "host_permissions": ["http://127.0.0.1:23456/*", "http://localhost:8083/*", "http://localhost:8765/*"],
+  "host_permissions": [
+    "http://127.0.0.1:23456/*", 
+    "http://localhost:8083/*", 
+    "http://localhost:8765/*", 
+    "https://www2.deepl.com/*"
+  ],
 
   "icons": {
     "16": "img/icon16.png",
@@ -18,7 +23,7 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["*://*/*"],
       "js": ["src/content.js"]
     }
   ],

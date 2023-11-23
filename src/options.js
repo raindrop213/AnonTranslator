@@ -42,16 +42,16 @@ function loadVitsVoices() {
 // 加载保存的设置
 function loadSettings() {
   chrome.storage.local.get([
-    'ignoreRT', 'useVITS', 
+    'ignoreFurigana', 'useVITS', 
     'voiceName', 'rate', 'pitch', 'clipAPI', 'vitsAPI', 
     'vitsVoice', 'length', 'noise', 'noisew', 'max', 'streaming', 
-    'google', 'googleColor', 'deepl', 'deeplColor', 
+    'from', 'to', 'google', 'googleColor', 'deepl', 'deeplColor', 
     'borderWidth', 'borderStyle', 'borderRadius', 
     'freeBorderColor', 'selectedBorderColor', 
   ], (data) => {
     loadWindowsVoices(); // 加载 Windows TTS 语音选项
     loadVitsVoices();
-    document.getElementById('ignoreRT').checked = data.ignoreRT || true;
+    document.getElementById('ignoreFurigana').checked = data.ignoreFurigana || true;
     document.getElementById('useVITS').checked = data.useVITS || false;
 
     document.getElementById('voiceName').value = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
@@ -67,16 +67,18 @@ function loadSettings() {
     document.getElementById('max').value = data.max || 50;
     document.getElementById('streaming').checked = data.streaming !== undefined ? data.streaming : false;
 
+    document.getElementById('from').value = data.from || 'ja';
+    document.getElementById('to').value = data.to || 'zh';
     document.getElementById('google').checked = data.google || true;
-    document.getElementById('googleColor').value = data.googleColor || '#029AD7';
+    document.getElementById('googleColor').value = data.googleColor || '#D4B102';
     document.getElementById('deepl').checked = data.deepl || true;
-    document.getElementById('deeplColor').value = data.deeplColor || '#E04F95';
+    document.getElementById('deeplColor').value = data.deeplColor || '#9C512E';
 
-    document.getElementById('borderWidth').value = data.borderWidth || '1px';
+    document.getElementById('borderWidth').value = data.borderWidth || '2px';
     document.getElementById('borderStyle').value = data.borderStyle || 'solid';
     document.getElementById('borderRadius').value = data.borderRadius || '8px';
-    document.getElementById('freeBorderColor').value = data.freeBorderColor || '#E04F95';
-    document.getElementById('selectedBorderColor').value = data.selectedBorderColor || '#029AD7';
+    document.getElementById('freeBorderColor').value = data.freeBorderColor || '#225D2E';
+    document.getElementById('selectedBorderColor').value = data.selectedBorderColor || '#94B505';
   });
 }
 
@@ -84,7 +86,7 @@ function loadSettings() {
 document.getElementById('settingsForm').addEventListener('submit', (e) => {
   e.preventDefault();
   chrome.storage.local.set({
-    ignoreRT: document.getElementById('ignoreRT').checked,
+    ignoreFurigana: document.getElementById('ignoreFurigana').checked,
     useVITS: document.getElementById('useVITS').checked,
 
     voiceName: document.getElementById('voiceName').value,
@@ -100,10 +102,13 @@ document.getElementById('settingsForm').addEventListener('submit', (e) => {
     max: parseInt(document.getElementById('max').value),
     streaming: document.getElementById('streaming').checked,
 
+    from: document.getElementById('from').value,
+    to: document.getElementById('to').value,
     google: document.getElementById('google').checked,
     googleColor: document.getElementById('googleColor').value,
     deepl: document.getElementById('deepl').checked,
     deeplColor: document.getElementById('deeplColor').value,
+
     borderWidth: document.getElementById('borderWidth').value,
     borderStyle: document.getElementById('borderStyle').value,
     borderRadius: document.getElementById('borderRadius').value,
