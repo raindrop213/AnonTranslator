@@ -18,10 +18,27 @@ let voicesLoaded = false;
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
 // 框样式
-let freeFrame = "1px double #E04F95"
-let lastFrame = "1px double #029AD7"
-let frameRadius = "8px"
-let fade_away =  "75"
+let borderWidth;
+let borderStyle;
+let borderRadius;
+let freeBorderColor;
+let selectedBorderColor;
+let fade_away =  "75";
+
+// 从存储中获取设置
+chrome.storage.local.get([
+  'borderWidth', 'borderStyle', 'borderRadius', 
+  'freeBorderColor', 'selectedBorderColor'
+], (data) => {
+  // 赋值给全局变量
+  borderWidth = data.borderWidth;
+  borderStyle = data.borderStyle;
+  borderRadius = data.borderRadius;
+  freeBorderColor = data.freeBorderColor;
+  selectedBorderColor = data.selectedBorderColor;
+});
+
+
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -128,8 +145,14 @@ function vits_tts(text, callback) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.local.get(['ignoreRT', 'useVITS'], (data) => {
-        let text = cleanText(tag.outerHTML, data.ignoreRT);
+    chrome.storage.local.get(['ignoreRT', 'useVITS', 'google', 'deepl'], (data) => {
+        // 仅提取原始标签的内容，不包括翻译部分
+        let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
+        let translationDivs = originalContent.querySelectorAll('.translation-div');
+        translationDivs.forEach(div => div.remove()); // 移除翻译部分
+
+        let text = cleanText(originalContent.outerHTML, data.ignoreRT);
+
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
@@ -141,6 +164,7 @@ function copyAndReadText(tag, callback) {
                 windows_tts(text, callback);
             });
         }
+        return translate(text, data.google, data.deepl);
     });
 }
 
@@ -166,6 +190,7 @@ function startAutoReading() {
                 readNext();
             }, readingInterval);
         });
+        translate(currentTag);
     }
 
     readNext();
@@ -192,6 +217,7 @@ function handleArrowKeyPress(event) {
         if (newTag) {
             applyBlueBorder(newTag);
             copyAndReadText(newTag);
+            translate(newTag);
         }
     }
 }
@@ -199,7 +225,49 @@ function handleArrowKeyPress(event) {
 
 /* ------------------------------翻译模块模块 */
 
+// 翻译文本
+function google(text) {
+    google_text = 'google: ' + text
+    // 翻译具体过程，之后再写，现在先测试看看
+    return google_text
+}
 
+// 翻译文本
+function deepl(text) {
+    deepl_text = 'deepl: ' + text
+    // 翻译具体过程，之后再写，现在先测试看看
+    return deepl_text
+}
+
+// 翻译文本并显示结果
+function translate(tag) {
+    chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
+        chrome.storage.local.get(['ignoreRT', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
+            let text = cleanText(tag.outerHTML, data.ignoreRT);
+
+            if (response.translat && !tag.querySelector('.translation-div')) {
+                // 创建新的翻译 DIV
+                const translationDiv = document.createElement('div');
+                translationDiv.className = 'translation-div';
+                
+                if (data.google) {
+                    const googleP = document.createElement('div');
+                    googleP.textContent = google(text);
+                    googleP.style.color = data.googleColor;
+                    translationDiv.appendChild(googleP);
+                }
+
+                if (data.deepl) {
+                    const deeplP = document.createElement('div');
+                    deeplP.textContent = deepl(text);
+                    deeplP.style.color = data.deeplColor;
+                    translationDiv.appendChild(deeplP);
+                }
+                tag.appendChild(translationDiv);
+            }
+        });
+    });
+}
 
 
 /* ------------------------------用户界面交互模块 */
@@ -209,42 +277,74 @@ function handleClick(event) {
     if (target.includes(event.target.nodeName)) {
         applyBlueBorder(event.target);
         copyAndReadText(event.target);
+        translate(event.target);
+    } else {
+        clearSelection();
+    }
+}
+
+// 清除当前选择
+function clearSelection() {
+    if (lastClickedPtag) {
+        lastClickedPtag.style.border = "";
+        lastClickedPtag.classList.remove('blue-highlighted');
+        
+        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
+        existingTranslations.forEach(div => div.remove());
+
+        lastClickedPtag = null;
     }
 }
 
 // 为指定标签添加蓝色边框
 function applyBlueBorder(tag) {
-    if (lastClickedPtag) {
+    // 如果有上一个被点击的标签且不是当前标签
+    if (lastClickedPtag && lastClickedPtag !== tag) {
+        // 移除上一个标签的翻译内容
+        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
+        existingTranslations.forEach(div => div.remove());
+
+        // 移除上一个蓝框
         lastClickedPtag.style.border = "";
         lastClickedPtag.classList.remove('blue-highlighted');
     }
-    tag.style.border = lastFrame;
-    tag.style.borderRadius = frameRadius;
-    tag.classList.add('blue-highlighted');
-    lastClickedPtag = tag;
+
+    // 为当前标签应用蓝框
+    chrome.storage.local.get([
+        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor'
+    ], (data) => {
+        tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
+        tag.style.borderRadius = data.borderRadius;
+        tag.classList.add('blue-highlighted');
+        lastClickedPtag = tag; // 更新最后点击的标签
+    })
 }
 
 
 // 为 target 标签添加红框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
-    doc.addEventListener('mouseenter', (event) => {
-        if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
-            event.target.style.border = freeFrame;
-            event.target.style.borderRadius = frameRadius;
-            event.target.classList.add('highlighted');
-            event.target.addEventListener('click', handleClick);
-        }
-    }, true);
+    chrome.storage.local.get([
+        'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor'
+    ], (data) => {
+        doc.addEventListener('mouseenter', (event) => {
+            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
+                event.target.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
+                event.target.style.borderRadius = data.borderRadius;
+                event.target.classList.add('highlighted');
+                event.target.addEventListener('click', handleClick);
+            }
+        }, true);
 
-    doc.addEventListener('mouseleave', (event) => {
-        if (target.includes(event.target.nodeName)) {
-            setTimeout(() => {
-                event.target.style.border = "";
-            }, fade_away);
-            event.target.classList.remove('highlighted');
-            event.target.removeEventListener('click', handleClick);
-        }
-    }, true);
+        doc.addEventListener('mouseleave', (event) => {
+            if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
+                setTimeout(() => {
+                    event.target.style.border = "";
+                }, fade_away);
+                event.target.classList.remove('highlighted');
+                event.target.removeEventListener('click', handleClick);
+            }
+        }, true);
+    })
 }
 
 
@@ -293,7 +393,6 @@ function connectWebSocket() {
 
 // 在脚本开始处初始化WebSocket连接
 connectWebSocket();
-
 
 
 /* ------------------------------DOM 变更监听 */

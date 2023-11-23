@@ -25,9 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
         document.getElementById('copy-to-clipboard').checked = response.copyToClipboard;
     });
-    // 请求 case-switch 的当前状态
-    chrome.runtime.sendMessage({ action: "requestCaseSwitchState" }, (response) => {
-        document.getElementById('case-switch').checked = response.caseSwitch;
+    // 请求 translat 的当前状态
+    chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
+        document.getElementById('translat').checked = response.translat;
     });
 });
 
@@ -46,7 +46,7 @@ document.getElementById('copy-to-clipboard').addEventListener('change', function
     chrome.runtime.sendMessage({ action: "updateCopyToClipboard", copyToClipboard: this.checked });
 });
 
-// 监听 case-switch 的状态变化
-document.getElementById('case-switch').addEventListener('change', function () {
-    chrome.runtime.sendMessage({ action: "updateCaseSwitch", caseSwitch: this.checked });
+// 监听 translat 的状态变化
+document.getElementById('translat').addEventListener('change', function () {
+    chrome.runtime.sendMessage({ action: "updateTranslat", translat: this.checked });
 });
