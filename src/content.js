@@ -1,6 +1,6 @@
 /* content.js */
 
-/* ------------------------------全局变量 */
+/* ------------------------------------------------------------全局变量 */
 
 // 最后点击的 <p> 标签
 let lastClickedPtag = null;
@@ -26,7 +26,7 @@ window.speechSynthesis.onvoiceschanged = function() {
 };
 
 
-/* ------------------------------文本模块 */
+/* ------------------------------------------------------------文本模块 */
 
 // 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
 function cleanText(htmlString, ignoreFurigana) {
@@ -61,7 +61,7 @@ function copyTextToClipboard(text, callback) {
 }
 
 
-/* ------------------------------语音模块 */
+/* ------------------------------------------------------------语音模块 */
 
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
@@ -151,7 +151,7 @@ function copyAndReadText(tag, callback) {
 }
 
 
-/* ------------------------------自动阅读控制模块 */
+/* ------------------------------------------------------------自动阅读控制模块 */
 
 // 函数：开始自动阅读
 function startAutoReading() {
@@ -205,7 +205,7 @@ function handleArrowKeyPress(event) {
 }
 
 
-/* ------------------------------翻译模块 */
+/* ------------------------------------------------------------翻译模块 */
 
 // 发送消息到背景脚本
 function requestTranslation(text, fromLang, toLang, translator, callback) {
@@ -255,7 +255,7 @@ function translate(tag) {
 }
 
 
-/* ------------------------------用户界面交互模块 */
+/* ------------------------------------------------------------用户界面交互模块 */
 
 // 处理点击事件
 function handleClick(event) {
@@ -355,7 +355,7 @@ function addMouseListener(doc) {
 addMouseListener(document);
 
 
-/* ------------------------------网络通信模块 */
+/* ------------------------------------------------------------网络通信模块 */
 
 // 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
 let socket = null;
@@ -380,7 +380,7 @@ function connectWebSocket() {
 connectWebSocket();
 
 
-/* ------------------------------DOM 变更监听 */
+/* ------------------------------------------------------------DOM 变更监听 */
 
 // 使用 MutationObserver 监听 DOM 变更
 const observer = new MutationObserver((mutations) => {

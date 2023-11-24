@@ -107,8 +107,8 @@ function getTimeStamp(iCount) {
 // DeepL API
 function deeplTranslate(query, from, to) {
   return new Promise((resolve, reject) => {
-    const sourceLanguage = langMap.get(from);
     const targetLanguage = langMap.get(to);
+    const sourceLanguage = langMap.get(from);
 
     if (!targetLanguage) {
       reject("不支持该语种");
@@ -148,26 +148,10 @@ function deeplTranslate(query, from, to) {
         headers: { "Content-Type": "application/json" },
         body: post_str,
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('网络请求失败，状态码：' + response.status);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          if (data.error) {
-            throw new Error('API 错误：' + data.error.message);
-          }
-          resolve(data.result.texts[0].text);
-        })
+        .then((response) => response.json())
+        .then((data) => resolve(data.result.texts[0].text))
         .catch((error) => {
-          // 检查错误对象是否包含特定属性
-          let errorMessage = error.message || "未知错误";
-          // 如果错误对象是一个空对象，提供一个通用错误信息
-          if (Object.keys(error).length === 0) {
-            errorMessage = "接口请求出现错误，但未提供具体错误信息";
-          }
-          reject(errorMessage);
+          reject("接口请求错误 - " + JSON.stringify(error));
         });
     } else {
       reject("没有提供翻译文本");
