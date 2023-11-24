@@ -8,7 +8,7 @@
 </head>
 
 <body>
-  <h1>Settings</h1>
+  <h1>Options</h1>
   <form id="settingsForm">
 
     <div>
@@ -49,9 +49,29 @@
       <h2>VITS TTS</h2>
     </div>
 
-    <div><label for="clipAPI">API Cilp:</label><input type="text" id="clipAPI" value="http://localhost:8765"></div>
+    <div>
+      <p>VITS需要下载：整合包 </p>
+    </div>
 
-    <div><label for="vitsAPI">API VITS:</label><input type="text" id="vitsAPI" value="http://127.0.0.1:23456"></div>
+    <div><label for="clipAPI">API Cilp: 如果不知道是什么就别改</label><input type="text" id="clipAPI" value="http://localhost:8765"></div>
+
+    <div>
+      <label for="vitsAPI">API VITS: 
+        <a href="http://127.0.0.1:23456" id="vitsAPI">http://127.0.0.1:23456</a>
+        | From: <a href="https://github.com/Artrajz/vits-simple-api">Artrajz/vits-simple-api</a>
+      </label>
+    </div>
+
+    <div>
+      <label for="vits-simple-api-json">Get List: 
+        <a href="http://127.0.0.1:23456/voice/speakers" id="vits-simple-api-json">http://127.0.0.1:23456/voice/speakers</a>
+        | From: <a href="https://huggingface.co/spaces/zomehwh/vits-uma-genshin-honkai">zomehwh/vits-uma-genshin-honkai</a>
+      </label>
+    </div>
+    
+    <div><label for="vitsVoice">Voice: 人物</label>
+      <select id="vitsVoice"></select>
+    </div>
 
     <div>
       <label>Language: 语言
@@ -62,13 +82,9 @@
         </select>
       </label>
     </div>
-    
-    <div><label for="vitsVoice">Voice: 人物</label>
-      <select id="vitsVoice"></select>
-    </div>
 
     <div><label for="length">Length (0 - 2): 语速</label>
-      <input type="range" id="length" min="0" max="2" step="0.2" value="1">
+      <input type="range" id="length" min="0" max="2" step="0.1" value="1">
     </div>
 
     <div><label for="noise">Noise: 声音随机性</label>
@@ -79,14 +95,14 @@
       <input type="text" id="noisew" value="0.4">
     </div>
 
-    <div><label for="max">Max: 文字分段阈值</label>
+    <div><label for="max">Max: 文字分段阈值：以标点符号为分割点，超过阈值的部分会分段发送</label>
       <input type="text" id="max" value="50">
     </div>
 
     <div><label>Streaming 流式传输<input type="checkbox" id="streaming"></label></div>
 
     <br>
-    <button type="submit">Save Settings</button>
+    <button class="save" type="submit">Save Settings</button>
     <br>
 
     <!-- Translator -->
@@ -95,7 +111,7 @@
     </div>
 
     <div>
-      <label>From: 
+      <label>From: 输入文本
         <select id="from">
           <option value="auto">auto</option>
           <option value="zh">zh</option>
@@ -106,7 +122,7 @@
     </div>
     
     <div>
-      <label>To: 
+      <label>To: 输出文本
         <select id="to">
           <option value="zh">zh</option>
           <option value="ja">ja</option>
@@ -117,7 +133,7 @@
 
     <div>
       <label>
-        Google<input type="checkbox" id="google" checked>
+        Google（未完成，等有时间再写了）<input type="checkbox" id="google" checked>
       </label>
     </div>
 
@@ -163,11 +179,11 @@
     </div>
 
     <div>
-      <label>Free Border Color: <input type="color" id="freeBorderColor"></label>
+      <label>Free Border Color: 指示框<input type="color" id="freeBorderColor"></label>
     </div>
 
     <div>
-      <label>Seleted Border Color: <input type="color" id="selectedBorderColor"></label>
+      <label>Seleted Border Color: 被选中的框<input type="color" id="selectedBorderColor"></label>
     </div>
 
     

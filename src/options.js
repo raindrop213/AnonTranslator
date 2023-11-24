@@ -24,7 +24,7 @@ function loadWindowsVoices(defaultVoiceName) {
 
 // 加载 VITS TTS 语音
 function loadVitsVoices(defaultVitsVoiceId) {
-  fetch('src/voice.json')
+  fetch('defaultVoice.json')
     .then(response => response.json())
     .then(data => {
       const vitsVoiceSelect = document.getElementById('vitsVoice');
@@ -42,7 +42,7 @@ function loadVitsVoices(defaultVitsVoiceId) {
       });
 
       // 如果默认 VITS 语音 ID 存在，则设置为选中状态，否则选择列表中的第一个语音
-      vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data.VITS[428]?.id;
+      vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data.VITS[342]?.id;
     })
     .catch(error => {
       console.error('加载 VITS 语音时出错:', error);

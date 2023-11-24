@@ -11,3 +11,9 @@ button {
   margin-bottom: 10px;
   display: block;
 }
+
+.save {
+  font-size: 30px;
+  color: #0a6b32;
+  font-family:Georgia, 'Times New Roman', Times, serif;
+}
