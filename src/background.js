@@ -105,11 +105,11 @@ function getTimeStamp(iCount) {
 }
 
 // DeepL API
-function deeplTranslate(query, from, to) {
+function deeplTranslate(text, from, to) {
   return new Promise((resolve, reject) => {
-    const targetLanguage = langMap.get(to);
     const sourceLanguage = langMap.get(from);
-
+    const targetLanguage = langMap.get(to);
+    
     if (!targetLanguage) {
       reject("不支持该语种");
       return;
@@ -117,7 +117,7 @@ function deeplTranslate(query, from, to) {
 
     const source_lang = sourceLanguage || "ja";
     const target_lang = targetLanguage || "zh";
-    const translate_text = query || "";
+    const translate_text = text || "";
 
     if (translate_text !== "") {
       const url = "https://www2.deepl.com/jsonrpc";
@@ -160,65 +160,65 @@ function deeplTranslate(query, from, to) {
 }
 
 // Google API
-function googleTranslate(query, from, to) {
-    return new Promise((resolve, reject) => {
-      // 模拟异步操作，例如从 API 获取数据
-      // 这里我们只是简单地返回一段文本
-      const text = "谷歌翻译还没做好...";
-  
-      // 模拟成功获取翻译结果
-      resolve(text);
-      
-      // 如果有任何错误，您可以使用 reject 来发送错误
-      // 例如：reject("翻译服务不可用");
-    });
-  }
+function googleTranslate(text, from, to) {
+  return new Promise((resolve, reject) => {
+    // 模拟异步操作，例如从 API 获取数据
+    // 这里我们只是简单地返回一段文本
+    const text = "谷歌翻译还没做好...";
 
+    // 模拟成功获取翻译结果
+    resolve(text);
+
+    // 如果有任何错误，您可以使用 reject 来发送错误
+    // 例如：reject("翻译服务不可用");
+  });
+}
 
 // Youdao API
-function youdaoTranslate(query, from, to) {
-    return new Promise((resolve, reject) => {
-      // 模拟异步操作，例如从 API 获取数据
-      // 这里我们只是简单地返回一段文本
-      const text = "有道翻译还没做好...";
-  
-      // 模拟成功获取翻译结果
-      resolve(text);
-  
-      // 如果有任何错误，您可以使用 reject 来发送错误
-      // 例如：reject("翻译服务不可用");
-    });
-  }
+function youdaoTranslate(text, from, to) {
+  return new Promise((resolve, reject) => {
+    // 模拟异步操作，例如从 API 获取数据
+    // 这里我们只是简单地返回一段文本
+    const text = "有道翻译还没做好...";
+
+    // 模拟成功获取翻译结果
+    resolve(text);
+
+    // 如果有任何错误，您可以使用 reject 来发送错误
+    // 例如：reject("翻译服务不可用");
+  });
+}
 
 
 // 响应翻译请求
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.action === "translate") {
-      let translateFunction;
-      
-      switch (request.translator) {
-        case "Google":
-          translateFunction = googleTranslate;
-          break;
-        case "Deepl":
-          translateFunction = deeplTranslate;
-          break;
-        case "Youdao":
-          translateFunction = youdaoTranslate;
-          break;
-        default:
-          sendResponse({ error: "未知的翻译服务" });
-          return;
-      }
-  
-      translateFunction(request.text, request.from, request.to)
-        .then(translation => sendResponse({ translation: translation }))
-        .catch(error => {
-          console.error("翻译错误: ", error);
-          sendResponse({ error: error });
-        });
-  
-      return true; // 异步响应
-    }
-  });
+  if (request.action === "translate") {
+    let translateFunction;
 
+    switch (request.translator) {
+      case "Google":
+        translateFunction = googleTranslate;
+        break;
+      case "Deepl":
+        translateFunction = deeplTranslate;
+        break;
+      case "Youdao":
+        translateFunction = youdaoTranslate;
+        break;
+      default:
+        sendResponse({ translatedText: "不支持的翻译器" });
+        return;
+    }
+
+    translateFunction(request.text, request.from, request.to)
+      .then((translatedText) => {
+        sendResponse({ translatedText: translatedText });
+      })
+      .catch((error) => {
+        sendResponse({ translatedText: "翻译错误: " + error });
+      });
+
+    // 为了使异步消息处理有效，返回 true
+    return true;
+  }
+});

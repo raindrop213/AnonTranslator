@@ -38,11 +38,18 @@ function cleanText(htmlString, ignoreFurigana) {
         div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
     }
 
-    if (div.textContent.trim()) {
-        return div.textContent.trim();
-    } else {
-        return '-';
-    };
+    let originalText = div.textContent;
+    let trimmedText = originalText.trimStart();
+
+    // 截取前导空格部分（包括全角和半角空格）
+    let leadingSpaces = originalText.substring(0, originalText.length - trimmedText.length);
+
+    // 如果去除两边空格后的文本为空，则返回 '-'
+    if (!trimmedText) {
+        return { text: '-', space: leadingSpaces };
+    }
+
+    return { text: trimmedText.trim(), space: leadingSpaces };
 }
 
 // 复制文本到剪贴板
@@ -91,7 +98,7 @@ function windows_tts(text, callback) {
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
         const encodedText = encodeURIComponent(text); // 对文本进行编码
         const params = new URLSearchParams({
             id: data.vitsVoice,
@@ -100,8 +107,13 @@ function vits_tts(text, callback) {
             noisew: data.noisew,
             max: data.max,
             streaming: data.streaming
-        });
+          });
+          if (data.vitsLang !== 'auto') {
+            params.append('lang', data.vitsLang);
+          }
+
         const vitsAPI = data.vitsAPI;
+        console.log(params.toString())
         const clip_url = `${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
 
         if (socket.readyState === WebSocket.OPEN) {
@@ -133,7 +145,7 @@ function copyAndReadText(tag, callback) {
         let translationDivs = originalContent.querySelectorAll('.translation-div');
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
 
-        let text = cleanText(originalContent.outerHTML, data.ignoreFurigana);
+        let text = cleanText(originalContent.outerHTML, data.ignoreFurigana)['text'];
 
         if (data.useVITS) {
             // 使用 vits tts
@@ -209,14 +221,14 @@ function handleArrowKeyPress(event) {
 
 // 发送消息到背景脚本
 function requestTranslation(text, fromLang, toLang, translator, callback) {
-    chrome.runtime.sendMessage({action: "translate", text: text, from: fromLang, to: toLang, translator: translator}, function(response) {
-        if(response.error) {
-            console.error(translator + '翻译出错: ', response.error);
-            callback(translator + ' Error...');
-        } else {
-            console.log(translator + '结果:', response.translation);
-            callback(response.translation);
-        }
+    chrome.runtime.sendMessage({ 
+        action: "translate", 
+        text: text, 
+        from: fromLang, 
+        to: toLang, 
+        translator: translator 
+    }, function(response) {
+        callback(response.translatedText);
     });
 }
 
@@ -224,7 +236,7 @@ function requestTranslation(text, fromLang, toLang, translator, callback) {
 function translate(tag) {
     chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
         chrome.storage.local.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
-            let text = cleanText(tag.outerHTML, data.ignoreFurigana);
+            let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
 
             try {
                 if (response.translat && !tag.querySelector('.translation-div')) { // 这行有错误，但能跑我就没管了...求教！
@@ -235,18 +247,30 @@ function translate(tag) {
                         const googleP = document.createElement('div');
                         googleP.style.color = data.googleColor;
                         translationDiv.appendChild(googleP);
-                        requestTranslation(text, data.from, data.to, "Google", (translatedText) => {
-                            googleP.textContent = translatedText;
-                        });
+    
+                        if (ctext['text'] !== '-') {
+                            requestTranslation(ctext['text'], data.from, data.to, "Google", (translatedText) => {
+                                googleP.textContent = ctext['space'] + translatedText;
+                            });
+                        } else {
+                            googleP.textContent = ctext['space'] + '-';
+                        }
                     }
+    
                     if (data.deepl) {
                         const deeplP = document.createElement('div');
                         deeplP.style.color = data.deeplColor;
                         translationDiv.appendChild(deeplP);
-                        requestTranslation(text, data.from, data.to, "Deepl", (translatedText) => {
-                            deeplP.textContent = translatedText;
-                        });
+    
+                        if (ctext['text'] !== '-') {
+                            requestTranslation(ctext['text'], data.from, data.to, "Deepl", (translatedText) => {
+                                deeplP.textContent = ctext['space'] + translatedText;
+                            });
+                        } else {
+                            deeplP.textContent = ctext['space'] + '-';
+                        }
                     }
+
                     tag.appendChild(translationDiv);
                 } 
             } catch (error) {}

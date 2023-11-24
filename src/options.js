@@ -1,35 +1,48 @@
+// options.js
+
 // 加载 Windows TTS 语音
-function loadWindowsVoices() {
+function loadWindowsVoices(defaultVoiceName) {
   chrome.tts.getVoices(voices => {
     const voiceSelect = document.getElementById('voiceName');
+    let voiceExists = false;
+
     voices.forEach(voice => {
       let option = document.createElement('option');
       option.text = voice.voiceName;
       option.value = voice.voiceName;
       voiceSelect.add(option);
-    })
+
+      if (voice.voiceName === defaultVoiceName) {
+        voiceExists = true;
+      }
+    });
+
+    // 如果默认语音存在，则设置为选中状态，否则选择列表中的第一个语音
+    voiceSelect.value = voiceExists ? defaultVoiceName : voices[6]?.voiceName;
   });
 }
 
 // 加载 VITS TTS 语音
-function loadVitsVoices() {
-  // 使用 fetch API 从指定的路径获取 voice.json 文件
+function loadVitsVoices(defaultVitsVoiceId) {
   fetch('src/voice.json')
-    .then(response => response.json()) // 将响应解析为 JSON
+    .then(response => response.json())
     .then(data => {
-      // 获取 HTML 中的选择框元素
       const vitsVoiceSelect = document.getElementById('vitsVoice');
+      let voiceExists = false;
 
-      // VITS 语音数据遍历
       data.VITS.forEach(voice => {
-        // 创建每个语音的选项
         let option = document.createElement('option');
         option.text = `${voice.id}_${voice.lang.join('/')}_${voice.name}`;
         option.value = voice.id;
-
-        // 将选项添加到选择框中
         vitsVoiceSelect.add(option);
+
+        if (voice.id === defaultVitsVoiceId) {
+          voiceExists = true;
+        }
       });
+
+      // 如果默认 VITS 语音 ID 存在，则设置为选中状态，否则选择列表中的第一个语音
+      vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data.VITS[428]?.id;
     })
     .catch(error => {
       console.error('加载 VITS 语音时出错:', error);
@@ -37,30 +50,27 @@ function loadVitsVoices() {
 }
 
 
-
-
 // 加载保存的设置
 function loadSettings() {
   chrome.storage.local.get([
     'ignoreFurigana', 'useVITS', 
     'voiceName', 'rate', 'pitch', 'clipAPI', 'vitsAPI', 
-    'vitsVoice', 'length', 'noise', 'noisew', 'max', 'streaming', 
+    'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming', 
     'from', 'to', 'google', 'googleColor', 'deepl', 'deeplColor', 
     'borderWidth', 'borderStyle', 'borderRadius', 
     'freeBorderColor', 'selectedBorderColor', 
   ], (data) => {
-    loadWindowsVoices(); // 加载 Windows TTS 语音选项
-    loadVitsVoices();
-    document.getElementById('ignoreFurigana').checked = data.ignoreFurigana || true;
-    document.getElementById('useVITS').checked = data.useVITS || false;
+    document.getElementById('ignoreFurigana').checked = data.ignoreFurigana !== undefined ? data.ignoreFurigana : true;
+    document.getElementById('useVITS').checked = data.useVITS !== undefined ? data.useVITS : false;
 
-    document.getElementById('voiceName').value = data.voiceName || 'Microsoft Sayaka - Japanese (Japan)';
+    loadWindowsVoices(data.voiceName); // 使用存储的语音名称作为默认值
     document.getElementById('rate').value = data.rate || 1;
     document.getElementById('pitch').value = data.pitch || 1;
     document.getElementById('clipAPI').value = data.clipAPI || 'http://localhost:8765';
     document.getElementById('vitsAPI').value = data.vitsAPI || 'http://127.0.0.1:23456';
 
-    document.getElementById('vitsVoice').value = data.vitsVoice || 0;
+    loadVitsVoices(data.vitsVoice);    // 使用存储的 VITS 语音 ID 作为默认值
+    document.getElementById('vitsLang').value = data.vitsLang || 'ja';
     document.getElementById('length').value = data.length || 1;
     document.getElementById('noise').value = data.noise || 0.33;
     document.getElementById('noisew').value = data.noisew || 0.4;
@@ -69,9 +79,9 @@ function loadSettings() {
 
     document.getElementById('from').value = data.from || 'ja';
     document.getElementById('to').value = data.to || 'zh';
-    document.getElementById('google').checked = data.google || true;
+    document.getElementById('google').checked = data.google !== undefined ? data.google : false;
     document.getElementById('googleColor').value = data.googleColor || '#D4B102';
-    document.getElementById('deepl').checked = data.deepl || true;
+    document.getElementById('deepl').checked = data.deepl !== undefined ? data.deepl : true;
     document.getElementById('deeplColor').value = data.deeplColor || '#9C512E';
 
     document.getElementById('borderWidth').value = data.borderWidth || '2px';
@@ -96,6 +106,7 @@ document.getElementById('settingsForm').addEventListener('submit', (e) => {
     vitsAPI: document.getElementById('vitsAPI').value,
 
     vitsVoice: parseInt(document.getElementById('vitsVoice').value),
+    vitsLang: document.getElementById('vitsLang').value,
     length: parseFloat(document.getElementById('length').value),
     noise: parseFloat(document.getElementById('noise').value),
     noisew: parseFloat(document.getElementById('noisew').value),

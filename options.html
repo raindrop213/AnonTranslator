@@ -29,7 +29,7 @@
 
     <!-- Windows TTS Settings -->
     <div>
-      <h2>WindowsTTS</h2>
+      <h2>Windows TTS</h2>
     </div>
 
     <div><label for="voiceName">Voice: 人物</label>
@@ -46,13 +46,23 @@
 
     <!-- VITS TTS Settings -->
     <div>
-      <h2>VITS TTS Settings</h2>
+      <h2>VITS TTS</h2>
     </div>
 
     <div><label for="clipAPI">API Cilp:</label><input type="text" id="clipAPI" value="http://localhost:8765"></div>
 
     <div><label for="vitsAPI">API VITS:</label><input type="text" id="vitsAPI" value="http://127.0.0.1:23456"></div>
 
+    <div>
+      <label>Language: 语言
+        <select id="vitsLang">
+          <option value="auto">auto</option>
+          <option value="ja">ja</option>
+          <option value="zh">zh</option>
+        </select>
+      </label>
+    </div>
+    
     <div><label for="vitsVoice">Voice: 人物</label>
       <select id="vitsVoice"></select>
     </div>
@@ -107,7 +117,7 @@
 
     <div>
       <label>
-        Google<input type="checkbox" id="google">
+        Google<input type="checkbox" id="google" checked>
       </label>
     </div>
 
@@ -118,7 +128,7 @@
 
     <div>
       <label>
-        Deepl<input type="checkbox" id="deepl">
+        Deepl<input type="checkbox" id="deepl" checked>
       </label>
     </div>
 
