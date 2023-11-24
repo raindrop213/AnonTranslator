@@ -146,20 +146,17 @@ function copyAndReadText(tag, callback) {
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
 
         let text = cleanText(originalContent.outerHTML, data.ignoreFurigana)['text'];
-
-        if (text !== '-') {
-            if (data.useVITS) {
-                // 使用 vits tts
-                copyTextToClipboard(text, () => {
-                    vits_tts(text, callback);
-                });
-            } else {
-                // 使用 windows tts
-                copyTextToClipboard(text, () => {
-                    windows_tts(text, callback);
-                });
-            };
-        }
+        if (data.useVITS) {
+            // 使用 vits tts
+            copyTextToClipboard(text, () => {
+                vits_tts(text, callback);
+            });
+        } else {
+            // 使用 windows tts
+            copyTextToClipboard(text, () => {
+                windows_tts(text, callback);
+            });
+        };
     });
 }
 
