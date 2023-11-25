@@ -4,7 +4,7 @@
 const version = chrome.runtime.getManifest().version;
 const named = chrome.runtime.getManifest().name;
 const author = chrome.runtime.getManifest().author;
-document.getElementById('extension-version').textContent = `${named} ${version}`;
+document.getElementById('extension-version').textContent = `Anon ${version}`;
 document.getElementById('extension-author').textContent = `By: ${author}`;
 
 

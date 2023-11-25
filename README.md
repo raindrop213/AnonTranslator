@@ -18,9 +18,9 @@ A chrome extension for light novel reading
 
 ### **插件安装**
 - [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%B5%8B%E8%AF%95%E7%89%88) （等功能完善后再去Chrome应用商店发布）
+- 首先右键插件到选项页面先设置保存一下才能用；
 - vitsTTS需要额外下载：
-  1. [vits-simple-api](https://github.com/Artrajz/vits-simple-api)，下载 release，我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！
-  2. [补丁](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%B5%8B%E8%AF%95%E7%89%88)（需要覆盖到 vits-simple-api 根目录下。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！）
+  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88)（里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
 
 
 ### **使用说明**
@@ -30,22 +30,25 @@ A chrome extension for light novel reading
 4. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
 5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
+### **常见问题**
+1. 浏览器中无法使用空格？ 答：因为是自动朗动用的，所以建议去插件管理对特定网站使用比较好；
+2. 翻译返回“接口请求错误 - {}”？ 答：这是免费接口，可能分时段，或者重新下载安装几次插件可能可以解决。
 
 ### **开发计划**
 - ~~去除振假名（假名注音）~~
 - ~~WindowsTTS~~
-- EdgeTTS
 - ~~vitsTTS~~
 - ~~自动朗读~~
-- 弹窗-翻译（DeepL、有道、moji）
-- 弹窗-日本語形態素解析（MeCab、moji、gpt）
-- 弹窗-联动Anki
+- 翻译（~~DeepL~~、Google）
+- 词典（moji、weblio、小学馆）
+- 日本語形態素解析（MeCab、moji）
+- 联动Anki
 
 
 ### **日文资源**
-1. 免费在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
-2. 免费下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
-3. 免费在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】。（需要你会做epub的话可以右键查看页面源码，然后拷贝到epub，快速匹配替换加标签就行了）；
+1. 在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
+2. 下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
+3. 在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】（需要你会做epub，右键查看页面源码，然后拷贝到epub，快速匹配替换加标签就行了）；
 4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？）
 
 ---
