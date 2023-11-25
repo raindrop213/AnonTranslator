@@ -12,7 +12,7 @@ A chrome extension for light novel reading
 
 # **插件仍在开发中，有些按钮是没有用！！！**
 
-![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview1.gif)
+![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview2.gif)
 
 ---
 
