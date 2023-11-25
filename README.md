@@ -10,23 +10,21 @@ A chrome extension for light novel reading
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
-# **插件仍在开发中，有些按钮是没有用！！！**
-
 ![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/preview2.gif)
 
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%B5%8B%E8%AF%95%E7%89%88) （等功能完善后再去Chrome应用商店发布）
-- 首先右键插件到选项页面先设置保存一下才能用；
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88) （在等Chrome审核，暂时先从这里下载吧）
+- 加载插件后，首先右键插件到选项页面先设置保存一下才能用，然后刷新一下页面就能用啦；
 - vitsTTS需要额外下载：
-  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88)（里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
+  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
 
 
 ### **使用说明**
 1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami) 使用Anki和语素分析；
-2. 键盘方向键 【↑】上一句 和 【↓】上一句，并且可以触发复制和朗读；
-3. 空格键【Backspace】一句接一句播放；
+2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
+3. 空格键 <kbd>Backspace</kbd> 一句接一句播放；
 4. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
 5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
@@ -67,3 +65,4 @@ A chrome extension for light novel reading
 </details>
 
 
+![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/cover.png)
