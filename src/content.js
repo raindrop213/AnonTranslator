@@ -161,6 +161,8 @@ function copyAndReadText(tag, callback) {
 }
 
 
+
+
 /* ------------------------------------------------------------自动阅读控制模块 */
 
 // 函数：开始自动阅读
@@ -194,22 +196,26 @@ function stopAutoReading() {
     window.speechSynthesis.cancel();
 }
 
-// 处理键盘事件，实现自动阅读的开始和停止
-function handleArrowKeyPress(event) {
-    if (lastClickedPtag && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-        stopAutoReading(); // 停止自动阅读
+// 处理键盘事件，包括箭头键和数字键盘 0
+function handleKeyPress(event) {
+    if (lastClickedPtag) {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            stopAutoReading(); // 停止自动阅读
 
-        let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
+            let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
 
-        // 确保新标签是一个 target 元素
-        while (newTag && !target.includes(newTag.nodeName)) {
-            newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
-        }
+            // 确保新标签是一个 target 元素
+            while (newTag && !target.includes(newTag.nodeName)) {
+                newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
+            }
 
-        if (newTag) {
-            applyBlueBorder(newTag);
-            copyAndReadText(newTag);
-            translate(newTag);
+            if (newTag) {
+                applyBlueBorder(newTag);
+                copyAndReadText(newTag);
+                translate(newTag);
+            }
+        } else if (event.keyCode === 48 || event.keyCode === 96 || event.keyCode === 112) { // 检查F1、主键盘小键盘的 0
+            copyAndReadText(lastClickedPtag); // 朗读当前选中的标签
         }
     }
 }
@@ -358,7 +364,7 @@ function highlightAndCopyPtag(doc) {
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     highlightAndCopyPtag(doc);
-    doc.addEventListener('keydown', handleArrowKeyPress);
+    doc.addEventListener('keydown', handleKeyPress);
     doc.addEventListener('keydown', function(event) {
         if (event.key === ' ') {
             if (isAutoReading) {

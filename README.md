@@ -24,12 +24,13 @@ A chrome extension for light novel reading
 ### **使用说明**
 1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析）或者 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami)（语素分析、Anki）；
 2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
-3. 空格键 <kbd>Backspace</kbd> 一句接一句播放；
-4. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
-5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
+3. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前句；
+3. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
+4. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
+5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 ### **常见问题**
-1. 浏览器中无法使用空格？ 答：因为是自动朗动用的，所以建议去插件管理对特定网站使用比较好；
+1. 浏览器中无法使用空格？ 答：因为被自动朗读占用了，所以建议去插件管理**对特定网站使用**比较好；
 2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可以解决。
 
 ### **开发计划**
