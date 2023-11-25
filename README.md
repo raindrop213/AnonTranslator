@@ -22,7 +22,7 @@ A chrome extension for light novel reading
 
 
 ### **使用说明**
-1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami) 使用Anki和语素分析；
+1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析）或者 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami)（语素分析、Anki）；
 2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
 3. 空格键 <kbd>Backspace</kbd> 一句接一句播放；
 4. 请配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
