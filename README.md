@@ -52,12 +52,6 @@ A chrome extension for light novel reading
 ---
 
 **其他**
-<details>
-  <summary>推荐声音</summary>
-  [428] zh/ja 日语雷电将军（泽城美雪）;
-  [445] zh/ja 日语八重神子（佐仓绫音）;
-</details>
-
 
 <details>
   <summary>vits整合包中可用语音</summary>
