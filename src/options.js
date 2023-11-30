@@ -23,14 +23,20 @@ function loadWindowsVoices(defaultVoiceName) {
 }
 
 // 加载 VITS TTS 语音
-function loadVitsVoices(defaultVitsVoiceId) {
+function loadVitsVoices(defaultVitsVoiceId, model) {
   fetch('defaultVoice.json')
     .then(response => response.json())
     .then(data => {
       const vitsVoiceSelect = document.getElementById('vitsVoice');
       let voiceExists = false;
 
-      data.VITS.forEach(voice => {
+      // 清空当前选项
+      while (vitsVoiceSelect.options.length > 0) {
+        vitsVoiceSelect.remove(0);
+      }
+
+      // 加载指定模型的语音选项
+      data[model].forEach(voice => {
         let option = document.createElement('option');
         option.text = `${voice.id}_${voice.lang.join('/')}_${voice.name}`;
         option.value = voice.id;
@@ -41,8 +47,13 @@ function loadVitsVoices(defaultVitsVoiceId) {
         }
       });
 
-      // 如果默认 VITS 语音 ID 存在，则设置为选中状态，否则选择列表中的第一个语音
-      vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data.VITS[342]?.id;
+      // 设置默认选项
+      if (model == 'VITS') {
+        vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data[model][342]?.id; // 342
+      } else {
+        vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data[model][0]?.id; // 342
+      }
+      
     })
     .catch(error => {
       console.error('加载 VITS 语音时出错:', error);
@@ -50,12 +61,13 @@ function loadVitsVoices(defaultVitsVoiceId) {
 }
 
 
+
 // 加载保存的设置
 function loadSettings() {
   chrome.storage.local.get([
     'ignoreFurigana', 'useVITS', 
     'voiceName', 'rate', 'pitch', 'clipAPI', 'vitsAPI', 
-    'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming', 
+    'model', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming', 
     'from', 'to', 'google', 'googleColor', 'deepl', 'deeplColor', 
     'borderWidth', 'borderStyle', 'borderRadius', 
     'freeBorderColor', 'selectedBorderColor', 
@@ -69,7 +81,8 @@ function loadSettings() {
     document.getElementById('clipAPI').value = data.clipAPI || 'http://localhost:8765';
     document.getElementById('vitsAPI').value = data.vitsAPI || 'http://127.0.0.1:23456';
 
-    loadVitsVoices(data.vitsVoice);    // 使用存储的 VITS 语音 ID 作为默认值
+    document.getElementById('modelSelect').value = data.model || 'VITS';
+    loadVitsVoices(data.vitsVoice, data.model || 'VITS');
     document.getElementById('vitsLang').value = data.vitsLang || 'ja';
     document.getElementById('length').value = data.length || 1;
     document.getElementById('noise').value = data.noise || 0.33;
@@ -96,6 +109,7 @@ function loadSettings() {
 document.getElementById('settingsForm').addEventListener('submit', (e) => {
   e.preventDefault();
   chrome.storage.local.set({
+    model: document.getElementById('modelSelect').value,
     ignoreFurigana: document.getElementById('ignoreFurigana').checked,
     useVITS: document.getElementById('useVITS').checked,
 
@@ -126,6 +140,12 @@ document.getElementById('settingsForm').addEventListener('submit', (e) => {
     freeBorderColor: document.getElementById('freeBorderColor').value,
     selectedBorderColor: document.getElementById('selectedBorderColor').value,
   });
+});
+
+
+document.getElementById('modelSelect').addEventListener('change', (e) => {
+  const selectedModel = e.target.value;
+  loadVitsVoices(null, selectedModel); // 加载新模型的语音选项
 });
 
 loadSettings();

@@ -98,7 +98,7 @@ function windows_tts(text, callback) {
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+    chrome.storage.local.get(['model', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
         const encodedText = encodeURIComponent(text); // 对文本进行编码
         const params = new URLSearchParams({
             id: data.vitsVoice,
@@ -111,10 +111,12 @@ function vits_tts(text, callback) {
           if (data.vitsLang !== 'auto') {
             params.append('lang', data.vitsLang);
           }
+          const model = data.model.toLowerCase();
 
         const vitsAPI = data.vitsAPI;
-        console.log(params.toString())
-        const clip_url = `${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
+        console.log(model, params.toString())
+        const clip_url = `${vitsAPI}/voice/${model}?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
+        console.log(clip_url)
 
         if (socket.readyState === WebSocket.OPEN) {
             console.log(`这是新请求：${text}`)
