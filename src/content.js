@@ -2,8 +2,9 @@
 
 /* ------------------------------------------------------------全局变量 */
 
-// 最后点击的目标标签
-let lastClickedPtag = null;
+// 当前被激活的文段和所在的标签
+let currentSegment = null;
+let currentElement = null;
 
 // 标记声音是否已加载
 let voicesLoaded = false;
@@ -51,8 +52,6 @@ function cleanText(htmlString, ignoreFurigana) {
     return { text: trimmedText.trim(), space: leadingSpaces };
 }
 
-
-/* ------------------------------------------------------------复制文本模块 */
 
 // 复制文本到剪贴板
 function copyText(text) {
@@ -146,7 +145,9 @@ function readText(text) {
 /* ------------------------------------------------------------用户界面交互模块 */
 
 // 处理点击事件
-function handleClick(inner_html) {
+function handleClick(inner_html, element, span) {
+    currentElement = element;
+    updateCurrentSegment(span);
     chrome.storage.local.get(['ignoreFurigana'], (data) => {
 
         // 调用复制文本的函数
@@ -211,9 +212,9 @@ function applySpanToText(element) {
         // 为每个段落添加点击事件监听器
         span.addEventListener('click', (e) => {
             e.stopPropagation(); // 防止事件冒泡
-            handleClick(e.target.innerHTML); // 调用 handleClick 函数
+            handleClick(e.target.innerHTML, element, span); // 调用 handleClick 函数
         });
-
+    
         element.appendChild(span);
     });
 }
@@ -257,14 +258,52 @@ function splitText(element) {
     return result;
 }
 
+
+// 处理键盘事件，用于切换文段
+function handleKeyPress(e) {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        navigateText(e.key);
+    }
+}
+
+// 导航到下一个或上一个文段
+function navigateText(direction) {
+    if (!currentElement || !currentSegment) return;
+
+    let segments = Array.from(currentElement.querySelectorAll('span'));
+    let currentIndex = segments.indexOf(currentSegment);
+
+    if (direction === "ArrowDown") {
+        currentIndex = currentIndex < segments.length - 1 ? currentIndex + 1 : 0;
+    } else if (direction === "ArrowUp") {
+        currentIndex = currentIndex > 0 ? currentIndex - 1 : segments.length - 1;
+    }
+
+    // 更新当前文段并朗读
+    updateCurrentSegment(segments[currentIndex]);
+    readText(currentSegment.textContent);
+}
+
+// 更新当前文段和相关样式
+function updateCurrentSegment(segment) {
+    if (currentSegment) {
+        currentSegment.style.backgroundColor = ''; // 移除上一个文段的背景色
+    }
+    currentSegment = segment;
+    currentSegment.style.backgroundColor = '#E3E3E3'; // 设置新文段的背景色
+}
+
+
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     highlightAndHandleClick(doc);
+    doc.addEventListener('keydown', handleKeyPress); // 添加键盘监听器
 }
 
 // 为主文档添加监听器
 addMouseListener(document);
 
+// document.addEventListener('keydown', handleKeyPress);
 
 /* ------------------------------------------------------------网络通信模块 */
 
