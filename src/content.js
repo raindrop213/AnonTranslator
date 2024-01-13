@@ -20,31 +20,39 @@ window.speechSynthesis.onvoiceschanged = function() {
 };
 
 
-/* ------------------------------------------------------------文本模块 */
+/* ------------------------------------------------------------处理文本标签模块 */
 
-// 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
+// 清理文本，处理<ruby>标签，并且清除后边空格。
+//（例）近接<ruby>戦闘<rt>せんとう</rt></ruby>   >>>   近接｜戦闘《せんとう》
 function cleanText(htmlString, ignoreFurigana) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 如果设置为忽略振假名（Furigana），则移除 <rt> 和 <rp> 标签。
     if (ignoreFurigana) {
         div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
+    } else {
+        div.querySelectorAll('ruby').forEach(ruby => {
+            const rb = ruby.childNodes[0].textContent; // 获取 <ruby> 标签内的第一个文本节点
+            const rt = ruby.querySelector('rt') ? ruby.querySelector('rt').textContent : '';
+            // 转换格式，确保只包含必要的元素
+            ruby.replaceWith(`｜${rb}《${rt}》`);
+        });
     }
 
-    let originalText = div.textContent;
+    let originalText = div.textContent || '';
     let trimmedText = originalText.trimStart();
 
-    // 截取前导空格部分（包括全角和半角空格）
     let leadingSpaces = originalText.substring(0, originalText.length - trimmedText.length);
 
-    // 如果去除两边空格后的文本为空，则返回 '-'
     if (!trimmedText) {
         return { text: '-', space: leadingSpaces };
     }
 
     return { text: trimmedText.trim(), space: leadingSpaces };
 }
+
+
+/* ------------------------------------------------------------复制文本模块 */
 
 // 复制文本到剪贴板
 function copyText(text) {
@@ -54,7 +62,6 @@ function copyText(text) {
         console.error('Failed to copy text: ', err);
     });
 }
-
 
 
 /* ------------------------------------------------------------语音模块 */
@@ -142,17 +149,19 @@ function readText(text) {
 function handleClick(event) {
     if (target.includes(event.target.nodeName)) {
         chrome.storage.local.get(['ignoreFurigana'], (data) => {
-            let cleanedText = cleanText(event.target.innerHTML, data.ignoreFurigana).text;
-            
+
             // 调用复制文本的函数
+            let copiedText = cleanText(event.target.innerHTML, data.ignoreFurigana).text;
+            console.log(event.target.innerHTML);
+            console.log(copiedText);
             chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
                 if (response.copyToClipboard) {
-                    copyText(cleanedText);
+                    copyText(copiedText);
                 }
-
-            });
+            })
 
             // 调用朗读文本的函数
+            let cleanedText = cleanText(event.target.innerHTML, true).text;
             chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
                 if (response.readText) {
                     readText(cleanedText);
@@ -160,45 +169,6 @@ function handleClick(event) {
             });
         });
     }
-}
-
-
-
-// 清除当前选择
-function clearSelection() {
-    if (lastClickedPtag) {
-        lastClickedPtag.style.border = "";
-        lastClickedPtag.classList.remove('blue-highlighted');
-        
-        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-        existingTranslations.forEach(div => div.remove());
-
-        lastClickedPtag = null;
-    }
-}
-
-// 为指定标签添加蓝色边框
-function applyBlueBorder(tag) {
-    // 如果有上一个被点击的标签且不是当前标签
-    if (lastClickedPtag && lastClickedPtag !== tag) {
-        // 移除上一个标签的翻译内容
-        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-        existingTranslations.forEach(div => div.remove());
-
-        // 移除上一个蓝框
-        lastClickedPtag.style.border = "";
-        lastClickedPtag.classList.remove('blue-highlighted');
-    }
-
-    // 为当前标签应用蓝框
-    chrome.storage.local.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor'
-    ], (data) => {
-        tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
-        tag.style.borderRadius = data.borderRadius;
-        tag.classList.add('blue-highlighted');
-        lastClickedPtag = tag; // 更新最后点击的标签
-    })
 }
 
 
