@@ -135,31 +135,6 @@ function readText(text) {
     });
 }
 
-/* ------------------------------------------------------------自动阅读控制模块 */
-
-// 处理键盘事件，包括箭头键和数字键盘 0
-function handleKeyPress(event) {
-    if (lastClickedPtag) {
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-
-            let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
-
-            // 确保新标签是一个 target 元素
-            while (newTag && !target.includes(newTag.nodeName)) {
-                newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
-            }
-
-            if (newTag) {
-                applyBlueBorder(newTag);
-                copyAndReadText(newTag);
-                translate(newTag);
-            }
-        } else if (event.keyCode === 48 || event.keyCode === 96 || event.keyCode === 112) { // 检查F1、主键盘小键盘的 0
-            copyAndReadText(lastClickedPtag); // 朗读当前选中的标签
-        }
-    }
-}
-
 
 /* ------------------------------------------------------------用户界面交互模块 */
 
@@ -257,7 +232,6 @@ function highlightAndCopyPtag(doc) {
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     highlightAndCopyPtag(doc);
-    doc.addEventListener('keydown', handleKeyPress);
 }
 
 // 为主文档添加监听器
