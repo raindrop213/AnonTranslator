@@ -294,6 +294,8 @@ function updateCurrentSegment(segment) {
 }
 
 
+/* ------------------------------------------------------------监听器模块 */
+
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     highlightAndHandleClick(doc);
