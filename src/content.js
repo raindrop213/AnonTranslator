@@ -2,7 +2,7 @@
 
 /* ------------------------------------------------------------全局变量 */
 
-// 最后点击的 <p> 标签
+// 最后点击的目标标签
 let lastClickedPtag = null;
 
 // 标记声音是否已加载
@@ -146,62 +146,120 @@ function readText(text) {
 /* ------------------------------------------------------------用户界面交互模块 */
 
 // 处理点击事件
-function handleClick(event) {
-    if (target.includes(event.target.nodeName)) {
-        chrome.storage.local.get(['ignoreFurigana'], (data) => {
+function handleClick(inner_html) {
+    chrome.storage.local.get(['ignoreFurigana'], (data) => {
 
-            // 调用复制文本的函数
-            let copiedText = cleanText(event.target.innerHTML, data.ignoreFurigana).text;
-            console.log(event.target.innerHTML);
-            console.log(copiedText);
-            chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-                if (response.copyToClipboard) {
-                    copyText(copiedText);
-                }
-            })
+        // 调用复制文本的函数
+        let copiedText = cleanText(inner_html, data.ignoreFurigana).text;
+        chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+            if (response.copyToClipboard) {
+                copyText(copiedText);
+            }
+        })
 
-            // 调用朗读文本的函数
-            let cleanedText = cleanText(event.target.innerHTML, true).text;
-            chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-                if (response.readText) {
-                    readText(cleanedText);
-                }
-            });
+        // 调用朗读文本的函数
+        let cleanedText = cleanText(inner_html, true).text;
+        chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
+            if (response.readText) {
+                readText(cleanedText);
+            }
         });
-    }
+    });
 }
 
 
-// 为 target 标签添加红框，并绑定点击事件
-function highlightAndCopyPtag(doc) {
+// 为 target 标签添加高亮框，并且对标签内文字分段
+function highlightAndHandleClick(doc) {
     chrome.storage.local.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor'
     ], (data) => {
-        doc.addEventListener('mouseenter', (event) => {
-            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
-                event.target.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
-                event.target.style.borderRadius = data.borderRadius;
-                event.target.classList.add('highlighted');
-                event.target.addEventListener('click', handleClick);
-            }
-        }, true);
+        target.forEach(tagName => {
+            doc.querySelectorAll(tagName).forEach(element => {
+                // 避免重复添加事件监听器
+                if (!element.hasAttribute('data-highlighted')) {
+                    element.setAttribute('data-highlighted', 'true');
 
-        doc.addEventListener('mouseleave', (event) => {
-            if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
-                setTimeout(() => {
-                    event.target.style.border = "";
-                }, fade_away);
-                event.target.classList.remove('highlighted');
-                event.target.removeEventListener('click', handleClick);
-            }
-        }, true);
-    })
+                    // 添加鼠标悬浮事件
+                    element.addEventListener('mouseenter', () => {
+                        element.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
+                        element.style.borderRadius = `${data.borderRadius}`;
+                        applySpanToText(element);
+                    });
+
+                    // 添加鼠标离开事件
+                    element.addEventListener('mouseleave', () => {
+                        element.style.border = '';
+                        element.style.borderRadius = '';
+                        removeSpanFromText(element);
+                    });
+                }
+            });
+        });
+    });
 }
 
+// 添加span颜色来区分文段，添加鼠标点击事件
+function applySpanToText(element) {
+    let segments = splitText(element);
+    element.innerHTML = ''; // 清空原始内容
+
+    segments.forEach((segment, index) => {
+        const span = document.createElement('span');
+        span.innerHTML = segment;
+        span.style.color = index % 2 === 0 ? '#D4B102' : '#94B505'; // 交替使用颜色
+
+        // 为每个段落添加点击事件监听器
+        span.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止事件冒泡
+            handleClick(e.target.innerHTML); // 调用 handleClick 函数
+        });
+
+        element.appendChild(span);
+    });
+}
+
+// 移除span框
+function removeSpanFromText(element) {
+    const text = Array.from(element.childNodes).map(node => node.textContent || node.innerText).join('');
+    element.textContent = text; // 恢复原始文本内容
+}
+
+// 完成文本分段
+function splitText(element) {
+
+    inner_html = element.innerHTML || "";
+    
+    const maxLen = 150;
+    let result = [];
+    let currentText = '';
+
+    for (let i = 0; i < inner_html.length; i++) {
+        currentText += inner_html[i];
+
+        // 当字符数接近150或者是文本末尾时，检查分段
+        if (currentText.length >= maxLen || i === inner_html.length - 1) {
+            let lastPunctuation = Math.max(currentText.lastIndexOf('。'), currentText.lastIndexOf('？'), currentText.lastIndexOf('！'));
+
+            // 如果找到了合适的分段位置
+            if (lastPunctuation !== -1 && lastPunctuation !== currentText.length - 1) {
+                // 将当前段落加入结果，并重置当前段落文本
+                result.push(currentText.substring(0, lastPunctuation + 1));
+                currentText = currentText.substring(lastPunctuation + 1);
+            }
+        }
+    }
+
+    // 添加最后一段文本
+    if (currentText) {
+        result.push(currentText);
+    }
+
+    return result;
+}
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
-    highlightAndCopyPtag(doc);
+    highlightAndHandleClick(doc);
 }
 
 // 为主文档添加监听器
