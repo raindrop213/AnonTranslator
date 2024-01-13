@@ -28,18 +28,21 @@ window.speechSynthesis.onvoiceschanged = function() {
 
 /* ------------------------------------------------------------文本模块 */
 
-// 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
-function cleanText(htmlString, ignoreFurigana) {
+// 去除 HTML 字符串中的 <rt>、<rp> 和 <ruby> 标签
+function removeFurigana(htmlString) {
+    const div = document.createElement('div');
+    div.innerHTML = htmlString;
+    div.querySelectorAll('rt, rp, ruby').forEach(tag => tag.remove());
+    return div.innerHTML;
+}
+
+// 移除前导和尾随的空格，并处理空文本的情况
+function cleanText(htmlString) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 如果设置为忽略振假名（Furigana），则移除 <rt> 和 <rp> 标签。
-    if (ignoreFurigana) {
-        div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
-    }
-
-    let originalText = div.textContent;
-    let trimmedText = originalText.trimStart();
+    let originalText = div.textContent || '';
+    let trimmedText = originalText.trim();
 
     // 截取前导空格部分（包括全角和半角空格）
     let leadingSpaces = originalText.substring(0, originalText.length - trimmedText.length);
@@ -49,8 +52,10 @@ function cleanText(htmlString, ignoreFurigana) {
         return { text: '-', space: leadingSpaces };
     }
 
-    return { text: trimmedText.trim(), space: leadingSpaces };
+    return { text: trimmedText, space: leadingSpaces };
 }
+
+cleanedText = cleanText(htmlString);
 
 // 复制文本到剪贴板
 function copyTextToClipboard(text, callback) {
