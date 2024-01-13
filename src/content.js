@@ -5,12 +5,6 @@
 // 最后点击的 <p> 标签
 let lastClickedPtag = null;
 
-// 是否处于自动阅读模式
-let isAutoReading = false;
-
-// 自动阅读模式下的阅读间隔时间（毫秒）
-let readingInterval = 200;
-
 // 标记声音是否已加载
 let voicesLoaded = false;
 
@@ -53,47 +47,37 @@ function cleanText(htmlString, ignoreFurigana) {
 }
 
 // 复制文本到剪贴板
-function copyTextToClipboard(text, callback) {
-    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
-        if (response.copyToClipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log("Text copied to clipboard");
-                if (callback) callback();
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                if (callback) callback();
-            });
-        }
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        console.log("Text copied to clipboard");
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
     });
 }
+
 
 
 /* ------------------------------------------------------------语音模块 */
 
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
-    chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-        // return 
-        if (response.readText) {
-            chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
-                const utterance = new SpeechSynthesisUtterance(text);
+    chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
+        const utterance = new SpeechSynthesisUtterance(text);
 
-                // 找到与用户设置匹配的语音
-                var voices = window.speechSynthesis.getVoices();
-                var selectedVoice = voices.find(voice => voice.name === data.voiceName);
-                utterance.voice = selectedVoice;
+        // 找到与用户设置匹配的语音
+        var voices = window.speechSynthesis.getVoices();
+        var selectedVoice = voices.find(voice => voice.name === data.voiceName);
+        utterance.voice = selectedVoice;
 
-                utterance.pitch = data.pitch || 1;
-                utterance.rate = data.rate || 1;
+        utterance.pitch = data.pitch || 1;
+        utterance.rate = data.rate || 1;
 
-                utterance.onend = () => {
-                    if (callback) callback();
-                }; // 如果callback存在，则创建回调函数callback
+        utterance.onend = () => {
+            if (callback) callback();
+        }; // 如果callback存在，则创建回调函数callback
 
-                window.speechSynthesis.cancel(); // 打断当前语音
-                window.speechSynthesis.speak(utterance);
-            });
-        }
+        window.speechSynthesis.cancel(); // 打断当前语音
+        window.speechSynthesis.speak(utterance);
     });
 }
 
@@ -140,70 +124,23 @@ function vits_tts(text, callback) {
     })
 }
 
-// 复制并朗读指定标签的文本
-function copyAndReadText(tag, callback) {
-    chrome.storage.local.get(['ignoreFurigana', 'useVITS', 'google', 'deepl'], (data) => {
-        // 仅提取原始标签的内容，不包括翻译部分
-        let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
-        let translationDivs = originalContent.querySelectorAll('.translation-div');
-        translationDivs.forEach(div => div.remove()); // 移除翻译部分
-
-        let text = cleanText(originalContent.outerHTML, data.ignoreFurigana)['text'];
+// 决定使用哪种 TTS 服务的函数
+function readText(text) {
+    chrome.storage.local.get(['useVITS'], (data) => {
         if (data.useVITS) {
-            // 使用 vits tts
-            copyTextToClipboard(text, () => {
-                vits_tts(text, callback);
-            });
+            vits_tts(text);
         } else {
-            // 使用 windows tts
-            copyTextToClipboard(text, () => {
-                windows_tts(text, callback);
-            });
-        };
+            windows_tts(text);
+        }
     });
 }
 
-
-
-
 /* ------------------------------------------------------------自动阅读控制模块 */
-
-// 函数：开始自动阅读
-function startAutoReading() {
-    isAutoReading = true;
-    let currentTag = lastClickedPtag;
-
-    function readNext() {
-        if (!isAutoReading || !currentTag) return;
-
-        applyBlueBorder(currentTag);
-        copyAndReadText(currentTag, () => {
-            // 设置延迟，然后读取下一个标签
-            setTimeout(() => {
-                currentTag = currentTag.nextElementSibling;
-                while (currentTag && !target.includes(currentTag.nodeName)) {
-                    currentTag = currentTag.nextElementSibling;
-                }
-                readNext();
-            }, readingInterval);
-        });
-        translate(currentTag);
-    }
-
-    readNext();
-}
-
-// 函数：停止自动阅读
-function stopAutoReading() {
-    isAutoReading = false;
-    window.speechSynthesis.cancel();
-}
 
 // 处理键盘事件，包括箭头键和数字键盘 0
 function handleKeyPress(event) {
     if (lastClickedPtag) {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            stopAutoReading(); // 停止自动阅读
 
             let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
 
@@ -224,80 +161,33 @@ function handleKeyPress(event) {
 }
 
 
-/* ------------------------------------------------------------翻译模块 */
-
-// 发送消息到背景脚本
-function requestTranslation(text, fromLang, toLang, translator, callback) {
-    chrome.runtime.sendMessage({ 
-        action: "translate", 
-        text: text, 
-        from: fromLang, 
-        to: toLang, 
-        translator: translator 
-    }, function(response) {
-        callback(response.translatedText);
-    });
-}
-
-// 翻译文本并显示结果
-function translate(tag) {
-    chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
-        chrome.storage.local.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
-            let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
-
-            try {
-                if (response.translat && !tag.querySelector('.translation-div')) { // 这行有错误，但能跑我就没管了...求教！
-                    const translationDiv = document.createElement('div');
-                    translationDiv.className = 'translation-div';
-
-                    if (data.google) {
-                        const googleP = document.createElement('div');
-                        googleP.style.color = data.googleColor;
-                        translationDiv.appendChild(googleP);
-    
-                        if (ctext['text'] !== '-') {
-                            requestTranslation(ctext['text'], data.from, data.to, "Google", (translatedText) => {
-                                googleP.textContent = ctext['space'] + translatedText;
-                            });
-                        } else {
-                            googleP.textContent = ctext['space'] + '-';
-                        }
-                    }
-    
-                    if (data.deepl) {
-                        const deeplP = document.createElement('div');
-                        deeplP.style.color = data.deeplColor;
-                        translationDiv.appendChild(deeplP);
-    
-                        if (ctext['text'] !== '-') {
-                            requestTranslation(ctext['text'], data.from, data.to, "Deepl", (translatedText) => {
-                                deeplP.textContent = ctext['space'] + translatedText;
-                            });
-                        } else {
-                            deeplP.textContent = ctext['space'] + '-';
-                        }
-                    }
-
-                    tag.appendChild(translationDiv);
-                } 
-            } catch (error) {}
-        });
-    });
-}
-
-
 /* ------------------------------------------------------------用户界面交互模块 */
 
 // 处理点击事件
 function handleClick(event) {
     if (target.includes(event.target.nodeName)) {
-        applyBlueBorder(event.target);
-        copyAndReadText(event.target);
-        translate(event.target);
-    } else {
-        clearSelection();
+        chrome.storage.local.get(['ignoreFurigana'], (data) => {
+            let cleanedText = cleanText(event.target.innerHTML, data.ignoreFurigana).text;
+            
+            // 调用复制文本的函数
+            chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+                if (response.copyToClipboard) {
+                    copyText(cleanedText);
+                }
+
+            });
+
+            // 调用朗读文本的函数
+            chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
+                if (response.readText) {
+                    readText(cleanedText);
+                }
+            });
+        });
     }
 }
+
+
 
 // 清除当前选择
 function clearSelection() {
@@ -368,18 +258,6 @@ function highlightAndCopyPtag(doc) {
 function addMouseListener(doc) {
     highlightAndCopyPtag(doc);
     doc.addEventListener('keydown', handleKeyPress);
-    doc.addEventListener('keydown', function(event) {
-        if (event.key === ' ') {
-            if (isAutoReading) {
-                stopAutoReading();
-            } else {
-                startAutoReading();
-            }
-            event.preventDefault();
-        } else if (event.key === 'Escape') {
-            stopAutoReading();
-        }
-    });
 }
 
 // 为主文档添加监听器
