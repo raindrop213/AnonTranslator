@@ -78,7 +78,7 @@ function loadSettings() {
     loadWindowsVoices(data.voiceName); // 使用存储的语音名称作为默认值
     document.getElementById('rate').value = data.rate || 1;
     document.getElementById('pitch').value = data.pitch || 1;
-    document.getElementById('clipAPI').value = data.clipAPI || 'http://localhost:8765';
+    document.getElementById('clipAPI').value = data.clipAPI || 'http://localhost:8666';
     document.getElementById('vitsAPI').value = data.vitsAPI || 'http://127.0.0.1:23456';
 
     document.getElementById('modelSelect').value = data.model || 'VITS';

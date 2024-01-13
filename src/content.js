@@ -73,6 +73,7 @@ function copyTextToClipboard(text, callback) {
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
     chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
+        // return 
         if (response.readText) {
             chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -390,7 +391,7 @@ addMouseListener(document);
 // 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
 let socket = null;
 function connectWebSocket() {
-    socket = new WebSocket('ws://localhost:8765');
+    socket = new WebSocket('ws://localhost:8666');
     
     socket.onopen = function(e) {
       console.log("[WebSocket] Connection established");

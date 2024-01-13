@@ -18,11 +18,7 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": [
-        "http://localhost:8083/*",
-        "https://kakuyomu.jp/*",
-        "https://syosetu.com/*"
-      ],
+      "matches": ["*://*/*"],
       "js": ["src/content.js"]
     }
   ],

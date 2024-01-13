@@ -53,6 +53,10 @@ A chrome extension for light novel reading
 ---
 
 **其他**
+<details>
+  <summary>推荐语音</summary>
+  bert-vits2：光、艾露
+</details>
 
 <details>
   <summary>vits整合包中可用语音</summary>
