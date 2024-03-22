@@ -5,6 +5,7 @@
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
   "permissions": ["scripting", "clipboardWrite", "tts", "storage"],
+  "host_permissions": ["https://www2.deepl.com/*"],
 
   "icons": {
     "16": "img/icon16.png",
