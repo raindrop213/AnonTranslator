@@ -73,7 +73,6 @@ function copyTextToClipboard(text, callback) {
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
     chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-        // return 
         if (response.readText) {
             chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -99,7 +98,7 @@ function windows_tts(text, callback) {
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.local.get(['model', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
         const encodedText = encodeURIComponent(text); // 对文本进行编码
         const params = new URLSearchParams({
             id: data.vitsVoice,
@@ -112,15 +111,13 @@ function vits_tts(text, callback) {
           if (data.vitsLang !== 'auto') {
             params.append('lang', data.vitsLang);
           }
-          const model = data.model.toLowerCase();
 
         const vitsAPI = data.vitsAPI;
-        console.log(model, params.toString())
-        const clip_url = `${vitsAPI}/voice/${model}?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
-        console.log(clip_url)
+        console.log(params.toString())
+        const clip_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
 
         if (socket.readyState === WebSocket.OPEN) {
-            console.log(`这是新请求：${text}`)
+            console.log(`这是新请求：${clip_url}`)
             socket.send(JSON.stringify({ url: clip_url }));
         }
 
@@ -142,7 +139,7 @@ function vits_tts(text, callback) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.local.get(['ignoreFurigana', 'useVITS', 'google', 'deepl'], (data) => {
+    chrome.storage.local.get(['ignoreFurigana', 'useVITS', 'useWindowsTTS', 'google', 'deepl'], (data) => {
         // 仅提取原始标签的内容，不包括翻译部分
         let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
         let translationDivs = originalContent.querySelectorAll('.translation-div');
@@ -154,10 +151,17 @@ function copyAndReadText(tag, callback) {
             copyTextToClipboard(text, () => {
                 vits_tts(text, callback);
             });
-        } else {
+
+        } else if(data.useWindowsTTS) {
             // 使用 windows tts
             copyTextToClipboard(text, () => {
                 windows_tts(text, callback);
+            });
+
+        } else {
+            // 不使用语音
+            copyTextToClipboard(text, () => {
+                setTimeout(callback, 10);
             });
         };
     });
@@ -391,20 +395,22 @@ addMouseListener(document);
 // 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
 let socket = null;
 function connectWebSocket() {
-    socket = new WebSocket('ws://localhost:8666');
-    
-    socket.onopen = function(e) {
-      console.log("[WebSocket] Connection established");
-    };
+    chrome.storage.local.get(['clipAPI'], (data) => {
+        socket = new WebSocket(`ws://127.0.0.1:${data.clipAPI}`);
 
-    socket.onerror = function(error) {
-      console.error(`[WebSocket] Error: ${error.message}`);
-    };
+        socket.onopen = function(e) {
+        console.log("[WebSocket] Connection established");
+        };
 
-    // socket.onclose = function(e) {
-    //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
-    //   setTimeout(connectWebSocket, 5000); // 5秒后重连
-    // };
+        socket.onerror = function(error) {
+        console.error(`[WebSocket] Error: ${error.message}`);
+        };
+
+        // socket.onclose = function(e) {
+        //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
+        //   setTimeout(connectWebSocket, 5000); // 5秒后重连
+        // };
+    })
 }
 
 // 在脚本开始处初始化WebSocket连接
