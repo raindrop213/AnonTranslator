@@ -29,7 +29,7 @@ A chrome extension for light novel reading
 4. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
 5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
-[![Demo](img/preview-video.jpg)](img/preview-video.mp4)
+<video controls width="720"><source src="https://github-production-user-asset-6210df.s3.amazonaws.com/53202747/316221948-5f32c4be-26f9-415c-ab9c-bdc3fa95a837.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240323%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240323T061949Z&X-Amz-Expires=300&X-Amz-Signature=9485d77768a9e16bfb45c99f06ee22bbbf6ce40329adb85018c7522330e403a5&X-Amz-SignedHeaders=host&actor_id=53202747&key_id=0&repo_id=7192627384" type="video/mp4" /></video>
 
 ### **常见问题**
 1. 浏览器中无法使用空格？ 答：因为被自动朗读占用了，所以建议去插件管理**对特定网站使用**比较好；
