@@ -15,25 +15,27 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88) （在等Chrome审核，暂时先从这里下载吧）
-- 加载插件后，首先右键插件到选项页面先设置保存一下才能用，然后刷新一下页面就能用啦；
-- vitsTTS需要额外下载：
-  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)（上架Chrome商店有点麻烦，就先从这下载吧）
+- 打开开发展模式；加载插件；首先右键插件到选项页面先设置保存一下才能正式启用插件，然后刷新一下页面就能用啦；
+- vitsTTS下载：
+  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！）
 
+### **使用场景**
+1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
+2. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 ### **使用说明**
-1. 点击标签可以朗读文本和复制到剪切板，所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析）或者 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami)（语素分析、Anki）；
+1. 点击文本就可以朗读文本和复制到剪切板（去除振假名），所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）或者 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami)（语素分析、Anki；说实话我觉得Yomichan不好用，但貌似很多人都在用？）；
 2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
 3. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前句；
 3. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
-4. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
-5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 https://github.com/raindrop213/AnonTranslator/assets/53202747/5f32c4be-26f9-415c-ab9c-bdc3fa95a837
 
 ### **常见问题**
-1. 浏览器中无法使用空格？ 答：因为被自动朗读占用了，所以建议去插件管理**对特定网站使用**比较好；
+1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好；
 2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可以解决。
+3. 其实Deepl翻译日语的能力很差，还是建议搭配LunaTranslator吧
 
 ### **开发计划**
 - ~~去除振假名（假名注音）~~
@@ -43,20 +45,20 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/5f32c4be-26f9-415c
 - 翻译（~~DeepL~~、Google）
 - 词典（moji、weblio、小学馆）
 - 日本語形態素解析（MeCab、moji）
-- 联动Anki
+- 联动Anki（提一下我另外写的一个小应用，主要是用来记录漫画生词的：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ### **日文资源**
 1. 在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
 2. 下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
 3. 在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】（使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
-4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？）
+4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？但要买书也不是很方便）
 
 ---
 
 **其他**
 <details>
   <summary>推荐语音</summary>
-  bert-vits2：光、艾露
+  [342] zh/ja 日语雷电将军（泽城美雪）;
 </details>
 
 <details>
@@ -866,6 +868,5 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/5f32c4be-26f9-415c
 [802] zh/ja 祝明;
 [803] zh/ja 祝涛 
 </details>
-
 
 ![tips](img/img2.png)
