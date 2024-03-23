@@ -29,6 +29,8 @@ A chrome extension for light novel reading
 4. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
 5. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
+<video controls width="720"><source src="img\preview-video.mp4" type="video/mp4" /></video>
+
 ### **常见问题**
 1. 浏览器中无法使用空格？ 答：因为被自动朗读占用了，所以建议去插件管理**对特定网站使用**比较好；
 2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可以解决。
@@ -42,7 +44,6 @@ A chrome extension for light novel reading
 - 词典（moji、weblio、小学馆）
 - 日本語形態素解析（MeCab、moji）
 - 联动Anki
-
 
 ### **日文资源**
 1. 在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
