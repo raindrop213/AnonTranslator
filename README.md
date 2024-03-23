@@ -15,10 +15,9 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)（上架Chrome商店有点麻烦，就先从这下载吧）
-- 打开开发展模式；加载插件；首先右键插件到选项页面先设置保存一下才能正式启用插件，然后刷新一下页面就能用啦；
-- vitsTTS下载：
-  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！）
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)（上架Chrome商店有点麻烦，就先从这下载吧）【打开开发展模式；加载插件；首先右键插件到选项页面先设置保存一下才能正式启用插件，然后刷新一下页面就能用啦】
+- [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases)：
+  下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型，还加了个WebSocket让插件与其进行网络通信。･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
 ### **使用场景**
 1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
