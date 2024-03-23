@@ -10,7 +10,7 @@ A chrome extension for light novel reading
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
-![tips](img/preview1.gif)
+![tips](img/preview2.gif)
 
 ---
 
