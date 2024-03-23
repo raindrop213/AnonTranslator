@@ -18,7 +18,7 @@ A chrome extension for light novel reading
 - [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88) （在等Chrome审核，暂时先从这里下载吧）
 - 加载插件后，首先右键插件到选项页面先设置保存一下才能用，然后刷新一下页面就能用啦；
 - vitsTTS需要额外下载：
-  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/tag/%E6%AD%A3%E5%BC%8F%E7%89%88) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
+  - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases) 下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文。里面包含所需的模型，还加了个接口让插件与vits进行网络通信，所以放在哪里都行。请按照里面的步骤操作吧！该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 我用的是 [0.5.3](https://github.com/Artrajz/vits-simple-api/releases/tag/0.5.3)，感谢该项目的开发人员！！！）
 
 
 ### **使用说明**
