@@ -29,7 +29,7 @@ A chrome extension for light novel reading
 3. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前句；
 3. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
 
-https://github.com/raindrop213/AnonTranslator/assets/53202747/5f32c4be-26f9-415c-ab9c-bdc3fa95a837
+https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
 1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好；
