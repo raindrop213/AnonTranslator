@@ -6,7 +6,7 @@
 </h3>
 A chrome extension for light novel reading
 
-多功能TTS啃生肉，追踪鼠标位置的文本标签，复制到剪切板时去除振假名（Furigana）
+TTS啃生肉（方便影子跟读），获取鼠标位置文本标签，复制到剪切板时去除振假名（Furigana）
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
@@ -24,17 +24,17 @@ A chrome extension for light novel reading
 2. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 ### **使用说明**
-1. 点击文本就可以朗读文本和复制到剪切板（去除振假名），所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）或者 [Yomichan](https://chromewebstore.google.com/detail/yomichan/ogmnaimimemjmbakcfefmnahgdfhfami)（语素分析、Anki；说实话我觉得Yomichan不好用，但貌似很多人都在用？）；
+1. 点击文本就可以朗读文本和复制到剪切板（去除振假名），所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）
 2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
 3. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前句；
-3. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
+4. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
+5. ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，建议用Luna的翻译，目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
 
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
 1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好；
 2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可以解决。
-3. 其实Deepl翻译日语的能力很差，还是建议搭配LunaTranslator吧
 
 ### **开发计划**
 - ~~去除振假名（假名注音）~~
