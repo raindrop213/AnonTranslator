@@ -33,8 +33,8 @@ TTS啃生肉（方便影子跟读），获取鼠标位置文本标签，复制�
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
-1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好；
-2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可以解决。
+1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好（注意只有用插件来接收vits才能实现播完自动跳转下一句，如果用luna的语音的话这个功能就不能正常工作）；
+2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但就像前面说的目前deepl翻译效果不行，建议还是用luna翻译。
 
 ### **开发计划**
 - ~~去除振假名（假名注音）~~
@@ -47,10 +47,10 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 - 联动Anki（提一下我另外写的一个小应用，主要是用来记录漫画生词的：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ### **日文资源**
-1. 在线阅读：[カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
+1. 在线阅读：适配 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
 2. 下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
-3. 在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/)【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】（使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
-4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，这些电子书破解下载到本地都需要用到 Calibre 的插件。（amazon的kindle破解步骤复杂一点，初步解出来的不是原图，要解原图然后再替换有点麻烦的说。听说另外两个破解相对无脑一点？但要买书也不是很方便）
+3. 在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/) 不能正常工作，因为是纯文本，没有标签。【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】（使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
+4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，bookwalker也是能完全破解的，只是知道方法的人比较少人，另外两个破解相对无脑一点。
 
 ---
 
