@@ -5,11 +5,17 @@
 // 最后点击的 <p> 标签
 let lastClickedPtag = null;
 
+// 记录当前高亮的句子
+let currentHighlightedSentence = null;
+
 // 是否处于自动阅读模式
 let isAutoReading = false;
 
 // 标记声音是否已加载
 let voicesLoaded = false;
+
+// Alt 键是否按下
+let isAltPressed = false;
 
 // 目标标签
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
@@ -52,7 +58,7 @@ function copyTextToClipboard(text, callback) {
     chrome.storage.sync.get('copy', (data) => {
         if (data.copy) {
             navigator.clipboard.writeText(text).then(() => {
-                console.log("Text copied to clipboard");
+                console.log(`Copy: ${text}`);
                 if (callback) callback();
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
@@ -158,6 +164,27 @@ function copyAndReadText(tag, callback) {
     });
 }
 
+// 复制并朗读指定标签的文本的句子
+function copyAndReadSentence(text) {
+    chrome.storage.sync.get(['useVITS', 'useWindowsTTS'], (data) => {
+        if (data.useVITS) {
+            // 使用 vits tts
+            copyTextToClipboard(text, () => {
+                vits_tts(text);
+            });
+
+        } else if(data.useWindowsTTS) {
+            // 使用 windows tts
+            copyTextToClipboard(text, () => {
+                windows_tts(text);
+            });
+
+        } else {
+            // 不使用语音
+            copyTextToClipboard(text);
+        }
+    });
+}
 
 
 
@@ -242,7 +269,8 @@ function translate(tag) {
         let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
 
         try {
-            if (data.deepl || data.google && !tag.querySelector('.translation-div')) {
+            // 先检查标签中是否已经存在翻译
+            if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
                 const translationDiv = document.createElement('div');
                 translationDiv.className = 'translation-div';
 
@@ -275,7 +303,7 @@ function translate(tag) {
                 }
 
                 tag.appendChild(translationDiv);
-            } 
+            }
         } catch (error) {}
     });
 }
@@ -285,14 +313,22 @@ function translate(tag) {
 
 // 处理点击事件
 function handleClick(event) {
-    if (target.includes(event.target.nodeName)) {
-        applyBlueBorder(event.target);
-        copyAndReadText(event.target);
-        translate(event.target);
+    let targetElement = event.target;
+
+    // 向上遍历DOM树，找到包含点击元素的目标标签（处理点击文字不触发情况）
+    while (targetElement && !target.includes(targetElement.nodeName)) {
+        targetElement = targetElement.parentElement;
+    }
+
+    if (targetElement && target.includes(targetElement.nodeName)) {
+        applyBlueBorder(targetElement);
+        copyAndReadText(targetElement);
+        translate(targetElement);
     } else {
         clearSelection();
     }
 }
+
 
 // 清除当前选择
 function clearSelection() {
@@ -346,6 +382,12 @@ function highlightAndCopyPtag(doc) {
                 event.target.style.borderRadius = data.borderRadius;
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
+                // 分割句子并用 <span> 标签包裹
+                if (!event.target.classList.contains('split-sentences')) {
+                    const sentences = splitSentences(event.target.innerHTML);
+                    event.target.innerHTML = sentences;
+                    event.target.classList.add('split-sentences');
+                }
             }
         }, true);
 
@@ -362,23 +404,72 @@ function highlightAndCopyPtag(doc) {
 }
 
 
+// 分割句子的函数
+function splitSentences(text) {
+    const sentenceEndings = /([。！？])/g;
+    let parts = text.split(sentenceEndings);
+    
+    // 合并分割的句子和标点符号
+    let sentences = [];
+    for (let i = 0; i < parts.length; i += 2) {
+        let sentence = parts[i];
+        if (i + 1 < parts.length) {
+            sentence += parts[i + 1];
+        }
+        sentences.push(sentence.trim());
+    }
+    
+    return sentences.map(part => `<span class="sentence">${part}</span>`).join('');
+}
+
+
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
-    highlightAndCopyPtag(doc);
-    doc.addEventListener('keydown', handleKeyPress);
-    doc.addEventListener('keydown', function(event) {
-        if (event.key === ' ') {
-            if (isAutoReading) {
+    chrome.storage.sync.get(['sentenceColor'], (data) => {
+        highlightAndCopyPtag(doc);
+        doc.addEventListener('keydown', handleKeyPress);
+        doc.addEventListener('keydown', function(event) {
+            if (event.key === ' ') {
+                if (isAutoReading) {
+                    stopAutoReading();
+                } else {
+                    startAutoReading();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
                 stopAutoReading();
-            } else {
-                startAutoReading();
+            } else if (event.key === 'Alt') {
+                isAltPressed = true;
             }
-            event.preventDefault();
-        } else if (event.key === 'Escape') {
-            stopAutoReading();
-        }
-    });
+        });
+
+        doc.addEventListener('keyup', function(event) {
+            if (event.key === 'Alt') {
+                isAltPressed = false;
+            }
+        });
+
+        doc.addEventListener('click', function(event) {
+            if (isAltPressed && event.target.classList.contains('sentence')) {
+                event.preventDefault();
+                copyAndReadSentence(event.target.innerText);
+            }
+        });
+        doc.addEventListener('mouseover', (event) => {
+            if (event.target.classList.contains('sentence')) {
+                event.target.style.backgroundColor = data.sentenceColor; // 设置背景颜色
+            }
+        });
+
+        doc.addEventListener('mouseout', (event) => {
+            if (event.target.classList.contains('sentence')) {
+                event.target.style.backgroundColor = ''; // 清除背景颜色
+            }
+        });
+    })
 }
+
+
 
 // 为主文档添加监听器
 addMouseListener(document);

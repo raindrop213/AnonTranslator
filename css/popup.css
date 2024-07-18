@@ -135,3 +135,9 @@ input:checked + .slider .off {
   margin: 5px 0;
 }
 
+.text-s3 {
+  font-size: 10px;
+  text-align: right;
+  color: #d4e725;
+  margin: 5px 0;
+}

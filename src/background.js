@@ -30,6 +30,7 @@ const defaultSettings = {
   borderRadius: '8px',
   freeBorderColor: '#225D2E',
   selectedBorderColor: '#94B505',
+  sentenceColor: '#d4e725',
   fade: '30',
   scrollIntoView: 'smooth'
 };
