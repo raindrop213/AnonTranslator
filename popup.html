@@ -84,7 +84,7 @@
           <option value="en">en</option>
         </select>
       </label>
-      <label>Google（未完成，等有时间再写了）<input type="checkbox" id="google" checked /></label>
+      <label>Google（未完成）<input type="checkbox" id="google" checked /></label>
       <label>Google Color: <input type="color" id="googleColor" /></label>
       <label>Deepl<input type="checkbox" id="deepl" checked /></label>
       <label>Deepl Color: <input type="color" id="deeplColor" /></label>
@@ -109,7 +109,13 @@
       <label>Border Radius: <input type="text" id="borderRadius" /></label>
       <label>Free Border Color: 指示框<input type="color" id="freeBorderColor"/></label>
       <label>Seleted Border Color: 被选中的框<input type="color" id="selectedBorderColor"/></label>
-      <label>Fade away: <input type="text" id="fade" />ms</label>
+      <label>Fade away: 延迟消失<input type="text" id="fade" />ms</label>
+      <label>Scroll into view: 画面滚动
+        <select id="scrollIntoView">
+          <option value="smooth">smooth</option>
+          <option value="instant">instant</option>
+        </select>
+      </label>
       <br>
       <button class="save" type="submit">Save Settings</button>
     </form>

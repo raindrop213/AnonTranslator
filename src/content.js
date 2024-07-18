@@ -322,7 +322,7 @@ function applyBlueBorder(tag) {
 
     // 为当前标签应用蓝框
     chrome.storage.sync.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor'
+        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollIntoView'
     ], (data) => {
         tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
         tag.style.borderRadius = data.borderRadius;
@@ -330,7 +330,7 @@ function applyBlueBorder(tag) {
         lastClickedPtag = tag; // 更新最后点击的标签
 
         // 滚动页面到当前标签位置
-        tag.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
     });
 }
 
