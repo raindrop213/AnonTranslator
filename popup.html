@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div>
+    <form id="settingsForm">
       <label class="switch">
         <input type="checkbox" id="toggleSwitch" />
         <span class="slider round">
@@ -16,18 +16,17 @@
           <span class="off">OFF</span>
         </span>
       </label>
-    </div>
-    <div>
-      <p class="text-h1" id="extension-version"></p>
-      <p class="text-s1" id="extension-author"></p>
-      <p>
-        Github:<a href="https://github.com/raindrop213/AnonTranslator">raindrop213/AnonTranslator</a>
-        <br />详细插件信息请浏览该项目仓库 ↑ ↑ ↑
-      </p>
-    </div>
-    <hr>
 
-    <form id="settingsForm">
+      <div>
+        <p class="text-h1" id="extension-version"></p>
+        <p class="text-s1" id="extension-author"></p>
+        <p>
+          Github: <a href="https://github.com/raindrop213/AnonTranslator">raindrop213/AnonTranslator</a>
+          <br />使用文档请浏览该项目仓库 ↑ ↑ ↑
+        </p>
+      </div>
+      <hr>
+
       <!-- Copy -->
       <h2>Copy <input type="checkbox" id="copy" class="title-switch" /></h2>
       <label>
@@ -48,8 +47,8 @@
       <!-- vitsTTS -->
       <h2>VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></h2>
       <p>需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases">vitsTTS整合包</a></p>
-      <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI" value="http://127.0.0.1:23456" /></label>
-      <label for="vitsAPIjson">Get List: <input type="text" id="vitsAPIjson" value="http://127.0.0.1:23456/voice/speakers"/></label>
+      <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI"/></label>
+      <label for="vitsAPIjson">Get List: <input type="text" id="vitsAPIjson"/></label>
       <label for="vitsVoice">Voice: 人物</label>
       <select id="vitsVoice"></select>
       <label for="vitsLang">Language: 语言</label>
