@@ -106,11 +106,9 @@ function vits_tts(text, callback) {
           }
 
         const vitsAPI = data.vitsAPI;
-        console.log(params.toString())
         const clip_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
 
         if (socket.readyState === WebSocket.OPEN) {
-            console.log(`这是新请求：${clip_url}`)
             socket.send(JSON.stringify({ url: clip_url }));
         }
 
@@ -232,7 +230,7 @@ function requestTranslation(text, fromLang, toLang, translator, callback) {
         text: text, 
         from: fromLang, 
         to: toLang, 
-        translator: translator 
+        translator: translator
     }, function(response) {
         callback(response.translatedText);
     });
@@ -330,7 +328,10 @@ function applyBlueBorder(tag) {
         tag.style.borderRadius = data.borderRadius;
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
-    })
+
+        // 滚动页面到当前标签位置
+        tag.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
 }
 
 
@@ -422,7 +423,7 @@ const observer = new MutationObserver((mutations) => {
                         try {
                             addMouseListener(node.contentDocument || node.contentWindow.document);
                         } catch (e) {
-                            console.error('Error adding listener to iframe:', e);
+                            console.log('Error adding listener to iframe:', e);
                         }
                     };
                 }
