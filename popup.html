@@ -1,29 +1,121 @@
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Setting</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
     <div>
-        <label class="switch">
-            <input type="checkbox" id="toggle-switch">
-            <span class="slider round">
-                <span class="on">ON</span>
-                <span class="off">OFF</span>
-            </span>
-        </label>
-        <p class="text-h3">朗读文本 <input type="checkbox" id="read-text"></p>
-        <p class="text-h3">复制文本 <input type="checkbox" id="copy-to-clipboard"></p>
-        <p class="text-h3">翻译开关 <input type="checkbox" id="translat"></p>
+      <label class="switch">
+        <input type="checkbox" id="toggleSwitch" />
+        <span class="slider round">
+          <span class="on">ON</span>
+          <span class="off">OFF</span>
+        </span>
+      </label>
     </div>
     <div>
-        <p class="text-h1" id="extension-version">Anon version</p>
-        <p class="text-s1" id="extension-author">By: author</p>
+      <p class="text-h1" id="extension-version"></p>
+      <p class="text-s1" id="extension-author"></p>
+      <p>
+        Github:<a href="https://github.com/raindrop213/AnonTranslator">raindrop213/AnonTranslator</a>
+        <br />详细插件信息请浏览该项目仓库 ↑ ↑ ↑
+      </p>
     </div>
-    <script src="src/popup.js"></script>
+    <hr>
+
+    <form id="settingsForm">
+      <!-- Copy -->
+      <h2>Copy <input type="checkbox" id="copy" class="title-switch" /></h2>
+      <label>
+        <p>Ignore Furigana <input type="checkbox" id="ignoreFurigana" /></p>
+      </label>
+      <hr />
+
+      <!-- WindowsTTS -->
+      <h2>Windows TTS <input type="checkbox" id="useWindowsTTS" class="title-switch" /></h2>
+      <label for="voiceName">Voice: 人物</label>
+      <select id="voiceName"></select>
+      <label for="rate">Rate (0 - 2): 语速</label>
+      <input type="range" id="rate" min="0" max="2" step="0.1" value="1" />
+      <label for="pitch">Pitch (0 - 2): 音调</label>
+      <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" />
+      <hr />
+
+      <!-- vitsTTS -->
+      <h2>VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></h2>
+      <p>需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases">vitsTTS整合包</a></p>
+      <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI" value="http://127.0.0.1:23456" /></label>
+      <label for="vitsAPIjson">Get List: <input type="text" id="vitsAPIjson" value="http://127.0.0.1:23456/voice/speakers"/></label>
+      <label for="vitsVoice">Voice: 人物</label>
+      <select id="vitsVoice"></select>
+      <label for="vitsLang">Language: 语言</label>
+      <select id="vitsLang">
+        <option value="auto">auto</option>
+        <option value="ja">ja</option>
+        <option value="zh">zh</option>
+      </select>
+      <label for="length">Length (0 - 2): 语速</label>
+      <input type="range" id="length" min="0" max="2" step="0.1" value="1" />
+      <label for="noise">Noise: 声音随机性</label>
+      <input type="text" id="noise" value="0.33" />
+      <label for="noisew">NoiseW: 随机发声时长</label>
+      <input type="text" id="noisew" value="0.4" />
+      <label for="max">Max: 文字分段阈值：以标点符号为分割点，超过阈值的部分会分段发送</label>
+      <input type="text" id="max" value="50" />
+      <label>Streaming 流式传输<input type="checkbox" id="streaming"/></label>
+      <hr />
+
+      <!-- Translator -->
+      <h2>Translator <input type="checkbox" id="translator" /></h2>
+      <label>From: 输入文本
+        <select id="from">
+          <option value="auto">auto</option>
+          <option value="zh">zh</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+        </select>
+      </label>
+      <label>To: 输出文本
+        <select id="to">
+          <option value="zh">zh</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+        </select>
+      </label>
+      <label>Google（未完成，等有时间再写了）<input type="checkbox" id="google" checked /></label>
+      <label>Google Color: <input type="color" id="googleColor" /></label>
+      <label>Deepl<input type="checkbox" id="deepl" checked /></label>
+      <label>Deepl Color: <input type="color" id="deeplColor" /></label>
+      <hr />
+
+      <!-- Style -->
+      <h2>Style</h2>
+      <label>Border Width: <input type="text" id="borderWidth" /></label>
+      <label>Border Style:
+          <select id="borderStyle">
+          <option value="none">None</option>
+          <option value="solid">Solid</option>
+          <option value="dotted">Dotted</option>
+          <option value="dashed">Dashed</option>
+          <option value="double">Double</option>
+          <option value="groove">Groove</option>
+          <option value="ridge">Ridge</option>
+          <option value="inset">Inset</option>
+          <option value="outset">Outset</option>
+          </select>
+      </label>
+      <label>Border Radius: <input type="text" id="borderRadius" /></label>
+      <label>Free Border Color: 指示框<input type="color" id="freeBorderColor"/></label>
+      <label>Seleted Border Color: 被选中的框<input type="color" id="selectedBorderColor"/></label>
+      <br>
+      <button class="save" type="submit">Save Settings</button>
+    </form>
     
-</body>
+
+    <script src="src/popup.js"></script>
+  </body>
 </html>

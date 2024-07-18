@@ -15,10 +15,14 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": [
+        "http://localhost:8083/*",
+        "https://kakuyomu.jp/*",
+        "https://syosetu.com/*",
+        "https://ebook.raindrop213.info/*"
+      ],
       "js": ["src/content.js"]
     }
   ],

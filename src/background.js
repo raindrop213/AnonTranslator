@@ -1,66 +1,53 @@
 // background.js
 
-let toggleState = true;
-let readTextState = true;
-let copyToClipboardState = true;
-let translatState = true;
+// 初始设置值
+const defaultSettings = {
+  toggleSwitch: true,
+  copy: true,
+  ignoreFurigana: true,
+  useVITS: false,
+  useWindowsTTS: true,
+  voiceName: '',
+  rate: 1,
+  pitch: 1,
+  vitsAPI: '23456',
+  vitsVoice: 342,
+  vitsLang: 'ja',
+  length: 1,
+  noise: 0.33,
+  noisew: 0.4,
+  max: 50,
+  streaming: false,
+  from: 'ja',
+  to: 'zh',
+  google: false,
+  googleColor: '#D4B102',
+  deepl: true,
+  deeplColor: '#9C512E',
+  borderWidth: '2px',
+  borderStyle: 'solid',
+  borderRadius: '8px',
+  freeBorderColor: '#225D2E',
+  selectedBorderColor: '#94B505'
+};
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case "updateToggle":
-      toggleState = message.toggle;
-      break;
-    case "requestToggleState":
-      sendResponse({ toggle: toggleState });
-      break;
+// 初始化设置
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.set(defaultSettings, () => {
+    console.log("Default settings saved.");
+  });
+});
 
-    case "updateReadText":
-      readTextState = message.readText;
-      break;
-    case "requestReadTextState":
-      sendResponse({ readText: readTextState });
-      break;
-
-    case "updateCopyToClipboard":
-      copyToClipboardState = message.copyToClipboard;
-      break;
-    case "requestCopyToClipboardState":
-      sendResponse({ copyToClipboard: copyToClipboardState });
-      break;
-
-    case "updateTranslat":
-      translatState = message.translat;
-      break;
-    case "requestTranslatState":
-      sendResponse({ translat: translatState });
-      break;
-
-    // 监听弹窗位置
-    // case "openPopup":
-    //     if (toggleState && caseSwitchState) {
-    //         const selectedText = message.selectedText;
-    //         const x = message.x;
-    //         const y = message.y;
-    //         const screenWidth = message.screenWidth;
-    //         const screenHeight = message.screenHeight;
-    //         const popupWidth = 400;
-    //         const popupHeight = 300;
-
-    //         // 计算窗口合适位置
-    //         const xPosition = Math.min(x, screenWidth - popupWidth);
-    //         const yPosition = Math.min(y, screenHeight - popupHeight);
-
-    //         chrome.windows.create({
-    //             url: chrome.runtime.getURL(`case.html?selectedText=${selectedText}`),
-    //             type: "popup",
-    //             width: popupWidth,
-    //             height: popupHeight,
-    //             top: yPosition + 100,
-    //             left: xPosition,
-    //         });
-    //     }
+// 接收消息并返回设置值
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'getSettings') {
+    chrome.storage.sync.get(null, (settings) => {
+      sendResponse(settings);
+    });
+    return true;  // 表示将使用异步发送响应
   }
 });
+
 
 
 const supportedLanguages = [

@@ -72,9 +72,10 @@ function copyTextToClipboard(text, callback) {
 
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
-    chrome.runtime.sendMessage({ action: "requestReadTextState" }, (response) => {
-        if (response.readText) {
-            chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (data) => {
+    chrome.storage.sync.get('settings', (data) => {
+        const settings = data.settings;
+        if (settings.readText) {
+            chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (voiceData) => {
                 const utterance = new SpeechSynthesisUtterance(text);
 
                 // 找到与用户设置匹配的语音
@@ -95,6 +96,7 @@ function windows_tts(text, callback) {
         }
     });
 }
+
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
