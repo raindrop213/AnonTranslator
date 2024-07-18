@@ -114,11 +114,6 @@ input:checked + .slider .off {
   opacity: 0;
 }
 
-/* Setting 字样式 */
-.text-h3 {
-  font-size: 13px;
-  color: #5e5e5e;
-}
 
 .text-h1 {
   font-size: 13px;
@@ -133,9 +128,3 @@ input:checked + .slider .off {
   margin: 5px 0;
 }
 
-/* Case 字样式 */
-.text-t3 {
-  font-size: 12px;
-  color: #333;
-  line-height: 22px;
-}

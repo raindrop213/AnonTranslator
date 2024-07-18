@@ -7,7 +7,7 @@ const defaultSettings = {
   ignoreFurigana: true,
   useVITS: false,
   useWindowsTTS: true,
-  voiceName: '',
+  winVoice: 6,
   rate: 1,
   pitch: 1,
   vitsAPI: 'http://127.0.0.1:23456',
@@ -48,7 +48,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;  // 表示将使用异步发送响应
   }
 });
-
 
 
 const supportedLanguages = [

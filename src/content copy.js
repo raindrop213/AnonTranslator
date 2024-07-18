@@ -54,8 +54,8 @@ function cleanText(htmlString, ignoreFurigana) {
 
 // 复制文本到剪贴板
 function copyTextToClipboard(text, callback) {
-    chrome.storage.sync.get('copy', (data) => {
-        if (data.copy) {
+    chrome.runtime.sendMessage({ action: "requestCopyToClipboardState" }, (response) => {
+        if (response.copyToClipboard) {
             navigator.clipboard.writeText(text).then(() => {
                 console.log("Text copied to clipboard");
                 if (callback) callback();
@@ -72,31 +72,35 @@ function copyTextToClipboard(text, callback) {
 
 // 朗读文本(windowsTTS)
 function windows_tts(text, callback) {
-    chrome.storage.sync.get(['winVoice', 'rate', 'pitch'], (data) => {
-        const utterance = new SpeechSynthesisUtterance(text);
+    chrome.storage.sync.get('settings', (data) => {
+        const settings = data.settings;
+        if (settings.readText) {
+            chrome.storage.local.get(['voiceName', 'rate', 'pitch'], (voiceData) => {
+                const utterance = new SpeechSynthesisUtterance(text);
 
-        // 找到与用户设置匹配的语音
-        var voices = window.speechSynthesis.getVoices();
-        var selectedVoice = voices[data.winVoice];
-        utterance.voice = selectedVoice;
+                // 找到与用户设置匹配的语音
+                var voices = window.speechSynthesis.getVoices();
+                var selectedVoice = voices.find(voice => voice.name === data.voiceName);
+                utterance.voice = selectedVoice;
 
-        utterance.pitch = data.pitch || 1;
-        utterance.rate = data.rate || 1;
+                utterance.pitch = data.pitch || 1;
+                utterance.rate = data.rate || 1;
 
-        utterance.onend = () => {
-            if (callback) callback();
-        }; // 如果callback存在，则创建回调函数callback
+                utterance.onend = () => {
+                    if (callback) callback();
+                }; // 如果callback存在，则创建回调函数callback
 
-        window.speechSynthesis.cancel(); // 打断当前语音
-        window.speechSynthesis.speak(utterance);
+                window.speechSynthesis.cancel(); // 打断当前语音
+                window.speechSynthesis.speak(utterance);
+            });
+        }
     });
 }
 
 
-
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.sync.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+    chrome.storage.local.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
         const encodedText = encodeURIComponent(text); // 对文本进行编码
         const params = new URLSearchParams({
             id: data.vitsVoice,
@@ -137,7 +141,7 @@ function vits_tts(text, callback) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.sync.get(['ignoreFurigana', 'useVITS', 'useWindowsTTS'], (data) => {
+    chrome.storage.local.get(['ignoreFurigana', 'useVITS', 'useWindowsTTS', 'google', 'deepl'], (data) => {
         // 仅提取原始标签的内容，不包括翻译部分
         let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
         let translationDivs = originalContent.querySelectorAll('.translation-div');
@@ -243,45 +247,47 @@ function requestTranslation(text, fromLang, toLang, translator, callback) {
 
 // 翻译文本并显示结果
 function translate(tag) {
-    chrome.storage.sync.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor'], (data) => {
-        let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
+    chrome.runtime.sendMessage({ action: "requestTranslatState" }, (response) => {
+        chrome.storage.local.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor', ], (data) => {
+            let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
 
-        try {
-            if (data.deepl || data.google && !tag.querySelector('.translation-div')) {
-                const translationDiv = document.createElement('div');
-                translationDiv.className = 'translation-div';
+            try {
+                if (response.translat && !tag.querySelector('.translation-div')) { // 这行有错误，但能跑我就没管了...求教！
+                    const translationDiv = document.createElement('div');
+                    translationDiv.className = 'translation-div';
 
-                if (data.google) {
-                    const googleP = document.createElement('div');
-                    googleP.style.color = data.googleColor;
-                    translationDiv.appendChild(googleP);
-
-                    if (ctext['text'] !== '-') {
-                        requestTranslation(ctext['text'], data.from, data.to, "Google", (translatedText) => {
-                            googleP.textContent = ctext['space'] + translatedText;
-                        });
-                    } else {
-                        googleP.textContent = ctext['space'] + '-';
+                    if (data.google) {
+                        const googleP = document.createElement('div');
+                        googleP.style.color = data.googleColor;
+                        translationDiv.appendChild(googleP);
+    
+                        if (ctext['text'] !== '-') {
+                            requestTranslation(ctext['text'], data.from, data.to, "Google", (translatedText) => {
+                                googleP.textContent = ctext['space'] + translatedText;
+                            });
+                        } else {
+                            googleP.textContent = ctext['space'] + '-';
+                        }
                     }
-                }
-
-                if (data.deepl) {
-                    const deeplP = document.createElement('div');
-                    deeplP.style.color = data.deeplColor;
-                    translationDiv.appendChild(deeplP);
-
-                    if (ctext['text'] !== '-') {
-                        requestTranslation(ctext['text'], data.from, data.to, "Deepl", (translatedText) => {
-                            deeplP.textContent = ctext['space'] + translatedText;
-                        });
-                    } else {
-                        deeplP.textContent = ctext['space'] + '-';
+    
+                    if (data.deepl) {
+                        const deeplP = document.createElement('div');
+                        deeplP.style.color = data.deeplColor;
+                        translationDiv.appendChild(deeplP);
+    
+                        if (ctext['text'] !== '-') {
+                            requestTranslation(ctext['text'], data.from, data.to, "Deepl", (translatedText) => {
+                                deeplP.textContent = ctext['space'] + translatedText;
+                            });
+                        } else {
+                            deeplP.textContent = ctext['space'] + '-';
+                        }
                     }
-                }
 
-                tag.appendChild(translationDiv);
-            } 
-        } catch (error) {}
+                    tag.appendChild(translationDiv);
+                } 
+            } catch (error) {}
+        });
     });
 }
 
@@ -326,7 +332,7 @@ function applyBlueBorder(tag) {
     }
 
     // 为当前标签应用蓝框
-    chrome.storage.sync.get([
+    chrome.storage.local.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor'
     ], (data) => {
         tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
@@ -339,7 +345,7 @@ function applyBlueBorder(tag) {
 
 // 为 target 标签添加红框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
-    chrome.storage.sync.get([
+    chrome.storage.local.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
@@ -391,7 +397,7 @@ addMouseListener(document);
 // 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
 let socket = null;
 function connectWebSocket() {
-    chrome.storage.sync.get(['clipAPI'], (data) => {
+    chrome.storage.local.get(['clipAPI'], (data) => {
         socket = new WebSocket(`ws://127.0.0.1:${data.clipAPI}`);
 
         socket.onopen = function(e) {

@@ -1,3 +1,5 @@
+//popup.js
+
 // 读取元数据
 const version = chrome.runtime.getManifest().version;
 const named = chrome.runtime.getManifest().name;
@@ -6,25 +8,26 @@ document.getElementById('extension-version').textContent = `${named} ${version}`
 document.getElementById('extension-author').textContent = `By: ${author}`;
 
 // 加载 Windows TTS 语音
-function loadWindowsVoices(defaultVoiceName) {
-  chrome.tts.getVoices(voices => {
-    const voiceSelect = document.getElementById('voiceName');
+function loadWindowsVoices(defaultVoiceIndex) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const voiceSelect = document.getElementById('winVoice');
     voiceSelect.innerHTML = ""; // 清空现有选项
     let voiceExists = false;
 
-    voices.forEach(voice => {
+    voices.forEach((voice, index) => {
       let option = document.createElement('option');
-      option.text = voice.voiceName;
-      option.value = voice.voiceName;
+      option.text = voice.name;
+      option.value = index;
       voiceSelect.add(option);
 
-      if (voice.voiceName === defaultVoiceName) {
+      if (index === defaultVoiceIndex) {
         voiceExists = true;
       }
     });
 
-    voiceSelect.value = voiceExists ? defaultVoiceName : voices[0]?.voiceName;
-  });
+    voiceSelect.value = voiceExists ? defaultVoiceIndex : 6;
+  };
 }
 
 // 加载 VITS TTS 语音
@@ -70,7 +73,7 @@ function loadSettings() {
       }
     }
 
-    loadWindowsVoices(settings.voiceName); // 使用存储的语音名称作为默认值
+    loadWindowsVoices(settings.winVoice); // 使用存储的语音序号作为默认值
     loadVitsVoices(settings.vitsVoice); // 使用存储的 VITS 语音 ID 作为默认值
   });
 }
