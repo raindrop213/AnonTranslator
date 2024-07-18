@@ -128,3 +128,10 @@ input:checked + .slider .off {
   margin: 5px 0;
 }
 
+.text-s2 {
+  font-size: 10px;
+  text-align: right;
+  color: #bdbdbd;
+  margin: 5px 0;
+}
+

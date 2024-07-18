@@ -29,7 +29,8 @@ const defaultSettings = {
   borderStyle: 'solid',
   borderRadius: '8px',
   freeBorderColor: '#225D2E',
-  selectedBorderColor: '#94B505'
+  selectedBorderColor: '#94B505',
+  fade: '30'
 };
 
 // 初始化设置

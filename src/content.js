@@ -8,17 +8,12 @@ let lastClickedPtag = null;
 // 是否处于自动阅读模式
 let isAutoReading = false;
 
-// 自动阅读模式下的阅读间隔时间（毫秒）
-let readingInterval = 200;
-
 // 标记声音是否已加载
 let voicesLoaded = false;
 
 // 目标标签
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
-// 红框消失延迟
-let fade_away =  "75";
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
@@ -176,20 +171,22 @@ function startAutoReading() {
     let currentTag = lastClickedPtag;
 
     function readNext() {
-        if (!isAutoReading || !currentTag) return;
+        chrome.storage.sync.get(['readingInterval'], (data) => {
+            if (!isAutoReading || !currentTag) return;
 
-        applyBlueBorder(currentTag);
-        copyAndReadText(currentTag, () => {
-            // 设置延迟，然后读取下一个标签
-            setTimeout(() => {
-                currentTag = currentTag.nextElementSibling;
-                while (currentTag && !target.includes(currentTag.nodeName)) {
+            applyBlueBorder(currentTag);
+            copyAndReadText(currentTag, () => {
+                // 设置延迟，然后读取下一个标签
+                setTimeout(() => {
                     currentTag = currentTag.nextElementSibling;
-                }
-                readNext();
-            }, readingInterval);
-        });
-        translate(currentTag);
+                    while (currentTag && !target.includes(currentTag.nodeName)) {
+                        currentTag = currentTag.nextElementSibling;
+                    }
+                    readNext();
+                }, data.readingInterval);
+            });
+            translate(currentTag);
+        })
     }
 
     readNext();
@@ -355,7 +352,7 @@ function highlightAndCopyPtag(doc) {
             if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
                 setTimeout(() => {
                     event.target.style.border = "";
-                }, fade_away);
+                }, data.fade);
                 event.target.classList.remove('highlighted');
                 event.target.removeEventListener('click', handleClick);
             }

@@ -20,10 +20,7 @@
       <div>
         <p class="text-h1" id="extension-version"></p>
         <p class="text-s1" id="extension-author"></p>
-        <p>
-          Github: <a href="https://github.com/raindrop213/AnonTranslator">raindrop213/AnonTranslator</a>
-          <br />使用文档请浏览该项目仓库 ↑ ↑ ↑
-        </p>
+        <p>使用文档请浏览该项目<a href="https://github.com/raindrop213/AnonTranslator" target="_blank">仓库↗</a></p>
       </div>
       <hr>
 
@@ -32,6 +29,8 @@
       <label>
         <p>Ignore Furigana <input type="checkbox" id="ignoreFurigana" /></p>
       </label>
+      <label for="readingInterval">readingInterval：自动阅读间隔时间（毫秒）</label>
+      <input type="text" id="readingInterval" value="200" />
       <hr />
 
       <!-- WindowsTTS -->
@@ -46,7 +45,7 @@
 
       <!-- vitsTTS -->
       <h2>VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></h2>
-      <p>需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases">vitsTTS整合包</a></p>
+      <p>需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases" target="_blank">vitsTTS整合包</a></p>
       <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI"/></label>
       <label for="vitsAPIjson">Get List: <input type="text" id="vitsAPIjson"/></label>
       <label for="vitsVoice">Voice: 人物</label>
@@ -110,6 +109,7 @@
       <label>Border Radius: <input type="text" id="borderRadius" /></label>
       <label>Free Border Color: 指示框<input type="color" id="freeBorderColor"/></label>
       <label>Seleted Border Color: 被选中的框<input type="color" id="selectedBorderColor"/></label>
+      <label>Fade away: <input type="text" id="fade" />ms</label>
       <br>
       <button class="save" type="submit">Save Settings</button>
     </form>

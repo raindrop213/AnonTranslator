@@ -4,7 +4,7 @@
   "version": "0.4.1",
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
-  "permissions": ["scripting", "clipboardWrite", "tts", "storage"],
+  "permissions": ["scripting", "storage"],
   "host_permissions": ["https://www2.deepl.com/*", "http://127.0.0.1:23456/*"],
 
   "icons": {
