@@ -7,50 +7,43 @@ const author = chrome.runtime.getManifest().author;
 document.getElementById('extension-version').textContent = `${named} ${version}`;
 document.getElementById('extension-author').textContent = `By: ${author}`;
 
-// 加载 Windows TTS 语音
+// 加载 Windows TTS 语音列表
 function loadWindowsVoices(defaultVoiceIndex) {
   window.speechSynthesis.onvoiceschanged = () => {
     const voices = window.speechSynthesis.getVoices();
     const voiceSelect = document.getElementById('winVoice');
     voiceSelect.innerHTML = ""; // 清空现有选项
-    let voiceExists = false;
-
     voices.forEach((voice, index) => {
       let option = document.createElement('option');
       option.text = voice.name;
       option.value = index;
       voiceSelect.add(option);
-
-      if (index === defaultVoiceIndex) {
-        voiceExists = true;
-      }
     });
-
-    voiceSelect.value = voiceExists ? defaultVoiceIndex : 6;
+    // 设置选中的语音序号
+    if (defaultVoiceIndex !== undefined) {
+      voiceSelect.value = defaultVoiceIndex;
+    }
   };
 }
 
-// 加载 VITS TTS 语音
+
+// 加载 VITS TTS 语音列表
 function loadVitsVoices(defaultVitsVoiceId) {
   fetch('defaultVoice.json')
     .then(response => response.json())
     .then(data => {
       const vitsVoiceSelect = document.getElementById('vitsVoice');
       vitsVoiceSelect.innerHTML = ""; // 清空现有选项
-      let voiceExists = false;
-
       data.VITS.forEach(voice => {
         let option = document.createElement('option');
         option.text = `${voice.id}_${voice.lang.join('/')}_${voice.name}`;
         option.value = voice.id;
         vitsVoiceSelect.add(option);
-
-        if (voice.id === defaultVitsVoiceId) {
-          voiceExists = true;
-        }
       });
-
-      vitsVoiceSelect.value = voiceExists ? defaultVitsVoiceId : data.VITS[0]?.id;
+      // 设置选中的语音序号
+      if (defaultVitsVoiceId !== undefined) {
+        vitsVoiceSelect.value = defaultVitsVoiceId;
+      }
     })
     .catch(error => {
       console.error('加载 VITS 语音时出错:', error);
@@ -73,8 +66,8 @@ function loadSettings() {
       }
     }
 
-    loadWindowsVoices(settings.winVoice); // 使用存储的语音序号作为默认值
-    loadVitsVoices(settings.vitsVoice); // 使用存储的 VITS 语音 ID 作为默认值
+    loadWindowsVoices(settings.winVoice); // 传递保存的 Windows 语音序号
+    loadVitsVoices(settings.vitsVoice);   // 传递保存的 VITS 语音序号
   });
 }
 

@@ -26,28 +26,28 @@
 
       <!-- Copy -->
       <h2>Copy <input type="checkbox" id="copy" class="title-switch" /></h2>
-      <label>
-        <p>Ignore Furigana <input type="checkbox" id="ignoreFurigana" /></p>
-      </label>
-      <label for="readingInterval">readingInterval：自动阅读间隔时间（毫秒）</label>
-      <input type="text" id="readingInterval" value="200" />
+      <label>Ignore Furigana <input type="checkbox" id="ignoreFurigana" /></label>
+      <label for="symbolPairs">Paragraph SymbolPairs: </label>
+      <input type="text" id="symbolPairs" />
+      <label for="sentenceDelimiters">Sentence Delimiters: </label>
+      <input type="text" id="sentenceDelimiters" />
+      <label>Sentence Segmentation Threshold: <input type="text" id="sentenceThreshold" /></label>
       <hr />
 
-      <!-- WindowsTTS -->
+      <!-- TTS -->
       <h2>Windows TTS <input type="checkbox" id="useWindowsTTS" class="title-switch" /></h2>
       <label for="winVoice">Voice: 人物</label>
       <select id="winVoice"></select>
       <label for="rate">Rate (0 - 2): 语速</label>
-      <input type="range" id="rate" min="0" max="2" step="0.1" value="1" />
+      <input type="range" id="rate" min="0" max="2" step="0.1" />
       <label for="pitch">Pitch (0 - 2): 音调</label>
-      <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" />
+      <input type="range" id="pitch" min="0" max="2" step="0.1" />
       <hr />
 
-      <!-- vitsTTS -->
       <h2>VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></h2>
       <p>需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases" target="_blank">vitsTTS整合包</a></p>
+      <label for="clipAPI">API Clip: <input type="text" id="clipAPI"/></label>
       <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI"/></label>
-      <label for="vitsAPIjson">Get List: <input type="text" id="vitsAPIjson"/></label>
       <label for="vitsVoice">Voice: 人物</label>
       <select id="vitsVoice"></select>
       <label for="vitsLang">Language: 语言</label>
@@ -57,37 +57,78 @@
         <option value="zh">zh</option>
       </select>
       <label for="length">Length (0 - 2): 语速</label>
-      <input type="range" id="length" min="0" max="2" step="0.1" value="1" />
+      <input type="range" id="length" min="0" max="2" step="0.1"/>
       <label for="noise">Noise: 声音随机性</label>
-      <input type="text" id="noise" value="0.33" />
+      <input type="text" id="noise"/>
       <label for="noisew">NoiseW: 随机发声时长</label>
-      <input type="text" id="noisew" value="0.4" />
+      <input type="text" id="noisew"/>
       <label for="max">Max: 文字分段阈值：以标点符号为分割点，超过阈值的部分会分段发送</label>
-      <input type="text" id="max" value="50" />
+      <input type="text" id="max"/>
       <label>Streaming 流式传输<input type="checkbox" id="streaming"/></label>
+      
+      <h2>TTS settings</h2>
+      <label for="readingInterval">readingInterval：自动阅读间隔时间（毫秒）</label>
+      <input type="text" id="readingInterval"/>
       <hr />
 
       <!-- Translator -->
-      <h2>Translator</h2>
-      <label>From: 输入文本
-        <select id="from">
-          <option value="auto">auto</option>
-          <option value="zh">zh</option>
-          <option value="ja">ja</option>
-          <option value="en">en</option>
-        </select>
-      </label>
-      <label>To: 输出文本
-        <select id="to">
-          <option value="zh">zh</option>
-          <option value="ja">ja</option>
-          <option value="en">en</option>
-        </select>
-      </label>
-      <label>Google（未完成）<input type="checkbox" id="google" checked /></label>
+      <h2><label>Google<input type="checkbox" id="google" checked /></label></h2>
       <label>Google Color: <input type="color" id="googleColor" /></label>
-      <label>Deepl<input type="checkbox" id="deepl" checked /></label>
+      <label>From: 
+        <select id="googleFrom">
+          <option value="auto">auto</option>
+          <option value="zh-CN">zh</option>
+          <option value="zh-TW">cht</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+        </select>
+      </label>
+      <label>To: 
+        <select id="googleTo">
+          <option value="zh-CN">zh</option>
+          <option value="zh-TW">cht</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+        </select>
+      </label>
+
+      <h2><label>Deepl<input type="checkbox" id="deepl" checked /></label></h2>
       <label>Deepl Color: <input type="color" id="deeplColor" /></label>
+      <label>From: 
+        <select id="deeplFrom">
+          <option value="auto">auto</option>
+          <option value="JA">ja</option>
+          <option value="EN">en</option>
+          <option value="ZH">zh</option>
+        </select>
+      </label>
+      <label>To: 
+        <select id="deeplTo">
+          <option value="ZH">zh</option>
+          <option value="JA">ja</option>
+          <option value="EN">en</option>
+        </select>
+      </label>
+
+      <h2><label>Youdao<input type="checkbox" id="youdao" checked /></label></h2>
+      <label>Youdao Color: <input type="color" id="youdaoColor" /></label>
+      <label>From: 
+        <select id="youdaoFrom">
+          <option value="auto">auto</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+          <option value="zh-CHS">zh</option>
+          <option value="zh-CHT">cht</option>
+        </select>
+      </label>
+      <label>To: 
+        <select id="youdaoTo">
+          <option value="zh-CHS">zh</option>
+          <option value="zh-CHT">cht</option>
+          <option value="ja">ja</option>
+          <option value="en">en</option>
+        </select>
+      </label>
       <hr />
 
       <!-- Style -->
@@ -107,7 +148,7 @@
           </select>
       </label>
       <label>Border Radius: <input type="text" id="borderRadius" /></label>
-      <label>Free Border Color: 指示框<input type="color" id="freeBorderColor"/></label>
+      <label><p>Free Border Color: 指示框 <input type="color" id="freeBorderColor"/></p></label>
       <label>Seleted Border Color: 被选中的框<input type="color" id="selectedBorderColor"/></label>
       <label>Seleted Sentence Color: 被选中的句子<input type="color" id="sentenceColor"/></label>
       <label>Fade away: 延迟消失<input type="text" id="fade" />ms</label>

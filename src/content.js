@@ -11,26 +11,35 @@ let currentHighlightedSentence = null;
 // 是否处于自动阅读模式
 let isAutoReading = false;
 
-// 标记声音是否已加载
-let voicesLoaded = false;
-
-// Alt 键是否按下
-let isAltPressed = false;
-
 // 目标标签
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
+// 标记声音是否已加载
+let voicesLoaded = false;
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
 window.speechSynthesis.onvoiceschanged = function() {
     voicesLoaded = true;
 };
 
+function parseStringToArray(str) {
+    return str.split('/'); // 将字符串按 `/` 分割并返回数组
+}
 
 /* ------------------------------------------------------------文本模块 */
 
+// 获取下一个或上一个非空标签
+function getValidTag(currentTag, direction = 'down') {
+    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
+    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
+        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
+    }
+    return tag;
+}
+
+
 // 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
-function cleanText(htmlString, ignoreFurigana) {
+function cleanText(htmlString, ignoreFurigana, symbolPairs) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
@@ -50,7 +59,23 @@ function cleanText(htmlString, ignoreFurigana) {
         return { text: '-', space: leadingSpaces };
     }
 
-    return { text: trimmedText.trim(), space: leadingSpaces };
+    let finalText = trimmedText.trim();
+
+    // 遍历 symbolPairs 数组
+    let hasEnclosingSymbols = symbolPairs.some(pair => {
+        return finalText.startsWith(pair[0]) && finalText.endsWith(pair[1]);
+    });
+
+    if (hasEnclosingSymbols) {
+        let symbolPair = symbolPairs.find(pair => {
+            return finalText.startsWith(pair[0]) && finalText.endsWith(pair[1]);
+        });
+
+        finalText = finalText.substring(1, finalText.length - 1);
+        return { text: finalText.trim(), space: leadingSpaces, symbolPair: symbolPair };
+    }
+
+    return { text: finalText, space: leadingSpaces, symbolPair: null };
 }
 
 // 复制文本到剪贴板
@@ -121,7 +146,7 @@ function vits_tts(text, callback) {
         // 监听WebSocket消息以获取语音流
         socket.onmessage = function(event) {
             try {
-                const responseData = JSON.parse(event.data);
+                const responseData = parseStringToArray(event.data);
                 
                 if (responseData.status === "finished") {
                     console.log("Voice playback finished");
@@ -136,25 +161,28 @@ function vits_tts(text, callback) {
 
 // 复制并朗读指定标签的文本
 function copyAndReadText(tag, callback) {
-    chrome.storage.sync.get(['ignoreFurigana', 'useVITS', 'useWindowsTTS'], (data) => {
-        // 仅提取原始标签的内容，不包括翻译部分
+    chrome.storage.sync.get([
+        'ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'
+    ], (data) => {
         let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
         let translationDivs = originalContent.querySelectorAll('.translation-div');
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
-
-        let text = cleanText(originalContent.outerHTML, data.ignoreFurigana)['text'];
+    
+        let textObj = cleanText(originalContent.outerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
+        text = textObj['space'] + textObj['text'];
+    
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
                 vits_tts(text, callback);
             });
-
-        } else if(data.useWindowsTTS) {
+    
+        } else if (data.useWindowsTTS) {
             // 使用 windows tts
             copyTextToClipboard(text, () => {
                 windows_tts(text, callback);
             });
-
+    
         } else {
             // 不使用语音
             copyTextToClipboard(text, () => {
@@ -162,11 +190,16 @@ function copyAndReadText(tag, callback) {
             });
         };
     });
+    
 }
 
+
 // 复制并朗读指定标签的文本的句子
-function copyAndReadSentence(text) {
-    chrome.storage.sync.get(['useVITS', 'useWindowsTTS'], (data) => {
+function copyAndReadSentence(tag) {
+    chrome.storage.sync.get(['ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'], (data) => {
+        let textObj = cleanText(tag, data.ignoreFurigana, parseStringToArray(data.symbolPairs))['text'];
+        text = textObj['space'] + textObj['text'];
+        
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
@@ -188,6 +221,7 @@ function copyAndReadSentence(text) {
 
 
 
+
 /* ------------------------------------------------------------自动阅读控制模块 */
 
 // 函数：开始自动阅读
@@ -198,19 +232,19 @@ function startAutoReading() {
     function readNext() {
         chrome.storage.sync.get(['readingInterval'], (data) => {
             if (!isAutoReading || !currentTag) return;
-
+    
             applyBlueBorder(currentTag);
-            copyAndReadText(currentTag, () => {
-                // 设置延迟，然后读取下一个标签
-                setTimeout(() => {
-                    currentTag = currentTag.nextElementSibling;
-                    while (currentTag && !target.includes(currentTag.nodeName)) {
-                        currentTag = currentTag.nextElementSibling;
-                    }
-                    readNext();
-                }, data.readingInterval);
-            });
-            translate(currentTag);
+    
+            if (currentTag) {
+                copyAndReadText(currentTag, () => {
+                    // 设置延迟，然后读取下一个标签
+                    setTimeout(() => {
+                        currentTag = getValidTag(currentTag, "down");
+                        readNext();
+                    }, data.readingInterval);
+                });
+                translate(currentTag);
+            }
         })
     }
 
@@ -223,35 +257,11 @@ function stopAutoReading() {
     window.speechSynthesis.cancel();
 }
 
-// 处理键盘事件，包括箭头键和数字键盘 0
-function handleKeyPress(event) {
-    if (lastClickedPtag) {
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            stopAutoReading(); // 停止自动阅读
-
-            let newTag = event.key === 'ArrowDown' ? lastClickedPtag.nextElementSibling : lastClickedPtag.previousElementSibling;
-
-            // 确保新标签是一个 target 元素
-            while (newTag && !target.includes(newTag.nodeName)) {
-                newTag = event.key === 'ArrowDown' ? newTag.nextElementSibling : newTag.previousElementSibling;
-            }
-
-            if (newTag) {
-                applyBlueBorder(newTag);
-                copyAndReadText(newTag);
-                translate(newTag);
-            }
-        } else if (event.keyCode === 48 || event.keyCode === 96 || event.keyCode === 112) { // 检查F1、主键盘小键盘的 0
-            copyAndReadText(lastClickedPtag); // 朗读当前选中的标签
-        }
-    }
-}
-
 
 /* ------------------------------------------------------------翻译模块 */
 
-// 发送消息到背景脚本
-function requestTranslation(text, fromLang, toLang, translator, callback) {
+// 发送消息到背景脚本并获取翻译结果
+function requestTranslation(tag, text, fromLang, toLang, translator, color, callback) {
     chrome.runtime.sendMessage({ 
         action: "translate", 
         text: text, 
@@ -259,54 +269,61 @@ function requestTranslation(text, fromLang, toLang, translator, callback) {
         to: toLang, 
         translator: translator
     }, function(response) {
-        callback(response.translatedText);
+        const translationDiv = tag.querySelector('.translation-div');
+        const p = document.createElement('div');
+        p.style.color = color;
+        if (text !== '-') {
+            if (callback) {
+                callback(response.translatedText, p);
+            } else {
+                p.textContent = response.translatedText;
+            }
+        } else {
+            p.textContent = '-';
+        }
+        translationDiv.appendChild(p);
     });
 }
 
 // 翻译文本并显示结果
 function translate(tag) {
-    chrome.storage.sync.get(['ignoreFurigana', 'from', 'to', 'google', 'deepl', 'googleColor', 'deeplColor'], (data) => {
-        let ctext = cleanText(tag.outerHTML, data.ignoreFurigana);
+    chrome.storage.sync.get([
+        'ignoreFurigana', 'symbolPairs',
+        'google', 'googleFrom', 'googleTo', 'googleColor',
+        'deepl', 'deeplFrom', 'deeplTo', 'deeplColor',
+        'youdao', 'youdaoFrom', 'youdaoTo', 'youdaoColor'
+    ], (data) => {
+        let ctext = cleanText(tag.outerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
 
-        try {
-            // 先检查标签中是否已经存在翻译
-            if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
-                const translationDiv = document.createElement('div');
-                translationDiv.className = 'translation-div';
+        // 先检查标签中是否已经存在翻译
+        if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
+            const translationDiv = document.createElement('div');
+            translationDiv.className = 'translation-div';
+            tag.appendChild(translationDiv);
 
-                if (data.google) {
-                    const googleP = document.createElement('div');
-                    googleP.style.color = data.googleColor;
-                    translationDiv.appendChild(googleP);
-
-                    if (ctext['text'] !== '-') {
-                        requestTranslation(ctext['text'], data.from, data.to, "Google", (translatedText) => {
-                            googleP.textContent = ctext['space'] + translatedText;
-                        });
-                    } else {
-                        googleP.textContent = ctext['space'] + '-';
-                    }
+            const translatedTextCallback = (translatedText, p) => {
+                if (ctext.symbolPair) {
+                    p.textContent = ctext['space'] + ctext.symbolPair[0] + translatedText + ctext.symbolPair[1];
+                } else {
+                    p.textContent = ctext['space'] + translatedText;
                 }
+            };
 
-                if (data.deepl) {
-                    const deeplP = document.createElement('div');
-                    deeplP.style.color = data.deeplColor;
-                    translationDiv.appendChild(deeplP);
-
-                    if (ctext['text'] !== '-') {
-                        requestTranslation(ctext['text'], data.from, data.to, "Deepl", (translatedText) => {
-                            deeplP.textContent = ctext['space'] + translatedText;
-                        });
-                    } else {
-                        deeplP.textContent = ctext['space'] + '-';
-                    }
-                }
-
-                tag.appendChild(translationDiv);
+            if (data.google) {
+                requestTranslation(tag, ctext['text'], data.googleFrom, data.googleTo, "google", data.googleColor, translatedTextCallback);
             }
-        } catch (error) {}
+            if (data.deepl) {
+                requestTranslation(tag, ctext['text'], data.deeplFrom, data.deeplTo, "deepl", data.deeplColor, translatedTextCallback);
+            }
+            if (data.youdao) {
+                requestTranslation(tag, ctext['text'], data.youdaoFrom, data.youdaoTo, "youdao", data.youdaoColor, translatedTextCallback);
+            }
+        }
     });
 }
+
+
+
 
 
 /* ------------------------------------------------------------用户界面交互模块 */
@@ -320,7 +337,8 @@ function handleClick(event) {
         targetElement = targetElement.parentElement;
     }
 
-    if (targetElement && target.includes(targetElement.nodeName)) {
+    // 检查目标元素是否包含图片
+    if (targetElement && target.includes(targetElement.nodeName) && !targetElement.querySelector('img')) {
         applyBlueBorder(targetElement);
         copyAndReadText(targetElement);
         translate(targetElement);
@@ -328,6 +346,7 @@ function handleClick(event) {
         clearSelection();
     }
 }
+
 
 
 // 清除当前选择
@@ -365,8 +384,7 @@ function applyBlueBorder(tag) {
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
 
-        // 滚动页面到当前标签位置
-        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
+        // tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
     });
 }
 
@@ -374,7 +392,7 @@ function applyBlueBorder(tag) {
 // 为 target 标签添加红框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
     chrome.storage.sync.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor'
+        'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
             if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
@@ -382,9 +400,10 @@ function highlightAndCopyPtag(doc) {
                 event.target.style.borderRadius = data.borderRadius;
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
+
                 // 分割句子并用 <span> 标签包裹
-                if (!event.target.classList.contains('split-sentences')) {
-                    const sentences = splitSentences(event.target.innerHTML);
+                if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img')) {
+                    const sentences = splitSentences(event.target.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
                     event.target.innerHTML = sentences;
                     event.target.classList.add('split-sentences');
                 }
@@ -400,15 +419,23 @@ function highlightAndCopyPtag(doc) {
                 event.target.removeEventListener('click', handleClick);
             }
         }, true);
-    })
+    });
 }
 
 
+
+
 // 分割句子的函数
-function splitSentences(text) {
-    const sentenceEndings = /([。！？])/g;
+function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
+    // 如果内容包含图片标签，直接返回原始内容
+    if (text.includes('<img') || text.includes('<a')) {
+        return text;
+    }
+
+    const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
+    const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
     let parts = text.split(sentenceEndings);
-    
+
     // 合并分割的句子和标点符号
     let sentences = [];
     for (let i = 0; i < parts.length; i += 2) {
@@ -418,16 +445,61 @@ function splitSentences(text) {
         }
         sentences.push(sentence.trim());
     }
-    
-    return sentences.map(part => `<span class="sentence">${part}</span>`).join('');
+
+    // 控制句子长度
+    let mergedSentences = [];
+    let tempSentence = '';
+
+    sentences.forEach(sentence => {
+        if (tempSentence.length + sentence.length > sentenceThreshold) {
+            if (tempSentence.length === 0) {
+                mergedSentences.push(`<span class="sentence">${sentence}</span>`);
+            } else {
+                mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
+                tempSentence = sentence;
+            }
+        } else {
+            tempSentence += sentence;
+        }
+    });
+
+    // 添加最后一个句子
+    if (tempSentence.length > 0) {
+        mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
+    }
+
+    return mergedSentences.join('');
 }
+
+
 
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     chrome.storage.sync.get(['sentenceColor'], (data) => {
         highlightAndCopyPtag(doc);
-        doc.addEventListener('keydown', handleKeyPress);
+
+        // 键盘事件，包括箭头键和数字键盘 0
+        doc.addEventListener('keydown', function(event) {
+            if (lastClickedPtag) {
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    stopAutoReading(); // 停止自动阅读
+                    
+                    // 确保新标签是一个 target 元素并且有文本内容
+                    let newTag = event.key === 'ArrowDown' ? getValidTag(lastClickedPtag, "down") : getValidTag(lastClickedPtag, "up");
+        
+                    if (newTag) {
+                        applyBlueBorder(newTag);
+                        copyAndReadText(newTag);
+                        translate(newTag);
+                    }
+                } else if (event.keyCode === 48 || event.keyCode === 96 || event.keyCode === 112) { // 检查F1、主键盘小键盘的 0
+                    copyAndReadText(lastClickedPtag); // 朗读当前选中的标签
+                }
+            }
+        });
+
+        // 自动朗读键盘事件
         doc.addEventListener('keydown', function(event) {
             if (event.key === ' ') {
                 if (isAutoReading) {
@@ -438,35 +510,33 @@ function addMouseListener(doc) {
                 event.preventDefault();
             } else if (event.key === 'Escape') {
                 stopAutoReading();
-            } else if (event.key === 'Alt') {
-                isAltPressed = true;
             }
         });
 
-        doc.addEventListener('keyup', function(event) {
-            if (event.key === 'Alt') {
-                isAltPressed = false;
+        // 使用 mousedown 事件监听鼠标中键
+        doc.addEventListener('mousedown', function(event) {
+            if (event.button === 1) { // 检查鼠标中键
+                if (currentHighlightedSentence) {
+                    copyAndReadSentence(currentHighlightedSentence.outerHTML); // 传递HTML内容以便处理振假名
+                }
+                event.preventDefault(); // 防止默认行为
             }
         });
 
-        doc.addEventListener('click', function(event) {
-            if (isAltPressed && event.target.classList.contains('sentence')) {
-                event.preventDefault();
-                copyAndReadSentence(event.target.innerText);
-            }
-        });
         doc.addEventListener('mouseover', (event) => {
             if (event.target.classList.contains('sentence')) {
                 event.target.style.backgroundColor = data.sentenceColor; // 设置背景颜色
+                currentHighlightedSentence = event.target; // 设置当前高亮的句子
             }
         });
 
         doc.addEventListener('mouseout', (event) => {
             if (event.target.classList.contains('sentence')) {
                 event.target.style.backgroundColor = ''; // 清除背景颜色
+                currentHighlightedSentence = null; // 清除当前高亮的句子
             }
         });
-    })
+    });
 }
 
 
