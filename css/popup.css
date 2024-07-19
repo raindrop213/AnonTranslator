@@ -8,13 +8,6 @@ label {
   display: block;
 }
 
-label,
-select,
-input,
-button {
-  margin-bottom: 10px;
-}
-
 .save {
   font-size: 20px;
   color: #0a6b32;

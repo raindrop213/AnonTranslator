@@ -56,7 +56,7 @@ function cleanText(htmlString, ignoreFurigana, symbolPairs) {
 
     // 如果去除两边空格后的文本为空，则返回 '-'
     if (!trimmedText) {
-        return { text: '-', space: leadingSpaces };
+        return { text: '-', space: leadingSpaces, symbolPair: null };
     }
 
     let finalText = trimmedText.trim();
@@ -86,7 +86,7 @@ function copyTextToClipboard(text, callback) {
                 console.log(`Copy: ${text}`);
                 if (callback) callback();
             }).catch(err => {
-                console.error('Failed to copy text: ', err);
+                console.log('Failed to copy text: ', err);
                 if (callback) callback();
             });
         }
@@ -167,8 +167,8 @@ function copyAndReadText(tag, callback) {
         let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
         let translationDivs = originalContent.querySelectorAll('.translation-div');
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
-    
-        let textObj = cleanText(originalContent.outerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
+
+        let textObj = cleanText(originalContent.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
         text = textObj['space'] + textObj['text'];
     
         if (data.useVITS) {
@@ -197,27 +197,28 @@ function copyAndReadText(tag, callback) {
 // 复制并朗读指定标签的文本的句子
 function copyAndReadSentence(tag) {
     chrome.storage.sync.get(['ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'], (data) => {
-        let textObj = cleanText(tag, data.ignoreFurigana, parseStringToArray(data.symbolPairs))['text'];
-        text = textObj['space'] + textObj['text'];
-        
+        let cleanedText = cleanText(tag.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
+        let text = cleanedText.space + cleanedText.text;
+
         if (data.useVITS) {
             // 使用 vits tts
             copyTextToClipboard(text, () => {
                 vits_tts(text);
             });
-
-        } else if(data.useWindowsTTS) {
+        } else if (data.useWindowsTTS) {
             // 使用 windows tts
             copyTextToClipboard(text, () => {
                 windows_tts(text);
             });
-
         } else {
             // 不使用语音
             copyTextToClipboard(text);
         }
     });
 }
+
+
+
 
 
 
@@ -293,7 +294,7 @@ function translate(tag) {
         'deepl', 'deeplFrom', 'deeplTo', 'deeplColor',
         'youdao', 'youdaoFrom', 'youdaoTo', 'youdaoColor'
     ], (data) => {
-        let ctext = cleanText(tag.outerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
+        let ctext = cleanText(tag.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
 
         // 先检查标签中是否已经存在翻译
         if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
@@ -395,14 +396,14 @@ function highlightAndCopyPtag(doc) {
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
-            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted')) {
+            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted') && event.target.textContent.trim()) {
                 event.target.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
                 event.target.style.borderRadius = data.borderRadius;
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
 
                 // 分割句子并用 <span> 标签包裹
-                if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img')) {
+                if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img, a')) {
                     const sentences = splitSentences(event.target.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
                     event.target.innerHTML = sentences;
                     event.target.classList.add('split-sentences');
@@ -425,12 +426,9 @@ function highlightAndCopyPtag(doc) {
 
 
 
+
 // 分割句子的函数
 function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
-    // 如果内容包含图片标签，直接返回原始内容
-    if (text.includes('<img') || text.includes('<a')) {
-        return text;
-    }
 
     const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
     const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
@@ -443,7 +441,7 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
         if (i + 1 < parts.length) {
             sentence += parts[i + 1];
         }
-        sentences.push(sentence.trim());
+        sentences.push(sentence);
     }
 
     // 控制句子长度
@@ -517,7 +515,7 @@ function addMouseListener(doc) {
         doc.addEventListener('mousedown', function(event) {
             if (event.button === 1) { // 检查鼠标中键
                 if (currentHighlightedSentence) {
-                    copyAndReadSentence(currentHighlightedSentence.outerHTML); // 传递HTML内容以便处理振假名
+                    copyAndReadSentence(currentHighlightedSentence); // 传递HTML内容以便处理振假名
                 }
                 event.preventDefault(); // 防止默认行为
             }
@@ -558,7 +556,7 @@ function connectWebSocket() {
         };
 
         socket.onerror = function(error) {
-        console.error(`[WebSocket] Error: ${error.message}`);
+        console.log(`[WebSocket] Error: ${error.message}`);
         };
 
         // socket.onclose = function(e) {
