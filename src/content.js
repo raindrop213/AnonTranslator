@@ -51,7 +51,7 @@ function cleanText(htmlString, symbolPairs) {
         parentNode.replaceChild(document.createTextNode(`${rb}(${rt})`), ruby);
     });
 
-    const textFurigana = div.textContent;
+    let textFurigana = div.textContent;
 
     // 生成去除振假名的版本
     div.innerHTML = htmlString;
@@ -70,21 +70,24 @@ function cleanText(htmlString, symbolPairs) {
 
     let finalText = trimmedText.trim();
 
-    // 遍历 symbolPairs 数组
+    // 遍历 symbolPairs 数组，检查首尾是否有符号对
     let hasEnclosingSymbols = symbolPairs.some(pair => {
         return finalText.startsWith(pair[0]) && finalText.endsWith(pair[1]);
     });
 
+    let symbolPair = null;
     if (hasEnclosingSymbols) {
-        let symbolPair = symbolPairs.find(pair => {
+        symbolPair = symbolPairs.find(pair => {
             return finalText.startsWith(pair[0]) && finalText.endsWith(pair[1]);
         });
 
-        finalText = finalText.substring(1, finalText.length - 1);
-        return { text: finalText.trim(), textFurigana: textFurigana.trim(), space: leadingSpaces, symbolPair: symbolPair };
+        finalText = finalText.substring(symbolPair[0].length, finalText.length - symbolPair[1].length).trim();
+        textFurigana = textFurigana.substring(symbolPair[0].length, textFurigana.length - symbolPair[1].length).trim();
+    } else {
+        textFurigana = textFurigana.trim();
     }
 
-    return { text: finalText, textFurigana: textFurigana.trim(), space: leadingSpaces, symbolPair: null };
+    return { text: finalText, textFurigana: textFurigana, space: leadingSpaces, symbolPair: symbolPair };
 }
 
 // 复制文本到剪贴板
@@ -200,10 +203,10 @@ function copyAndReadSentence(tag) {
 
         if (data.useVITS) {
             copyTextToClipboard(textToCopy);
-            vits_tts(textObj.text, callback);
+            vits_tts(textObj.text);
         } else if (data.useWindowsTTS) {
             copyTextToClipboard(textToCopy);
-            windows_tts(textObj.text, callback);
+            windows_tts(textObj.text);
         } else {
             copyTextToClipboard(textToCopy);
         }
@@ -299,6 +302,7 @@ function translate(tag) {
                 }
             };
 
+            console.log(`Translate: ${textObj['text']}`)
             if (data.google) {
                 requestTranslation(tag, textObj['text'], data.googleFrom, data.googleTo, "google", data.googleColor, translatedTextCallback);
             }
