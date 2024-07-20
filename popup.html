@@ -31,6 +31,15 @@
         z-index: 1000; /* 确保按钮在最上层 */
       }
 
+      kbd {
+        background-color: #0a6b32;
+        color: white; /* 文字颜色为白色 */
+        border: 2px solid #064a22; /* 深绿色边框 */
+        border-radius: 4px; /* 圆角 */
+        padding: 2px 6px; /* 内边距 */
+        font-family: "Courier New", Courier, monospace; /* 等宽字体 */
+      }
+
       /* 基本开关样式 */
       .switch {
         position: relative;
@@ -198,7 +207,6 @@
       <div class="settings">
         <p class="text-h1" id="extension-version"></p>
         <p class="text-s1" id="extension-author"></p>
-        <p>使用文档请浏览该项目<a href="https://github.com/raindrop213/AnonTranslator" target="_blank">仓库↗</a></p>
       </div>
       <hr />
 
@@ -426,8 +434,24 @@
             </label>
           </div>
         </div>
-      </div>
 
+        <!-- Guide Tab -->
+        <input type="radio" id="tab5" name="tab" class="tab" />
+        <label for="tab5" class="tab-label">Guide</label>
+        <div class="tab-content">
+          <div>
+            <h2>使用说明</h2>
+            <p>1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；</p>
+            <p>2. 键盘方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并且可以触发复制和朗读；</p>
+            <p>3. 空格键 <kbd>Backspace</kbd> 自动读书，一段接一段播放；</p>
+            <p>4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；</p>
+            <p>5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；</p>
+            <br>
+            <p>详细使用文档请浏览该项目<a href="https://github.com/raindrop213/AnonTranslator" target="_blank">仓库↗</a></p>
+          </div>
+        </div>
+        
+      </div>
       <br>
       <button class="save" type="submit">Save Settings</button>
     </form>

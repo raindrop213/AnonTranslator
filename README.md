@@ -15,7 +15,7 @@ TTS啃生肉（方便影子跟读），获取鼠标位置文本标签，复制�
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)（上架Chrome商店有点麻烦，就先从这下载吧）【打开开发展模式；加载插件；首先右键插件到选项页面先设置保存一下才能正式启用插件，然后刷新一下页面就能用啦】
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)【打开开发展模式；加载插件】（上架Chrome商店有点麻烦，就先从这下载吧）
 - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases)：
   下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型，还加了个WebSocket让插件与其进行网络通信。･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
@@ -24,11 +24,14 @@ TTS啃生肉（方便影子跟读），获取鼠标位置文本标签，复制�
 2. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
 
 ### **使用说明**
-1. 点击文本就可以朗读文本和复制到剪切板（去除振假名），所以通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）
-2. 键盘方向键 <kbd>↑</kbd> 上一句 和 <kbd>↓</kbd> 上一句，并且可以触发复制和朗读；
-3. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前句；
-4. 空格键 <kbd>Backspace</kbd> 自动读书，一句接一句播放；
-5. ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，建议用Luna的翻译，目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
+1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；
+2. 键盘方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并且可以触发复制和朗读；
+3. 空格键 <kbd>Backspace</kbd> 自动读书，一段接一段播放；
+4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；
+5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；
+
+- 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）
+- ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，建议用Luna的翻译，目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
 
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 

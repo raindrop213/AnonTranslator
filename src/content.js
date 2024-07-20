@@ -22,21 +22,13 @@ window.speechSynthesis.onvoiceschanged = function() {
     voicesLoaded = true;
 };
 
-function parseStringToArray(str) {
-    return str.split('/'); // 将字符串按 `/` 分割并返回数组
-}
 
 /* ------------------------------------------------------------文本模块 */
 
-// 获取下一个或上一个非空标签
-function getValidTag(currentTag, direction = 'down') {
-    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
-    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
-        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
-    }
-    return tag;
+// 分割成列表
+function parseStringToArray(str) {
+    return str.split('/'); // 将字符串按 `/` 分割并返回数组
 }
-
 
 // 清理文本
 function cleanText(htmlString, symbolPairs) {
@@ -156,7 +148,7 @@ function vits_tts(text, callback) {
         // 监听WebSocket消息以获取语音流
         socket.onmessage = function(event) {
             try {
-                const responseData = parseStringToArray(event.data);
+                const responseData = JSON.parse(event.data);
                 
                 if (responseData.status === "finished") {
                     console.log("Voice playback finished");
@@ -212,7 +204,6 @@ function copyAndReadSentence(tag) {
         }
     });
 }
-
 
 
 /* ------------------------------------------------------------自动阅读控制模块 */
@@ -319,6 +310,15 @@ function translate(tag) {
 
 /* ------------------------------------------------------------用户界面交互模块 */
 
+// 获取下一个或上一个非空标签
+function getValidTag(currentTag, direction = 'down') {
+    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
+    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
+        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
+    }
+    return tag;
+}
+
 // 处理点击事件
 function handleClick(event) {
     let targetElement = event.target;
@@ -347,7 +347,7 @@ function handleClick(event) {
     }
 }
 
-// 为指定标签添加蓝色边框
+// 为指定标签添加激活框
 function applyBlueBorder(tag) {
     // 如果有上一个被点击的标签且不是当前标签
     if (lastClickedPtag && lastClickedPtag !== tag) {
@@ -355,33 +355,32 @@ function applyBlueBorder(tag) {
         const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
         existingTranslations.forEach(div => div.remove());
 
-        // 移除上一个蓝框
-        lastClickedPtag.style.border = "";
+        // 移除上一个激活框
+        lastClickedPtag.style.outline = "";
         lastClickedPtag.classList.remove('blue-highlighted');
     }
 
-    // 为当前标签应用蓝框
+    // 为当前标签应用激活框
     chrome.storage.sync.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollIntoView'
     ], (data) => {
-        tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
+        tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
         tag.style.borderRadius = data.borderRadius;
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
 
-        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
+        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
     });
 }
 
-
-// 为 target 标签添加红框，并绑定点击事件
+// 为指定标签添加预选框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
     chrome.storage.sync.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
             if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted') && event.target.textContent.trim()) {
-                event.target.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
+                event.target.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
                 event.target.style.borderRadius = data.borderRadius;
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
@@ -398,7 +397,7 @@ function highlightAndCopyPtag(doc) {
         doc.addEventListener('mouseleave', (event) => {
             if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
                 setTimeout(() => {
-                    event.target.style.border = "";
+                    event.target.style.outline = "";
                 }, data.fade);
                 event.target.classList.remove('highlighted');
                 event.target.removeEventListener('click', handleClick);
@@ -406,10 +405,6 @@ function highlightAndCopyPtag(doc) {
         }, true);
     });
 }
-
-
-
-
 
 // 分割句子的函数
 function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
@@ -452,9 +447,6 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
 
     return mergedSentences.join('');
 }
-
-
-
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
@@ -520,7 +512,6 @@ function addMouseListener(doc) {
         });
     });
 }
-
 
 
 // 为主文档添加监听器
