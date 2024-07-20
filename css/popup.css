@@ -1,0 +1,129 @@
+body {
+  margin: 10px;
+  padding: 5px;
+  width: 400px;
+}
+
+label {
+  display: block;
+}
+
+.save {
+  font-size: 20px;
+  color: #0a6b32;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  position: fixed; /* 固定位置 */
+  top: 10px; /* 距离顶部10px */
+  right: 10px; /* 距离右边10px */
+  z-index: 1000; /* 确保按钮在最上层 */
+}
+
+/* 基本开关样式 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 70px;
+  height: 34px;
+}
+
+/* 隐藏默认的checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* 自定义滑块 */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #1c72e2;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #1c72e2;
+}
+
+input:checked + .slider:before {
+  transform: translateX(35px);
+}
+
+/* 圆角滑块 */
+.slider.round {
+  border-radius: 5px;
+}
+
+.slider.round:before {
+  border-radius: 3px;
+}
+
+/* ON和OFF文字样式 */
+.slider .on,
+.slider .off {
+  color: white;
+  position: absolute;
+  transform: translateY(-50%);
+  top: 50%;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+}
+
+.slider .on {
+  left: 10px;
+  opacity: 0;
+}
+
+.slider .off {
+  right: 10px;
+  opacity: 1;
+}
+
+/* 当开关选中时改变文字的显示 */
+input:checked + .slider .on {
+  opacity: 1;
+}
+
+input:checked + .slider .off {
+  opacity: 0;
+}
+
+
+.text-h1 {
+  font-size: 13px;
+  color: #1ec2b4;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  margin-bottom: 0;
+}
+
+.text-s1 {
+  font-size: 10px;
+  color: #bdbdbd;
+  margin: 5px 0;
+}
+
+.text-s2 {
+  font-size: 10px;
+  text-align: right;
+  color: #bdbdbd;
+  margin: 5px 0;
+}

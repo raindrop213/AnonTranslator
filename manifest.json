@@ -1,11 +1,15 @@
 {
   "manifest_version": 3,
   "name": "AnonTranslator",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
-  "permissions": ["scripting", "clipboardWrite", "tts", "storage"],
-  "host_permissions": ["https://www2.deepl.com/*"],
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www2.deepl.com/*",
+    "https://translate.google.com/m*",
+    "https://aidemo.youdao.com/trans*"
+  ],
 
   "icons": {
     "16": "img/icon16.png",
@@ -15,10 +19,15 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": [
+        "http://localhost:8083/*",
+        "https://kakuyomu.jp/*",
+        "https://syosetu.com/*",
+        "https://ebook.raindrop213.info/*",
+        "https://reader.ttsu.app/*"
+      ],
       "js": ["src/content.js"]
     }
   ],

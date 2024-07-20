@@ -1,122 +1,84 @@
 // background.js
 
-let toggleState = true;
-let readTextState = true;
-let copyToClipboardState = true;
-let translatState = true;
+// 初始设置值
+const defaultSettings = {
+  toggleSwitch: true,
+  copy: true,
+  ignoreFurigana: true,
+  symbolPairs: '「」/『』/《》/“”/【】/（）',
+  sentenceDelimiters: '。/ ！/？',
+  sentenceThreshold: 50,
+  useWindowsTTS: true,
+  winVoice: 5,
+  rate: 1,
+  pitch: 1,
+  useVITS: false,
+  clipAPI: 8666,
+  vitsAPI: 23456,
+  vitsVoice: 342,
+  vitsLang: 'ja',
+  length: 1,
+  noise: 0.33,
+  noisew: 0.4,
+  max: 50,
+  streaming: false,
+  readingInterval: 200,
+  google: true,
+  googleColor: '#D4B102',
+  googleFrom: 'auto',
+  googleTo: 'zh-CN',
+  deepl: true,
+  deeplColor: '#E39D7D',
+  deeplFrom: 'auto',
+  deeplTo: 'ZH',
+  youdao: true,
+  youdaoColor: '#C8E37D',
+  youdaoFrom: 'auto',
+  youdaoTo: 'zh-CHS',
+  borderWidth: '2px',
+  borderStyle: 'solid',
+  borderRadius: '8px',
+  freeBorderColor: '#225D2E',
+  selectedBorderColor: '#94B505',
+  sentenceColor: '#d4e725',
+  fade: '30',
+  scrollIntoView: 'smooth'
+};
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case "updateToggle":
-      toggleState = message.toggle;
-      break;
-    case "requestToggleState":
-      sendResponse({ toggle: toggleState });
-      break;
+// 初始化设置
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.set(defaultSettings, () => {
+    console.log("Default settings saved.");
+  });
+});
 
-    case "updateReadText":
-      readTextState = message.readText;
-      break;
-    case "requestReadTextState":
-      sendResponse({ readText: readTextState });
-      break;
-
-    case "updateCopyToClipboard":
-      copyToClipboardState = message.copyToClipboard;
-      break;
-    case "requestCopyToClipboardState":
-      sendResponse({ copyToClipboard: copyToClipboardState });
-      break;
-
-    case "updateTranslat":
-      translatState = message.translat;
-      break;
-    case "requestTranslatState":
-      sendResponse({ translat: translatState });
-      break;
-
-    // 监听弹窗位置
-    // case "openPopup":
-    //     if (toggleState && caseSwitchState) {
-    //         const selectedText = message.selectedText;
-    //         const x = message.x;
-    //         const y = message.y;
-    //         const screenWidth = message.screenWidth;
-    //         const screenHeight = message.screenHeight;
-    //         const popupWidth = 400;
-    //         const popupHeight = 300;
-
-    //         // 计算窗口合适位置
-    //         const xPosition = Math.min(x, screenWidth - popupWidth);
-    //         const yPosition = Math.min(y, screenHeight - popupHeight);
-
-    //         chrome.windows.create({
-    //             url: chrome.runtime.getURL(`case.html?selectedText=${selectedText}`),
-    //             type: "popup",
-    //             width: popupWidth,
-    //             height: popupHeight,
-    //             top: yPosition + 100,
-    //             left: xPosition,
-    //         });
-    //     }
+// 接收消息并返回设置值
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'getSettings') {
+    chrome.storage.sync.get(null, (settings) => {
+      sendResponse(settings);
+    });
+    return true;  // 表示将使用异步发送响应
   }
 });
 
 
-const supportedLanguages = [
-  ["auto", "auto"],
-  ["de", "DE"],
-  ["en", "EN"],
-  ["es", "ES"],
-  ["fr", "FR"],
-  ["it", "IT"],
-  ["ja", "JA"],
-  ["ko", "KO"],
-  ["nl", "NL"],
-  ["pl", "PL"],
-  ["pt", "PT"],
-  ["ru", "RU"],
-  ["zh", "ZH"],
-  ["zh", "ZH"],
-  ["bg", "BG"],
-  ["cs", "CS"],
-  ["da", "DA"],
-  ["el", "EL"],
-  ["et", "ET"],
-  ["fi", "FI"],
-  ["hu", "HU"],
-  ["lt", "LT"],
-  ["lv", "LV"],
-  ["ro", "RO"],
-  ["sk", "SK"],
-  ["sl", "SL"],
-  ["sv", "SV"],
-];
-const langMap = new Map(supportedLanguages);
-
-function getTimeStamp(iCount) {
-  const ts = Date.now();
-  if (iCount !== 0) {
-    iCount = iCount + 1;
-    return ts - (ts % iCount) + iCount;
-  } else {
-    return ts;
-  }
-}
-
 // DeepL API
 function deeplTranslate(text, from, to) {
   return new Promise((resolve, reject) => {
-    const sourceLanguage = langMap.get(from);
-    const targetLanguage = langMap.get(to);
-    
-    if (!targetLanguage) {
-      reject("不支持该语种");
-      return;
-    }
 
-    const source_lang = sourceLanguage || "ja";
-    const target_lang = targetLanguage || "zh";
+    const getTimeStamp = (iCount) => {
+      const ts = Date.now();
+      if (iCount !== 0) {
+        iCount = iCount + 1;
+        return ts - (ts % iCount) + iCount;
+      } else {
+        return ts;
+      }
+    };
+
+    const source_lang = from;
+    const target_lang = to;
     const translate_text = text || "";
 
     if (translate_text !== "") {
@@ -162,30 +124,79 @@ function deeplTranslate(text, from, to) {
 // Google API
 function googleTranslate(text, from, to) {
   return new Promise((resolve, reject) => {
-    // 模拟异步操作，例如从 API 获取数据
-    // 这里我们只是简单地返回一段文本
-    const text = "谷歌翻译还没做好...";
+    const query = encodeURIComponent(text);
+    
+    const url = `https://translate.google.com/m?sl=${from}&tl=${to}&hl=zh-CN&q=${query}`;
 
-    // 模拟成功获取翻译结果
-    resolve(text);
-
-    // 如果有任何错误，您可以使用 reject 来发送错误
-    // 例如：reject("翻译服务不可用");
+    fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+      }
+    })
+    .then(response => response.text())
+    .then(text => {
+      const regex = /<div class="result-container">([\s\S]*?)<\/div>/;
+      const matches = text.match(regex);
+      if (matches && matches[1]) {
+        resolve(decodeURIComponent(matches[1].replace(/<\/?[^>]+(>|$)/g, "")));
+      } else {
+        reject("翻译结果未找到");
+      }
+    })
+    .catch(error => {
+      reject("接口请求错误 - " + error);
+    });
   });
 }
 
 // Youdao API
 function youdaoTranslate(text, from, to) {
   return new Promise((resolve, reject) => {
-    // 模拟异步操作，例如从 API 获取数据
-    // 这里我们只是简单地返回一段文本
-    const text = "有道翻译还没做好...";
+    const headers = {
+        "authority": "aidemo.youdao.com",
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "zh-CN,zh;q=0.9",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "origin": "https://ai.youdao.com",
+        "referer": "https://ai.youdao.com/",
+        "sec-ch-ua": '"Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+    };
 
-    // 模拟成功获取翻译结果
-    resolve(text);
+    const data = new URLSearchParams();
+    data.append("q", text);
+    data.append("from", from);
+    data.append("to", to);
 
-    // 如果有任何错误，您可以使用 reject 来发送错误
-    // 例如：reject("翻译服务不可用");
+    fetch("https://aidemo.youdao.com/trans", {
+        method: "POST",
+        headers: headers,
+        body: data,
+    })
+    .then(response => {
+      if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(json => {
+      if (json && json.translation && json.translation[0]) {
+        resolve(json.translation[0]);
+      } else {
+        throw new Error(`Unexpected response format: ${JSON.stringify(json)}`);
+      }
+    })
+    .catch(error => {
+      reject("Translation error: " + error.message);
+    });
   });
 }
 
@@ -196,13 +207,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     let translateFunction;
 
     switch (request.translator) {
-      case "Google":
+      case "google":
         translateFunction = googleTranslate;
         break;
-      case "Deepl":
+      case "deepl":
         translateFunction = deeplTranslate;
         break;
-      case "Youdao":
+      case "youdao":
         translateFunction = youdaoTranslate;
         break;
       default:
