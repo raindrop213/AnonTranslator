@@ -38,15 +38,24 @@ function getValidTag(currentTag, direction = 'down') {
 }
 
 
-// 清理文本，移除 <rt>、<rp> 和 <ruby> 标签，并且清除两边空格。
-function cleanText(htmlString, ignoreFurigana, symbolPairs) {
+// 清理文本
+function cleanText(htmlString, symbolPairs) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 如果设置为忽略振假名（Furigana），则移除 <rt> 和 <rp> 标签。
-    if (ignoreFurigana) {
-        div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
-    }
+    // 生成带有振假名的版本
+    div.querySelectorAll('ruby').forEach(ruby => {
+        const rb = ruby.querySelector('rb').textContent;
+        const rt = ruby.querySelector('rt').textContent;
+        const parentNode = ruby.parentNode;
+        parentNode.replaceChild(document.createTextNode(`${rb}(${rt})`), ruby);
+    });
+
+    const textFurigana = div.textContent;
+
+    // 生成去除振假名的版本
+    div.innerHTML = htmlString;
+    div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
 
     let originalText = div.textContent;
     let trimmedText = originalText.trimStart();
@@ -56,7 +65,7 @@ function cleanText(htmlString, ignoreFurigana, symbolPairs) {
 
     // 如果去除两边空格后的文本为空，则返回 '-'
     if (!trimmedText) {
-        return { text: '-', space: leadingSpaces, symbolPair: null };
+        return { text: '-', textFurigana: '-', space: leadingSpaces, symbolPair: null };
     }
 
     let finalText = trimmedText.trim();
@@ -72,10 +81,10 @@ function cleanText(htmlString, ignoreFurigana, symbolPairs) {
         });
 
         finalText = finalText.substring(1, finalText.length - 1);
-        return { text: finalText.trim(), space: leadingSpaces, symbolPair: symbolPair };
+        return { text: finalText.trim(), textFurigana: textFurigana.trim(), space: leadingSpaces, symbolPair: symbolPair };
     }
 
-    return { text: finalText, space: leadingSpaces, symbolPair: null };
+    return { text: finalText, textFurigana: textFurigana.trim(), space: leadingSpaces, symbolPair: null };
 }
 
 // 复制文本到剪贴板
@@ -117,8 +126,6 @@ function windows_tts(text, callback) {
         window.speechSynthesis.speak(utterance);
     });
 }
-
-
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
@@ -168,58 +175,40 @@ function copyAndReadText(tag, callback) {
         let translationDivs = originalContent.querySelectorAll('.translation-div');
         translationDivs.forEach(div => div.remove()); // 移除翻译部分
 
-        let textObj = cleanText(originalContent.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
-        text = textObj['space'] + textObj['text'];
-    
-        if (data.useVITS) {
-            // 使用 vits tts
-            copyTextToClipboard(text, () => {
-                vits_tts(text, callback);
-            });
-    
-        } else if (data.useWindowsTTS) {
-            // 使用 windows tts
-            copyTextToClipboard(text, () => {
-                windows_tts(text, callback);
-            });
-    
-        } else {
-            // 不使用语音
-            copyTextToClipboard(text, () => {
-                setTimeout(callback, 10);
-            });
-        };
-    });
-    
-}
-
-
-// 复制并朗读指定标签的文本的句子
-function copyAndReadSentence(tag) {
-    chrome.storage.sync.get(['ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'], (data) => {
-        let cleanedText = cleanText(tag.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
-        let text = cleanedText.space + cleanedText.text;
+        let textObj = cleanText(originalContent.innerHTML, parseStringToArray(data.symbolPairs));
+        let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
+        
 
         if (data.useVITS) {
-            // 使用 vits tts
-            copyTextToClipboard(text, () => {
-                vits_tts(text);
-            });
+            copyTextToClipboard(textToCopy);
+            vits_tts(textObj.text, callback);
         } else if (data.useWindowsTTS) {
-            // 使用 windows tts
-            copyTextToClipboard(text, () => {
-                windows_tts(text);
-            });
+            copyTextToClipboard(textToCopy);
+            windows_tts(textObj.text, callback);
         } else {
-            // 不使用语音
-            copyTextToClipboard(text);
+            copyTextToClipboard(textToCopy);
+            setTimeout(callback, 10);
         }
     });
 }
 
+// 复制并朗读指定标签的文本的句子
+function copyAndReadSentence(tag) {
+    chrome.storage.sync.get(['ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'], (data) => {
+        let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
+        let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
 
-
-
+        if (data.useVITS) {
+            copyTextToClipboard(textToCopy);
+            vits_tts(textObj.text, callback);
+        } else if (data.useWindowsTTS) {
+            copyTextToClipboard(textToCopy);
+            windows_tts(textObj.text, callback);
+        } else {
+            copyTextToClipboard(textToCopy);
+        }
+    });
+}
 
 
 
@@ -289,12 +278,12 @@ function requestTranslation(tag, text, fromLang, toLang, translator, color, call
 // 翻译文本并显示结果
 function translate(tag) {
     chrome.storage.sync.get([
-        'ignoreFurigana', 'symbolPairs',
+        'symbolPairs',
         'google', 'googleFrom', 'googleTo', 'googleColor',
         'deepl', 'deeplFrom', 'deeplTo', 'deeplColor',
         'youdao', 'youdaoFrom', 'youdaoTo', 'youdaoColor'
     ], (data) => {
-        let ctext = cleanText(tag.innerHTML, data.ignoreFurigana, parseStringToArray(data.symbolPairs));
+        let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
 
         // 先检查标签中是否已经存在翻译
         if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
@@ -303,28 +292,25 @@ function translate(tag) {
             tag.appendChild(translationDiv);
 
             const translatedTextCallback = (translatedText, p) => {
-                if (ctext.symbolPair) {
-                    p.textContent = ctext['space'] + ctext.symbolPair[0] + translatedText + ctext.symbolPair[1];
+                if (textObj.symbolPair) {
+                    p.textContent = textObj['space'] + textObj.symbolPair[0] + translatedText + textObj.symbolPair[1];
                 } else {
-                    p.textContent = ctext['space'] + translatedText;
+                    p.textContent = textObj['space'] + translatedText;
                 }
             };
 
             if (data.google) {
-                requestTranslation(tag, ctext['text'], data.googleFrom, data.googleTo, "google", data.googleColor, translatedTextCallback);
+                requestTranslation(tag, textObj['text'], data.googleFrom, data.googleTo, "google", data.googleColor, translatedTextCallback);
             }
             if (data.deepl) {
-                requestTranslation(tag, ctext['text'], data.deeplFrom, data.deeplTo, "deepl", data.deeplColor, translatedTextCallback);
+                requestTranslation(tag, textObj['text'], data.deeplFrom, data.deeplTo, "deepl", data.deeplColor, translatedTextCallback);
             }
             if (data.youdao) {
-                requestTranslation(tag, ctext['text'], data.youdaoFrom, data.youdaoTo, "youdao", data.youdaoColor, translatedTextCallback);
+                requestTranslation(tag, textObj['text'], data.youdaoFrom, data.youdaoTo, "youdao", data.youdaoColor, translatedTextCallback);
             }
         }
     });
 }
-
-
-
 
 
 /* ------------------------------------------------------------用户界面交互模块 */
@@ -343,23 +329,17 @@ function handleClick(event) {
         applyBlueBorder(targetElement);
         copyAndReadText(targetElement);
         translate(targetElement);
+
+    // 清除当前选择
     } else {
-        clearSelection();
-    }
-}
+        if (lastClickedPtag) {
+            lastClickedPtag.style.border = "";
+            lastClickedPtag.classList.remove('blue-highlighted');
 
-
-
-// 清除当前选择
-function clearSelection() {
-    if (lastClickedPtag) {
-        lastClickedPtag.style.border = "";
-        lastClickedPtag.classList.remove('blue-highlighted');
-        
-        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-        existingTranslations.forEach(div => div.remove());
-
-        lastClickedPtag = null;
+            const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
+            existingTranslations.forEach(div => div.remove());
+            lastClickedPtag = null;
+        }
     }
 }
 
@@ -385,7 +365,7 @@ function applyBlueBorder(tag) {
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
 
-        // tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
+        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
     });
 }
 

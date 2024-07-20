@@ -13,8 +13,12 @@
         width: 400px;
       }
 
-      label {
-        display: block;
+      .settings {
+        margin: 5px;
+      }
+
+      input[type="text"] {
+        width: 100%; /* 这里设置宽度 */
       }
 
       .save {
@@ -116,7 +120,6 @@
         opacity: 0;
       }
 
-
       .text-h1 {
         font-size: 13px;
         color: #1ec2b4;
@@ -151,6 +154,7 @@
       }
 
       .tab-label {
+        display: block;
         cursor: pointer;
         padding: 10px;
         margin-top: 5px;
@@ -181,15 +185,17 @@
   </head>
   <body>
     <form id="settingsForm">
-      <label class="switch">
-        <input type="checkbox" id="toggleSwitch" />
-        <span class="slider round">
-          <span class="on">ON</span>
-          <span class="off">OFF</span>
-        </span>
-      </label>
+      <div class="settings">
+        <label class="switch">
+          <input type="checkbox" id="toggleSwitch" />
+          <span class="slider round">
+            <span class="on">ON</span>
+            <span class="off">OFF</span>
+          </span>
+        </label>
+      </div>
 
-      <div>
+      <div class="settings">
         <p class="text-h1" id="extension-version"></p>
         <p class="text-s1" id="extension-author"></p>
         <p>使用文档请浏览该项目<a href="https://github.com/raindrop213/AnonTranslator" target="_blank">仓库↗</a></p>
@@ -201,12 +207,20 @@
         <input type="radio" id="tab1" name="tab" class="tab" checked />
         <label for="tab1" class="tab-label">Copy <input type="checkbox" id="copy" class="title-switch" /></label>
         <div class="tab-content">
-          <label class="settings">Ignore Furigana <input type="checkbox" id="ignoreFurigana" /></label>
-          <label for="symbolPairs">Paragraph SymbolPairs: </label>
-          <input type="text" id="symbolPairs" />
-          <label for="sentenceDelimiters">Sentence Delimiters: </label>
-          <input type="text" id="sentenceDelimiters" />
-          <label class="settings">Sentence Segmentation Threshold: <input type="text" id="sentenceThreshold" /></label>
+          <div class="settings">
+            <label>Ignore Furigana: 忽略振假名 <input type="checkbox" id="ignoreFurigana" /></label>
+          </div>
+          <div class="settings">
+            <label for="symbolPairs">Paragraph SymbolPairs: </label>
+            <input type="text" id="symbolPairs" />
+          </div>
+          <div class="settings">
+            <label for="sentenceDelimiters">Sentence Delimiters: </label>
+            <input type="text" id="sentenceDelimiters" />
+          </div>
+          <div class="settings">
+            <label>Sentence Segmentation Threshold: <input type="text" id="sentenceThreshold" /></label>
+          </div>
         </div>
 
         <!-- TTS Tab -->
@@ -216,37 +230,63 @@
           <input type="radio" id="tabWindows" name="ttsTab" class="tab" checked />
           <label for="tabWindows" class="tab-label tab-label-color">Windows TTS <input type="checkbox" id="useWindowsTTS" class="title-switch" /></label>
           <div class="tab-content">
-            <label for="winVoice">Voice: 人物</label>
-            <select id="winVoice"></select>
-            <label for="rate">Rate (0 - 2): 语速</label>
-            <input type="range" id="rate" min="0" max="2" step="0.1" />
-            <label for="pitch">Pitch (0 - 2): 音调</label>
-            <input type="range" id="pitch" min="0" max="2" step="0.1" />
+            <div class="settings">
+              <label for="winVoice">Voice: 人物</label>
+              <select id="winVoice"></select>
+            </div>
+            <div class="settings">
+              <label for="rate">Rate (0 - 2): 语速</label>
+              <input type="range" id="rate" min="0" max="2" step="0.1" />
+            </div>
+            <div class="settings">
+              <label for="pitch">Pitch (0 - 2): 音调</label>
+              <input type="range" id="pitch" min="0" max="2" step="0.1" />
+            </div>
           </div>
 
           <input type="radio" id="tabVits" name="ttsTab" class="tab" />
           <label for="tabVits" class="tab-label tab-label-color">VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></label>
           <div class="tab-content">
-            需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases" target="_blank">vitsTTS整合包</a>
-            <label for="clipAPI">API Clip: <input type="text" id="clipAPI"/></label>
-            <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI"/></label>
-            <label for="vitsVoice">Voice: 人物</label>
-            <select id="vitsVoice"></select>
-            <label for="vitsLang">Language: 语言</label>
-            <select id="vitsLang">
-              <option value="auto">auto</option>
-              <option value="ja">ja</option>
-              <option value="zh">zh</option>
-            </select>
-            <label for="length">Length (0 - 2): 语速</label>
-            <input type="range" id="length" min="0" max="2" step="0.1"/>
-            <label for="noise">Noise: 声音随机性</label>
-            <input type="text" id="noise"/>
-            <label for="noisew">NoiseW: 随机发声时长</label>
-            <input type="text" id="noisew"/>
-            <label for="max">Max: 文字分段阈值：以标点符号为分割点，超过阈值的部分会分段发送</label>
-            <input type="text" id="max"/>
-            <label class="settings">Streaming 流式传输<input type="checkbox" id="streaming"/></label>
+            <div class="settings">
+              需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases" target="_blank">vitsTTS整合包</a>
+            </div>
+            <div class="settings">
+              <label for="clipAPI">API Clip: <input type="text" id="clipAPI"/></label>
+            </div>
+            <div class="settings">
+              <label for="vitsAPI">API VITS: <input type="text" id="vitsAPI"/></label>
+            </div>
+            <div class="settings">
+              <label for="vitsVoice">Voice: 人物</label>
+              <select id="vitsVoice"></select>
+            </div>
+            <div class="settings">
+              <label for="vitsLang">Language: 语言</label>
+              <select id="vitsLang">
+                <option value="auto">auto</option>
+                <option value="ja">ja</option>
+                <option value="zh">zh</option>
+              </select>
+            </div>
+            <div class="settings">
+              <label for="length">Length (0 - 2): 语速</label>
+              <input type="range" id="length" min="0" max="2" step="0.1"/>
+            </div>
+            <div class="settings">
+              <label for="noise">Noise: 声音随机性</label>
+              <input type="text" id="noise"/>
+            </div>
+            <div class="settings">
+              <label for="noisew">NoiseW: 随机发声时长</label>
+              <input type="text" id="noisew"/>
+            </div>
+            <div class="settings">
+              <label for="max">Max: 文字分段阈值：以标点符号为分割点，超过阈值的部分会分段发送</label>
+              <input type="text" id="max"/>
+            </div>
+            <div class="settings">
+              <label>Streaming 流式传输<input type="checkbox" id="streaming"/></label>
+            </div>
           </div>
         </div>
 
@@ -257,68 +297,86 @@
           <input type="radio" id="tabgoogle" name="translatorTab" class="tab" checked />
           <label for="tabgoogle" class="tab-label tab-label-color">Google <input type="checkbox" id="google" checked /></label>
           <div class="tab-content">
-            <label class="settings">Google Color: <input type="color" id="googleColor" /></label>
-            <label class="settings">From: 
-              <select id="googleFrom">
-                <option value="auto">auto</option>
-                <option value="zh-CN">zh</option>
-                <option value="zh-TW">cht</option>
-                <option value="ja">ja</option>
-                <option value="en">en</option>
-              </select>
-            </label>
-            <label class="settings">To: 
-              <select id="googleTo">
-                <option value="zh-CN">zh</option>
-                <option value="zh-TW">cht</option>
-                <option value="ja">ja</option>
-                <option value="en">en</option>
-              </select>
-            </label>
+            <div class="settings">
+              <label>Google Color: <input type="color" id="googleColor" /></label>
+            </div>
+            <div class="settings">
+              <label>From: 
+                <select id="googleFrom">
+                  <option value="auto">auto</option>
+                  <option value="zh-CN">zh</option>
+                  <option value="zh-TW">cht</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                </select>
+              </label>
+            </div>
+            <div class="settings">
+              <label>To: 
+                <select id="googleTo">
+                  <option value="zh-CN">zh</option>
+                  <option value="zh-TW">cht</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <input type="radio" id="tabDeepl" name="translatorTab" class="tab" checked />
           <label for="tabDeepl" class="tab-label tab-label-color">Deepl <input type="checkbox" id="deepl" checked /></label>
           <div class="tab-content">
-            <label class="settings">Deepl Color: <input type="color" id="deeplColor" /></label>
-            <label class="settings">From: 
-              <select id="deeplFrom">
-                <option value="auto">auto</option>
-                <option value="JA">ja</option>
-                <option value="EN">en</option>
-                <option value="ZH">zh</option>
-              </select>
-            </label>
-            <label class="settings">To: 
-              <select id="deeplTo">
-                <option value="ZH">zh</option>
-                <option value="JA">ja</option>
-                <option value="EN">en</option>
-              </select>
-            </label>
+            <div class="settings">
+              <label>Deepl Color: <input type="color" id="deeplColor" /></label>
+            </div>
+            <div class="settings">
+              <label>From: 
+                <select id="deeplFrom">
+                  <option value="auto">auto</option>
+                  <option value="JA">ja</option>
+                  <option value="EN">en</option>
+                  <option value="ZH">zh</option>
+                </select>
+              </label>
+            </div>
+            <div class="settings">
+              <label>To: 
+                <select id="deeplTo">
+                  <option value="ZH">zh</option>
+                  <option value="JA">ja</option>
+                  <option value="EN">en</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <input type="radio" id="tabYoudao" name="translatorTab" class="tab" checked />
           <label for="tabYoudao" class="tab-label tab-label-color">Youdao <input type="checkbox" id="youdao" checked /></label>
           <div class="tab-content">
-            <label class="settings">Youdao Color: <input type="color" id="youdaoColor" /></label>
-            <label class="settings">From: 
-              <select id="youdaoFrom">
-                <option value="auto">auto</option>
-                <option value="ja">ja</option>
-                <option value="en">en</option>
-                <option value="zh-CHS">zh</option>
-                <option value="zh-CHT">cht</option>
-              </select>
-            </label>
-            <label class="settings">To: 
-              <select id="youdaoTo">
-                <option value="zh-CHS">zh</option>
-                <option value="zh-CHT">cht</option>
-                <option value="ja">ja</option>
-                <option value="en">en</option>
-              </select>
-            </label>
+            <div class="settings">
+              <label>Youdao Color: <input type="color" id="youdaoColor" /></label>
+            </div>
+            <div class="settings">
+              <label>From: 
+                <select id="youdaoFrom">
+                  <option value="auto">auto</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                  <option value="zh-CHS">zh</option>
+                  <option value="zh-CHT">cht</option>
+                </select>
+              </label>
+            </div>
+            <div class="settings">
+              <label>To: 
+                <select id="youdaoTo">
+                  <option value="zh-CHS">zh</option>
+                  <option value="zh-CHT">cht</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                </select>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -326,31 +384,47 @@
         <input type="radio" id="tab4" name="tab" class="tab" />
         <label for="tab4" class="tab-label">Style</label>
         <div class="tab-content">
-          <label class="settings">Border Width: <input type="text" id="borderWidth" /></label>
-          <label class="settings">Border Style:
-              <select id="borderStyle">
-              <option value="none">None</option>
-              <option value="solid">Solid</option>
-              <option value="dotted">Dotted</option>
-              <option value="dashed">Dashed</option>
-              <option value="double">Double</option>
-              <option value="groove">Groove</option>
-              <option value="ridge">Ridge</option>
-              <option value="inset">Inset</option>
-              <option value="outset">Outset</option>
+          <div class="settings">
+            <label>Border Width: <input type="text" id="borderWidth" /></label>
+          </div>
+          <div class="settings">
+            <label>Border Style:
+                <select id="borderStyle">
+                <option value="none">None</option>
+                <option value="solid">Solid</option>
+                <option value="dotted">Dotted</option>
+                <option value="dashed">Dashed</option>
+                <option value="double">Double</option>
+                <option value="groove">Groove</option>
+                <option value="ridge">Ridge</option>
+                <option value="inset">Inset</option>
+                <option value="outset">Outset</option>
+                </select>
+            </label>
+          </div>
+          <div class="settings">
+            <label>Border Radius: <input type="text" id="borderRadius" /></label>
+          </div>
+          <div class="settings">
+            <label>Free Border Color: 指示框 <input type="color" id="freeBorderColor"/></label>
+          </div>
+          <div class="settings">
+            <label>Selected Border Color: 被选中的框 <input type="color" id="selectedBorderColor"/></label>
+          </div>
+          <div class="settings">
+            <label>Selected Sentence Color: 被选中的句子 <input type="color" id="sentenceColor"/></label>
+          </div>
+          <div class="settings">
+            <label>Fade away: 延迟消失 <input type="text" id="fade" />ms</label>
+          </div>
+          <div class="settings">
+            <label>Scroll into view: 画面滚动
+              <select id="scrollIntoView">
+                <option value="smooth">smooth</option>
+                <option value="instant">instant</option>
               </select>
-          </label>
-          <label class="settings">Border Radius: <input type="text" id="borderRadius" /></label>
-          <label class="settings">Free Border Color: 指示框 <input type="color" id="freeBorderColor"/></label>
-          <label class="settings">Selected Border Color: 被选中的框 <input type="color" id="selectedBorderColor"/></label>
-          <label class="settings">Selected Sentence Color: 被选中的句子 <input type="color" id="sentenceColor"/></label>
-          <label class="settings">Fade away: 延迟消失 <input type="text" id="fade" />ms</label>
-          <label class="settings">Scroll into view: 画面滚动
-            <select id="scrollIntoView">
-              <option value="smooth">smooth</option>
-              <option value="instant">instant</option>
-            </select>
-          </label>
+            </label>
+          </div>
         </div>
       </div>
 
