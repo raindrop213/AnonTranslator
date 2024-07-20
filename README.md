@@ -6,7 +6,7 @@
 </h3>
 A chrome extension for light novel reading
 
-TTS啃生肉（方便影子跟读），获取鼠标位置文本标签，复制到剪切板时去除振假名（Furigana）
+啃生肉工具，获取鼠标位置文本标签，复制到剪切板
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
@@ -44,16 +44,15 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 - ~~WindowsTTS~~
 - ~~vitsTTS~~
 - ~~自动朗读~~
-- 翻译（~~DeepL~~、Google）
-- 词典（moji、weblio、小学馆）
+- ~~翻译（Google、Youdao、DeepL）~~
+- 词典（moji、weblio）
 - 日本語形態素解析（MeCab、moji）
 - 联动Anki（提一下我另外写的一个小应用，主要是用来记录漫画生词的：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ### **日文资源**
-1. 在线阅读：适配 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)【轻小说】；
-2. 下载：Z-Library 就不用多说了，那你也可能知道 [安娜的档案](https://zh.annas-archive.gs/)，BitTorrent站 [nyaa](https://nyaa.si/) ；
-3. 在线阅读（非标准格式）：[青空文庫](https://www.aozora.gr.jp/) 不能正常工作，因为是纯文本，没有标签。【很多文学作品。这网站很出名啦！整本书都会放在同一页，比较好扒】（使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
-4. 电子书购买：[amazon](https://www.amazon.co.jp/kindle-dbs/storefront)、[bookwalker](https://bookwalker.jp/) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，bookwalker也是能完全破解的，只是知道方法的人比较少人，另外两个破解相对无脑一点。
+1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
+2. 下载党：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
+3. 电子书购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点，搜一搜就有了。
 
 ---
 

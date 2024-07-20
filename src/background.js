@@ -1,3 +1,5 @@
+// background.js
+
 // 读取并解析defaultSettings.json文件
 function loadDefaultSettings() {
   return fetch(chrome.runtime.getURL('defaultSettings.json'))
@@ -28,6 +30,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse(settings);
     });
     return true;  // 表示将使用异步发送响应
+  }
+});
+
+
+/* ------------------------------------------------------------vits请求模块 */
+// background.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'play_audio') {
+      const vits_url = message.vits_url;
+      const clipAPI = message.clipAPI;
+
+      fetch(`http://127.0.0.1:${clipAPI}/play`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: vits_url })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === "completed") {
+              sendResponse({ status: "completed" });
+          } else if (data.error) {
+              sendResponse({ status: "error", error: data.error });
+          }
+      })
+      .catch(error => sendResponse({ error: error.message }));
+
+      return true;
   }
 });
 

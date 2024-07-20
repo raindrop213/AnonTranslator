@@ -7,6 +7,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://www2.deepl.com/*",
+    "http://127.0.0.1:8666/*",
     "https://translate.google.com/m*",
     "https://aidemo.youdao.com/trans*"
   ],
@@ -26,7 +27,8 @@
         "https://kakuyomu.jp/*",
         "https://syosetu.com/*",
         "https://ebook.raindrop213.info/*",
-        "https://reader.ttsu.app/*"
+        "https://reader.ttsu.app/*",
+        "http://127.0.0.1/*"
       ],
       "js": ["src/content.js"]
     }

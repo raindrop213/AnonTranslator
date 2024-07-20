@@ -86,13 +86,18 @@ function cleanText(htmlString, symbolPairs) {
 function copyTextToClipboard(text, callback) {
     chrome.storage.sync.get('copy', (data) => {
         if (data.copy) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log(`Copy: ${text}`);
+            if (document.hasFocus()) { // 检查当前文档是否聚焦
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log(`Copy: ${text}`);
+                    if (callback) callback();
+                }).catch(err => {
+                    console.log('Failed to copy text: ', err);
+                    if (callback) callback();
+                });
+            } else {
+                console.log('Document is not focused, cannot copy text.');
                 if (callback) callback();
-            }).catch(err => {
-                console.log('Failed to copy text: ', err);
-                if (callback) callback();
-            });
+            }
         }
     });
 }
@@ -124,41 +129,28 @@ function windows_tts(text, callback) {
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.sync.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
-        const encodedText = encodeURIComponent(text); // 对文本进行编码
+    chrome.storage.sync.get(['clipAPI', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+        const encodedText = encodeURIComponent(text);
         const params = new URLSearchParams({
             id: data.vitsVoice,
+            lang: data.vitsLang,
             length: data.length,
             noise: data.noise,
             noisew: data.noisew,
             max: data.max,
             streaming: data.streaming
-          });
-          if (data.vitsLang !== 'auto') {
-            params.append('lang', data.vitsLang);
-          }
-
+        });
+        const clipAPI = data.clipAPI;
         const vitsAPI = data.vitsAPI;
-        const clip_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
+        const vits_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
 
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ url: clip_url }));
-        }
-
-        // 监听WebSocket消息以获取语音流
-        socket.onmessage = function(event) {
-            try {
-                const responseData = JSON.parse(event.data);
-                
-                if (responseData.status === "finished") {
-                    console.log("Voice playback finished");
-                    if (callback) callback();
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket response:", error);
+        // 将请求发送到background script
+        chrome.runtime.sendMessage({ action: 'play_audio', vits_url: vits_url, clipAPI: clipAPI }, (response) => {
+            if (response.status === "completed" && callback) {
+                callback();
             }
-        };
-    })
+        });
+    });
 }
 
 // 复制并朗读指定标签的文本
@@ -387,7 +379,7 @@ function highlightAndCopyPtag(doc) {
 
                 // 分割句子并用 <span> 标签包裹
                 if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img, a')) {
-                    const sentences = splitSentences(event.target.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
+                    const sentences = splitSentences(event.target.innerHTML.replace(/<span[^>]*>|<\/span>/g, ''), data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
                     event.target.innerHTML = sentences;
                     event.target.classList.add('split-sentences');
                 }
@@ -502,6 +494,17 @@ function addMouseListener(doc) {
                 event.target.style.backgroundColor = data.sentenceColor; // 设置背景颜色
                 currentHighlightedSentence = event.target; // 设置当前高亮的句子
             }
+
+            // 检查标签是否包含 img 但不包含 a ，打开大图
+            if (event.target.nodeName !== 'A' && event.target.querySelector('img')) {
+                const img = event.target.querySelector('img');
+                if (!img.parentElement || img.parentElement.nodeName !== 'A') {
+                    img.style.cursor = 'pointer';
+                    img.addEventListener('click', function() {
+                        window.open(img.src, '_blank');
+                    });
+                }
+            }
         });
 
         doc.addEventListener('mouseout', (event) => {
@@ -516,33 +519,6 @@ function addMouseListener(doc) {
 
 // 为主文档添加监听器
 addMouseListener(document);
-
-
-/* ------------------------------------------------------------网络通信模块 */
-
-// 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
-let socket = null;
-function connectWebSocket() {
-    chrome.storage.sync.get(['clipAPI'], (data) => {
-        socket = new WebSocket(`ws://127.0.0.1:${data.clipAPI}`);
-
-        socket.onopen = function(e) {
-        console.log("[WebSocket] Connection established");
-        };
-
-        socket.onerror = function(error) {
-        console.log(`[WebSocket] Error: ${error.message}`);
-        };
-
-        // socket.onclose = function(e) {
-        //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
-        //   setTimeout(connectWebSocket, 5000); // 5秒后重连
-        // };
-    })
-}
-
-// 在脚本开始处初始化WebSocket连接
-connectWebSocket();
 
 
 /* ------------------------------------------------------------DOM 变更监听 */
