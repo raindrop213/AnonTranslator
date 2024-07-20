@@ -504,10 +504,12 @@ function addMouseListener(doc) {
                 currentHighlightedSentence = event.target; // 设置当前高亮的句子
             }
 
-            // 检查标签是否包含 img 但不包含 a ，打开大图
-            if (event.target.nodeName !== 'A' && event.target.querySelector('img')) {
+            // 检查标签是否包含 img 或 svg>image 但不包含 a ，打开大图
+            if (event.target.nodeName !== 'A' && (event.target.querySelector('img') || event.target.querySelector('svg image'))) {
                 const img = event.target.querySelector('img');
-                if (!img.parentElement || img.parentElement.nodeName !== 'A') {
+                const svgImage = event.target.querySelector('svg image');
+
+                if (img && (!img.parentElement || img.parentElement.nodeName !== 'A')) {
                     img.style.cursor = 'pointer';
 
                     // 检查是否已经有点击事件监听器
@@ -516,6 +518,18 @@ function addMouseListener(doc) {
                             window.open(img.src, '_blank');
                         });
                         img.setAttribute('data-click-listener-added', 'true');
+                    }
+                }
+
+                if (svgImage && (!svgImage.parentElement || svgImage.parentElement.nodeName !== 'A')) {
+                    svgImage.style.cursor = 'pointer';
+
+                    // 检查是否已经有点击事件监听器
+                    if (!svgImage.hasAttribute('data-click-listener-added')) {
+                        svgImage.addEventListener('click', function() {
+                            window.open(svgImage.getAttribute('xlink:href'), '_blank');
+                        });
+                        svgImage.setAttribute('data-click-listener-added', 'true');
                     }
                 }
             }
