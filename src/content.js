@@ -313,6 +313,8 @@ function getValidTag(currentTag, direction = 'down') {
 
 // 处理点击事件
 function handleClick(event) {
+    stopAutoReading(); // 停止自动阅读
+
     let targetElement = event.target;
 
     // 向上遍历DOM树，找到包含点击元素的目标标签（处理点击文字不触发情况）
@@ -358,10 +360,16 @@ function applyBlueBorder(tag) {
     ], (data) => {
         tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
         tag.style.borderRadius = data.borderRadius;
+        tag.style.borderRadius = data.borderRadius;
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
 
-        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
+        const tagRect = tag.getBoundingClientRect();
+
+        // 检查标签是否超出当前窗口大小，如果超过则跳过scrollIntoView.
+        if (tagRect.width <= window.innerWidth && tagRect.height <= window.innerHeight) {
+            tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
+        }
     });
 }
 
@@ -482,6 +490,7 @@ function addMouseListener(doc) {
         // 使用 mousedown 事件监听鼠标中键
         doc.addEventListener('mousedown', function(event) {
             if (event.button === 1) { // 检查鼠标中键
+                stopAutoReading();
                 if (currentHighlightedSentence) {
                     copyAndReadSentence(currentHighlightedSentence); // 传递HTML内容以便处理振假名
                 }
@@ -500,9 +509,14 @@ function addMouseListener(doc) {
                 const img = event.target.querySelector('img');
                 if (!img.parentElement || img.parentElement.nodeName !== 'A') {
                     img.style.cursor = 'pointer';
-                    img.addEventListener('click', function() {
-                        window.open(img.src, '_blank');
-                    });
+
+                    // 检查是否已经有点击事件监听器
+                    if (!img.hasAttribute('data-click-listener-added')) {
+                        img.addEventListener('click', function() {
+                            window.open(img.src, '_blank');
+                        });
+                        img.setAttribute('data-click-listener-added', 'true');
+                    }
                 }
             }
         });

@@ -7,16 +7,10 @@
     <title>Setting</title>
     <!-- <link rel="stylesheet" href="css/popup.css" /> -->
     <style>
-      :root {
-        --color1: hsl(4, 30%, 54%);
-        --color2: hsl(4, 48%, 36%);
-        --color3: hsl(4, 68%, 21%);
-        }
-
       body {
-        margin: 0px;
-        padding: 0px;
-        width: 350px;
+        margin: 10px;
+        padding: 5px;
+        width: 400px;
       }
 
       .settings {
@@ -27,78 +21,29 @@
         width: 100%; /* 这里设置宽度 */
       }
 
-      /* 滑動鈕 樣式 */
-      [type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        margin: 0;
-        outline: 0;
-        background-color: transparent;
-        width: 80%;
-      }
- 
-      /* 定义range控件轨道的样式 */
-      [type="range"]::-webkit-slider-runnable-track {
-        height: 4px;
-        background: #eee;
-      }
-  
-      /* 定义range控件容器的样式 */
-      [type="range" i]::-webkit-slider-container {
-        height: 20px;
-        overflow: hidden;
-      }
- 
-      /* 定义range控件拇指的样式 */
-      [type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #f44336;
-        border: 1px solid transparent;
-        margin-top: -8px;
-        /* 使用border-image属性给拇指添加渐变边框 */
-        border-image: linear-gradient(#f44336, #f44336) 0 fill / 8 20 8 0 / 0px 0px 0 2000px;
-      }
-
       .save {
-        font-size: 30px;
-        color: #ffffff;
-        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: 20px;
+        color: #0a6b32;
+        font-family: Georgia, 'Times New Roman', Times, serif;
         position: fixed; /* 固定位置 */
         top: 10px; /* 距离顶部10px */
         right: 10px; /* 距离右边10px */
         z-index: 1000; /* 确保按钮在最上层 */
-        background-color: var(--color2);
-        opacity: 0.8;
       }
-      .save:hover {
-        opacity: 1;
-      }
-
       .gift {
-        height: 300px;
-      }
-      .upper-part {
-        background-image: url('img/img2.png'); /* 替换为你的背景图片路径 */
-        background-size: cover;
-        background-position: center;
-        padding: 10px;
-        height: 100px;
+        height: 270px;
       }
 
       kbd {
-        background-color: var(--color1);
+        background-color: #0a6b32;
         color: white; /* 文字颜色为白色 */
-        border: 2px solid var(--color3); /* 深绿色边框 */
+        border: 2px solid #064a22; /* 深绿色边框 */
         border-radius: 4px; /* 圆角 */
         padding: 2px 6px; /* 内边距 */
         font-family: "Courier New", Courier, monospace; /* 等宽字体 */
       }
 
-      /* 开关按钮1 */
+      /* 基本开关样式 */
       .switch {
         position: relative;
         display: inline-block;
@@ -137,11 +82,11 @@
       }
 
       input:checked + .slider {
-        background-color: var(--color1);
+        background-color: #1c72e2;
       }
 
       input:focus + .slider {
-        box-shadow: 0 0 1px var(--color1);
+        box-shadow: 0 0 1px #1c72e2;
       }
 
       input:checked + .slider:before {
@@ -187,70 +132,17 @@
         opacity: 0;
       }
 
-      /* 开关按钮2 */
-      .cmn-toggle {
-        position: absolute;
-        margin-left: -9999px;
-        visibility: hidden;
-      }
-      .cmn-toggle + label {
-        display: block;
-        position: relative;
-        cursor: pointer;
-        outline: none;
-        user-select: none;
-      }
-      input.cmn-toggle-round-flat + label {
-        padding: 2px;
-        width: 40px;
-        height: 20px;
-        background-color: #dddddd;
-        border-radius: 15px;
-        transition: background 0.3s;
-      }
-      input.cmn-toggle-round-flat + label:before,
-      input.cmn-toggle-round-flat + label:after {
-        display: block;
-        position: absolute;
-        content: "";
-      }
-      input.cmn-toggle-round-flat + label:before {
-        top: 2px;
-        left: 2px;
-        bottom: 2px;
-        right: 2px;
-        background-color: #fff;
-        border-radius: 15px;
-        transition: background 0.3s;
-      }
-      input.cmn-toggle-round-flat + label:after {
-        top: 4px;
-        left: 4px;
-        bottom: 4px;
-        width: 15px;
-        background-color: #dddddd;
-        border-radius: 10px;
-        transition: margin 0.3s, background 0.3s;
-      }
-      input.cmn-toggle-round-flat:checked + label {
-        background-color: var(--color1);
-      }
-      input.cmn-toggle-round-flat:checked + label:after {
-        margin-left: 21px;
-        background-color: var(--color2);
-      }
-
       .text-h1 {
-        display: contents;
-        font-size: 20px;
-        color: #880505;
-        font-family:Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: 13px;
+        color: #1ec2b4;
+        font-family: Georgia, 'Times New Roman', Times, serif;
+        margin-bottom: 0;
       }
 
       .text-s1 {
         font-size: 10px;
-        color: #868686;
-        margin: 0px 0;
+        color: #bdbdbd;
+        margin: 5px 0;
       }
 
       .text-s2 {
@@ -274,29 +166,25 @@
       }
 
       .tab-label {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        display: block;
         cursor: pointer;
-        padding: 8px;
+        padding: 10px;
         margin-top: 5px;
         border: 1px solid #ccc;
-        background-color: var(--color2);
+        background-color: #3a7452;
         color: #ffffff;
-        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-        font-size: 1.7em;
       }
 
       .tab-label:hover {
-        background-color: var(--color3);
+        background-color: #0a6b32;
       }
 
       .tab-label-color {
-        background-color: var(--color1);
+        background-color: #8d8d8d;
       }
 
       .tab-label-color:hover {
-        background-color: var(--color2);
+        background-color: #636363;
       }
 
       .tab-content {
@@ -309,25 +197,32 @@
   </head>
   <body>
     <form id="settingsForm">
-
-      <div class="upper-part">
-        <p class="text-h1" id="extension-version">v 1.0.0</p>
-        <p class="text-s1" id="extension-author">By: raindrop213</p>
+      <div class="settings">
+        <label class="switch">
+          <input type="checkbox" id="toggleSwitch" />
+          <span class="slider round">
+            <span class="on">ON</span>
+            <span class="off">OFF</span>
+          </span>
+        </label>
       </div>
+
+      <div class="settings">
+        <p class="text-h1" id="extension-version"></p>
+        <p class="text-s1" id="extension-author"></p>
+      </div>
+      <hr />
 
       <div class="tabs">
         <!-- Copy Tab -->
         <input type="radio" id="tab1" name="tab" class="tab" checked />
-        <label for="tab1" class="tab-label">Copy
-          <input id="copy" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-          <label for="copy"></label>
-        </label>
+        <label for="tab1" class="tab-label">Copy <input type="checkbox" id="copy" class="title-switch" /></label>
         <div class="tab-content">
           <div class="settings">
             <label>Ignore Furigana: 忽略振假名 <input type="checkbox" id="ignoreFurigana" /></label>
           </div>
           <div class="settings">
-            <label for="symbolPairs">Paragraph Symbol Pairs: 忽略首尾符号对</label>
+            <label for="symbolPairs">Paragraph SymbolPairs: 忽略首尾符号对</label>
             <input type="text" id="symbolPairs" />
           </div>
           <div class="settings">
@@ -335,14 +230,8 @@
             <input type="text" id="sentenceDelimiters" />
           </div>
           <div class="settings">
-            <label for="sentenceThreshold">Sentence Segmentation Threshold: 断句的字数阈值</label>
-            <input type="text" id="sentenceThreshold" />
+            <label>Sentence Segmentation Threshold: 断句的字数阈值<input type="text" id="sentenceThreshold" /></label>
           </div>
-          <div class="settings">
-            <label for="readingInterval">Reading Interval: 自动朗读间隔(ms)</label>
-            <input type="text" id="readingInterval" />
-          </div>
-          
         </div>
 
         <!-- TTS Tab -->
@@ -350,10 +239,7 @@
         <label for="tab2" class="tab-label">TTS</label>
         <div class="tab-content">
           <input type="radio" id="tabWindows" name="ttsTab" class="tab" checked />
-          <label for="tabWindows" class="tab-label tab-label-color">Windows
-            <input id="useWindowsTTS" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="useWindowsTTS"></label>
-          </label>
+          <label for="tabWindows" class="tab-label tab-label-color">Windows TTS <input type="checkbox" id="useWindowsTTS" class="title-switch" /></label>
           <div class="tab-content">
             <div class="settings">
               <label for="winVoice">Voice: 人物</label>
@@ -370,10 +256,7 @@
           </div>
 
           <input type="radio" id="tabVits" name="ttsTab" class="tab" />
-          <label for="tabVits" class="tab-label tab-label-color">VITS
-            <input id="useVITS" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="useVITS"></label>
-          </label>
+          <label for="tabVits" class="tab-label tab-label-color">VITS TTS <input type="checkbox" id="useVITS" class="title-switch" /></label>
           <div class="tab-content">
             <div class="settings">
               需要下载：<a href="https://github.com/raindrop213/AnonTranslator/releases" target="_blank">vitsTTS整合包</a>
@@ -423,13 +306,10 @@
         <label for="tab3" class="tab-label">Translator</label>
         <div class="tab-content">
           <input type="radio" id="tabgoogle" name="translatorTab" class="tab" checked />
-          <label for="tabgoogle" class="tab-label tab-label-color">Google 
-            <input id="google" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="google"></label>
-          </label>
+          <label for="tabgoogle" class="tab-label tab-label-color">Google <input type="checkbox" id="google" checked /></label>
           <div class="tab-content">
             <div class="settings">
-              <label>Google: <input type="color" id="googleColor" /></label>
+              <label>Google Color: <input type="color" id="googleColor" /></label>
             </div>
             <div class="settings">
               <label>From: 
@@ -455,13 +335,10 @@
           </div>
 
           <input type="radio" id="tabDeepl" name="translatorTab" class="tab" checked />
-          <label for="tabDeepl" class="tab-label tab-label-color">Deepl 
-            <input id="deepl" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="deepl"></label>
-          </label>
+          <label for="tabDeepl" class="tab-label tab-label-color">Deepl <input type="checkbox" id="deepl" checked /></label>
           <div class="tab-content">
             <div class="settings">
-              <label>Deepl: <input type="color" id="deeplColor" /></label>
+              <label>Deepl Color: <input type="color" id="deeplColor" /></label>
             </div>
             <div class="settings">
               <label>From: 
@@ -485,13 +362,10 @@
           </div>
 
           <input type="radio" id="tabYoudao" name="translatorTab" class="tab" checked />
-          <label for="tabYoudao" class="tab-label tab-label-color">Youdao 
-            <input id="youdao" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="youdao"></label>
-          </label>
+          <label for="tabYoudao" class="tab-label tab-label-color">Youdao <input type="checkbox" id="youdao" checked /></label>
           <div class="tab-content">
             <div class="settings">
-              <label>Youdao: <input type="color" id="youdaoColor" /></label>
+              <label>Youdao Color: <input type="color" id="youdaoColor" /></label>
             </div>
             <div class="settings">
               <label>From: 
@@ -522,10 +396,10 @@
         <label for="tab4" class="tab-label">Style</label>
         <div class="tab-content">
           <div class="settings">
-            <label>Border Width: 框宽度<input type="text" id="borderWidth" /></label>
+            <label>Border Width: <input type="text" id="borderWidth" /></label>
           </div>
           <div class="settings">
-            <label>Border Style: 框样式
+            <label>Border Style:
                 <select id="borderStyle">
                 <option value="none">None</option>
                 <option value="solid">Solid</option>
@@ -540,16 +414,16 @@
             </label>
           </div>
           <div class="settings">
-            <label>Border Radius: 框圆角<input type="text" id="borderRadius" /></label>
+            <label>Border Radius: <input type="text" id="borderRadius" /></label>
           </div>
           <div class="settings">
-            <label>Free Border Color: 预选框 <input type="color" id="freeBorderColor"/></label>
+            <label>Free Border Color: 指示框 <input type="color" id="freeBorderColor"/></label>
           </div>
           <div class="settings">
-            <label>Selected Border Color: 激活框 <input type="color" id="selectedBorderColor"/></label>
+            <label>Selected Border Color: 被选中的框 <input type="color" id="selectedBorderColor"/></label>
           </div>
           <div class="settings">
-            <label>Selected Sentence Color: 预选句子 <input type="color" id="sentenceColor"/></label>
+            <label>Selected Sentence Color: 被选中的句子 <input type="color" id="sentenceColor"/></label>
           </div>
           <div class="settings">
             <label>Fade away: 延迟消失(ms) <input type="text" id="fade" /></label>
@@ -583,9 +457,12 @@
         
       </div>
       <br>
-      <button class="save" type="submit">Save</button>
+      <button class="save" type="submit">Save Settings</button>
     </form>
 
     <script src="src/popup.js"></script>
   </body>
 </html>
+
+
+这是Chrome插件的popup窗口，当我重新打开的时候我希望可以在上一次退出的界面，还有google、Deepl、youdao这样的二级窗口是可以同时打开的，而不是像现在那样只能开一个。

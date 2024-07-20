@@ -24,11 +24,11 @@
     {
       "matches": [
         "http://localhost:8083/*",
+        "http://127.0.0.1:8083/*",
         "https://kakuyomu.jp/*",
         "https://syosetu.com/*",
         "https://ebook.raindrop213.info/*",
-        "https://reader.ttsu.app/*",
-        "http://127.0.0.1/*"
+        "https://reader.ttsu.app/*"
       ],
       "js": ["src/content.js"]
     }

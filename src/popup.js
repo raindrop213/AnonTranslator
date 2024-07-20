@@ -4,7 +4,7 @@
 const version = chrome.runtime.getManifest().version;
 const named = chrome.runtime.getManifest().name;
 const author = chrome.runtime.getManifest().author;
-document.getElementById('extension-version').textContent = `${named} ${version}`;
+document.getElementById('extension-version').textContent = `Ver ${version}`;
 document.getElementById('extension-author').textContent = `By: ${author}`;
 
 // 加载 Windows TTS 语音列表
@@ -84,6 +84,8 @@ function saveSettings() {
         settings[element.id] = element.value;
       } else if (element.tagName === 'SELECT') {
         settings[element.id] = element.value;
+      } else if (element.type === 'radio') {
+        settings[element.id] = element.checked;
       }
     }
   }
