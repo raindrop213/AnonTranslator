@@ -20,7 +20,7 @@ A chrome extension for light novel reading
   下载解压后打开 <kbd>RD213.bat</kbd>（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型。能力有限，无论如何都绕不开限制，就加了个api来桥接插件･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
 ### **使用场景**
-1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
+1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！这里放一下我的 [书库](https://ebook.raindrop213.info/)）；
 2. 由于主要适配 Calibre-web，别的阅读器和网站不一定能用。插件默认提取网页中  \<p\> \<h1\> ~ \<h6\> 标签。这里放一个简单好用的阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
 
 ### **使用说明**
