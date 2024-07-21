@@ -100,7 +100,7 @@ function loadWindowsVoices(defaultVoiceIndex) {
 
 // 加载 VITS TTS 语音列表
 function loadVitsVoices(defaultVitsVoiceId) {
-  fetch('defaultVoice.json')
+  fetch('config/defaultVoice.json')
     .then(response => response.json())
     .then(data => {
       const vitsVoiceSelect = document.getElementById('vitsVoice');

@@ -371,30 +371,28 @@ function handleClick(event) {
 
 // 为指定标签添加激活框
 function applyBlueBorder(tag) {
-    // 如果有上一个被点击的标签且不是当前标签
-    if (lastClickedPtag && lastClickedPtag !== tag) {
-        // 移除上一个标签的翻译内容
-        const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-        existingTranslations.forEach(div => div.remove());
-
-        // 移除上一个激活框
-        lastClickedPtag.style.outline = "";
-        lastClickedPtag.classList.remove('blue-highlighted');
-    }
-
-    // 为当前标签应用激活框
     chrome.storage.sync.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollSwitch', 'scrollIntoView'
     ], (data) => {
-        tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
-        tag.style.borderRadius = data.borderRadius;
-        tag.style.borderRadius = data.borderRadius;
+
+        // 如果有上一个被点击的标签且不是当前标签
+        if (lastClickedPtag && lastClickedPtag !== tag) {
+            // 移除上一个标签的翻译内容
+            const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
+            existingTranslations.forEach(div => div.remove());
+            // 移除上一个激活框
+            lastClickedPtag.style.outline = "";
+            lastClickedPtag.classList.remove('blue-highlighted');
+        }
+
+        // 为当前标签应用激活框
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
-
-        const tagRect = tag.getBoundingClientRect();
-
+        tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
+        tag.style.borderRadius = data.borderRadius;
+        
         // 检查标签是否超出当前窗口大小，如果超过则跳过scrollIntoView.
+        const tagRect = tag.getBoundingClientRect();
         if (data.scrollSwitch && tagRect.width <= window.innerWidth && tagRect.height <= window.innerHeight) {
             tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
         }
@@ -407,12 +405,12 @@ function highlightAndCopyPtag(doc) {
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
-            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted') && event.target.textContent.trim()) {
-                event.target.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
-                event.target.style.borderRadius = data.borderRadius;
+            if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted') && !event.target.classList.contains('blue-highlighted') && event.target.textContent.trim()) {
+                // 为当前标签应用激活框
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
-
+                event.target.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
+                event.target.style.borderRadius = data.borderRadius;
                 // 分割句子并用 <span> 标签包裹
                 if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img, a')) {
                     const sentences = splitSentences(event.target.innerHTML.replace(/<span[^>]*>|<\/span>/g, ''), data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));

@@ -2,7 +2,7 @@
 
 // 读取并解析defaultSettings.json文件
 function loadDefaultSettings() {
-  return fetch(chrome.runtime.getURL('defaultSettings.json'))
+  return fetch(chrome.runtime.getURL('config/defaultSettings.json'))
     .then(response => response.json())
     .catch(error => {
       console.error("Error loading default settings:", error);
