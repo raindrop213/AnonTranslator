@@ -1,3 +1,5 @@
+/* popup.css */
+
 :root {
   --color1: hsl(4, 30%, 54%);
   --color2: hsl(4, 48%, 36%);
@@ -9,6 +11,20 @@ body {
   margin: 0px;
   padding: 0px;
   width: 350px;
+}
+
+::-webkit-scrollbar {
+  width: 8px; /* 设置滚动条的宽度 */
+  height: 8px; /* 设置水平滚动条的高度 */
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color2); /* 滑道背景设置为透明 */
+}
+
+::-webkit-scrollbar-thumb {
+  margin: 1px;
+  background: white; /* 滚动条滑块颜色设置为半透明 */
 }
 
 .custom-list {
@@ -25,11 +41,15 @@ body {
   margin: 5px;
 }
 
+select {
+  width: 100%;
+}
+
 input[type="text"] {
   width: 100%; /* 这里设置宽度 */
 }
 
-/* 滑動鈕 樣式 */
+/* 滑动钮样式 */
 [type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -67,13 +87,14 @@ input[type="text"] {
 }
 
 .save {
-  font-size: 30px;
+  font-size: 28px;
   color: #ffffff;
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   position: fixed; /* 固定位置 */
-  top: 10px; /* 距离顶部10px */
-  right: 10px; /* 距离右边10px */
-  z-index: 1000; /* 确保按钮在最上层 */
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  border-radius: 5px;
   background-color: var(--color2);
   opacity: 0.8;
 }
@@ -90,6 +111,7 @@ input[type="text"] {
   background-position: center;
   padding: 6px;
   height: 100px;
+  position: relative; /* 添加这个属性 */
 }
 
 kbd {
@@ -106,21 +128,22 @@ kbd {
   margin-left: 10px;
 }
 
-/* 开关按钮1 */
+/* 总开关按钮ON/OFF */
 .switch {
-  position: relative;
+  position: absolute;
   display: inline-block;
   width: 70px;
   height: 34px;
+  bottom: 10px; /* 调整距离底部的距离 */
+  right: 10px; /* 调整距离右边的距离 */
+  z-index: 1000; /* 确保开关在最上层 */
 }
-
 /* 隐藏默认的checkbox */
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
-
 /* 自定义滑块 */
 .slider {
   position: absolute;
@@ -132,7 +155,6 @@ kbd {
   background-color: #ccc;
   transition: 0.4s;
 }
-
 .slider:before {
   position: absolute;
   content: "";
@@ -143,28 +165,22 @@ kbd {
   background-color: white;
   transition: 0.4s;
 }
-
 input:checked + .slider {
-  background-color: var(--color1);
+  background-color: var(--color2);
 }
-
 input:focus + .slider {
-  box-shadow: 0 0 1px var(--color1);
+  box-shadow: 0 0 1px var(--color2);
 }
-
 input:checked + .slider:before {
   transform: translateX(35px);
 }
-
 /* 圆角滑块 */
 .slider.round {
   border-radius: 5px;
 }
-
 .slider.round:before {
   border-radius: 3px;
 }
-
 /* ON和OFF文字样式 */
 .slider .on,
 .slider .off {
@@ -175,22 +191,18 @@ input:checked + .slider:before {
   font-size: 12px;
   font-family: Arial, sans-serif;
 }
-
 .slider .on {
   left: 10px;
   opacity: 0;
 }
-
 .slider .off {
   right: 10px;
   opacity: 1;
 }
-
 /* 当开关选中时改变文字的显示 */
 input:checked + .slider .on {
   opacity: 1;
 }
-
 input:checked + .slider .off {
   opacity: 0;
 }
@@ -211,7 +223,7 @@ input:checked + .slider .off {
 input.cmn-toggle-round-flat + label {
   padding: 2px;
   width: 40px;
-  height: 20px;
+  height: 18px;
   background-color: #dddddd;
   border-radius: 15px;
   transition: background 0.3s;
@@ -295,7 +307,7 @@ input[type="checkbox"] {
   background-color: var(--color2);
   color: #ffffff;
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-  font-size: 1.7em;
+  font-size: 1.6em;
 }
 
 .tab-label:hover {

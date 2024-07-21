@@ -31,6 +31,45 @@ copyNotification.id = 'copy-notification';
 document.body.appendChild(copyNotification);
 
 
+/* ------------------------------------------------------------总开关 */
+
+// 初始设置
+chrome.storage.sync.get(['pluginSwitch'], (data) => {
+    if (!data.pluginSwitch) {
+      // 如果插件被禁用，取消所有绑定事件或功能
+      removeEventListeners();
+    }
+});
+
+// 接收来自 popup 的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'togglePlugin') {
+        chrome.storage.sync.get(['pluginSwitch'], (data) => {
+            if (data.pluginSwitch) {
+                console.log("ttttttttttttt")
+                addEventListeners();
+            } else {
+                console.log("fffffffffffff")
+                removeEventListeners();
+            }
+        })
+    }
+});
+
+// 启用插件功能
+function addEventListeners() {
+    addMouseListener(document);
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// 禁用插件功能
+function removeEventListeners() {
+    window.speechSynthesis.cancel();
+    document.removeEventListener('click', handleClick);
+    observer.disconnect();
+}
+
+
 /* ------------------------------------------------------------文本模块 */
 
 // 分割成列表

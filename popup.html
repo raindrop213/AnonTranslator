@@ -1,3 +1,5 @@
+<!-- popup.html -->
+</popup>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -12,7 +14,14 @@
     <form id="settingsForm">
 
       <div class="upper-part">
-        <p class="text-h1" id="extension-version"></p>
+        <label class="switch">
+          <input type="checkbox" id="pluginSwitch">
+          <span class="slider round">
+              <span class="on">ON</span>
+              <span class="off">OFF</span>
+          </span>
+        </label>
+        <p class="text-h1" id="extensionVersion"></p>
         <p class="text-s1">By: raindrop213</p>
       </div>
 
@@ -53,7 +62,7 @@
         <input type="radio" id="tab2" name="tab" class="tab" />
         <label for="tab2" class="tab-label">TTS</label>
         <div class="tab-content">
-          <input type="radio" id="tabWindows" name="ttsTab" class="tab" checked />
+          <input type="checkbox" id="tabWindows" name="ttsTab" class="tab" checked />
           <label for="tabWindows" class="tab-label tab-label-color">Windows
             <input id="useWindowsTTS" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
             <label for="useWindowsTTS"></label>
@@ -75,7 +84,7 @@
             </div>
           </div>
 
-          <input type="radio" id="tabVits" name="ttsTab" class="tab" />
+          <input type="checkbox" id="tabVits" name="ttsTab" class="tab" />
           <label for="tabVits" class="tab-label tab-label-color">VITS
             <input id="useVITS" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
             <label for="useVITS"></label>
@@ -129,7 +138,7 @@
         <input type="radio" id="tab3" name="tab" class="tab" />
         <label for="tab3" class="tab-label">Translator</label>
         <div class="tab-content">
-          <input type="radio" id="tabgoogle" name="translatorTab" class="tab" checked />
+          <input type="checkbox" id="tabgoogle" name="translatorTab" class="tab" checked />
           <label for="tabgoogle" class="tab-label tab-label-color">Google 
             <input id="google" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
             <label for="google"></label>
@@ -161,7 +170,7 @@
             </div>
           </div>
 
-          <input type="radio" id="tabDeepl" name="translatorTab" class="tab" checked />
+          <input type="checkbox" id="tabDeepl" name="translatorTab" class="tab" />
           <label for="tabDeepl" class="tab-label tab-label-color">Deepl 
             <input id="deepl" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
             <label for="deepl"></label>
@@ -191,7 +200,7 @@
             </div>
           </div>
 
-          <input type="radio" id="tabYoudao" name="translatorTab" class="tab" checked />
+          <input type="checkbox" id="tabYoudao" name="translatorTab" class="tab" />
           <label for="tabYoudao" class="tab-label tab-label-color">Youdao 
             <input id="youdao" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
             <label for="youdao"></label>

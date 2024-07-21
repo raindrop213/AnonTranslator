@@ -1,5 +1,5 @@
 {
-  "toggleSwitch": true,
+  "pluginSwitch": true,
   "copy": true,
   "ignoreFurigana": true,
   "showCopyContent": true,
