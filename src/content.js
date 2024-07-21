@@ -484,7 +484,7 @@ function addMouseListener(doc) {
         // 键盘事件，包括箭头键和数字键盘 0
         doc.addEventListener('keydown', function(event) {
             if (lastClickedPtag) {
-                if (event.keyCode === 40 || event.keyCode === 97 || event.keyCode === 20 || event.keyCode === 98) {
+                if (event.keyCode === 40 || event.keyCode === 97 || event.keyCode === 38 || event.keyCode === 98) {
                     stopAutoReading(); // 停止自动阅读
                     
                     // 确保新标签是一个 target 元素并且有文本内容

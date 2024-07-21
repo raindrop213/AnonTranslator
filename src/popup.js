@@ -7,49 +7,6 @@ const author = chrome.runtime.getManifest().author;
 document.getElementById('extension-version').textContent = `Ver ${version}`;
 document.getElementById('extension-author').textContent = `By: ${author}`;
 
-// 加载 Windows TTS 语音列表
-function loadWindowsVoices(defaultVoiceIndex) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    const voices = window.speechSynthesis.getVoices();
-    const voiceSelect = document.getElementById('winVoice');
-    voiceSelect.innerHTML = ""; // 清空现有选项
-    voices.forEach((voice, index) => {
-      let option = document.createElement('option');
-      option.text = voice.name;
-      option.value = index;
-      voiceSelect.add(option);
-    });
-    // 设置选中的语音序号
-    if (defaultVoiceIndex !== undefined) {
-      voiceSelect.value = defaultVoiceIndex;
-    }
-  };
-}
-
-
-// 加载 VITS TTS 语音列表
-function loadVitsVoices(defaultVitsVoiceId) {
-  fetch('defaultVoice.json')
-    .then(response => response.json())
-    .then(data => {
-      const vitsVoiceSelect = document.getElementById('vitsVoice');
-      vitsVoiceSelect.innerHTML = ""; // 清空现有选项
-      data.VITS.forEach(voice => {
-        let option = document.createElement('option');
-        option.text = `${voice.id}_${voice.lang.join('/')}_${voice.name}`;
-        option.value = voice.id;
-        vitsVoiceSelect.add(option);
-      });
-      // 设置选中的语音序号
-      if (defaultVitsVoiceId !== undefined) {
-        vitsVoiceSelect.value = defaultVitsVoiceId;
-      }
-    })
-    .catch(error => {
-      console.error('加载 VITS 语音时出错:', error);
-    });
-}
-
 // 加载保存的设置
 function loadSettings() {
   chrome.storage.sync.get(null, (settings) => {
@@ -120,3 +77,46 @@ document.addEventListener('DOMContentLoaded', function () {
   bindSlider('pitch', 'pitchValue');
   bindSlider('length', 'lengthValue');
 });
+
+// 加载 Windows TTS 语音列表
+function loadWindowsVoices(defaultVoiceIndex) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const voiceSelect = document.getElementById('winVoice');
+    voiceSelect.innerHTML = ""; // 清空现有选项
+    voices.forEach((voice, index) => {
+      let option = document.createElement('option');
+      option.text = voice.name;
+      option.value = index;
+      voiceSelect.add(option);
+    });
+    // 设置选中的语音序号
+    if (defaultVoiceIndex !== undefined) {
+      voiceSelect.value = defaultVoiceIndex;
+    }
+  };
+}
+
+
+// 加载 VITS TTS 语音列表
+function loadVitsVoices(defaultVitsVoiceId) {
+  fetch('defaultVoice.json')
+    .then(response => response.json())
+    .then(data => {
+      const vitsVoiceSelect = document.getElementById('vitsVoice');
+      vitsVoiceSelect.innerHTML = ""; // 清空现有选项
+      data.VITS.forEach(voice => {
+        let option = document.createElement('option');
+        option.text = `${voice.id}_${voice.lang.join('/')}_${voice.name}`;
+        option.value = voice.id;
+        vitsVoiceSelect.add(option);
+      });
+      // 设置选中的语音序号
+      if (defaultVitsVoiceId !== undefined) {
+        vitsVoiceSelect.value = defaultVitsVoiceId;
+      }
+    })
+    .catch(error => {
+      console.error('加载 VITS 语音时出错:', error);
+    });
+}

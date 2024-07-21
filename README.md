@@ -36,7 +36,7 @@ A chrome extension for light novel reading
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
-1. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1::23456 说明能用，使用时请挂着别关。
+1. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
 2. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
 3. Deepl返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但deepl日语效果不行。
 
