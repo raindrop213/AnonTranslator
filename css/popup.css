@@ -11,6 +11,16 @@ body {
   width: 350px;
 }
 
+.custom-list {
+  list-style-type: disc; /* 使用圆点 */
+  padding-left: 20px; /* 调整左边距，使列表项对齐 */
+}
+
+.custom-list li {
+  margin-bottom: 10px; /* 每个列表项之间的间距 */
+  line-height: 2em;
+}
+
 .settings {
   margin: 5px;
 }
@@ -78,7 +88,7 @@ input[type="text"] {
   background-image: url("../img/img2.png"); /* 替换为你的背景图片路径 */
   background-size: cover;
   background-position: center;
-  padding: 10px;
+  padding: 6px;
   height: 100px;
 }
 

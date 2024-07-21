@@ -1,5 +1,5 @@
-# **AnonTranslator**
-![tips](https://raw.githubusercontent.com/raindrop213/AnonTranslator/main/img/icon128.png)
+# **AnonTranslator v1.1.0**
+![tips](img/icon128.png)
 <h3>
 <ruby>千早<rt>ちはや</rt></ruby>
 <ruby>愛音<rt>あのん</rt></ruby>
@@ -9,7 +9,6 @@ A chrome extension for light novel reading
 啃生肉工具，获取浏览器中的段落或句子，并复制到剪切板
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
-
 ![tips](img/preview2.gif)
 
 ---
@@ -20,9 +19,9 @@ A chrome extension for light novel reading
   下载解压后打开 <kbd>RD213.bat</kbd>（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型。能力有限，无论如何都绕不开限制，就加了个api来桥接插件･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
 ### **使用场景**
-1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！这里放一下我的 [书库](https://ebook.raindrop213.info/)）；
-2. 由于主要适配 Calibre-web，别的阅读器和网站不一定能用。插件默认提取网页中  \<p\> \<h1\> ~ \<h6\> 标签。这里放一个简单好用的阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
-3. 建议在 <kbd>manifest.json</kbd> 中的 <code>matches</code> 参数中设置使用插件的网页。如果想无过滤则设置 <code>\<all_urls\></code> 
+1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！这里放一下我的[书库](https://ebook.raindrop213.info/)）；
+2. 由于主要适配 Calibre-web，别的阅读器和网站不一定能用。插件默认提取网页中  \<p\> \<h1\> ~ \<h6\> \<img\>标签。这里放一个简单好用的阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
+3. 建议设置成 <kbd>在特定网站上</kbd> 。也可在 <kbd>manifest.json</kbd> 中的 <code>matches</code> 硬设置使用插件的网页。
 
 ### **使用说明**
 1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；
@@ -31,6 +30,7 @@ A chrome extension for light novel reading
 4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；
 5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；
 
+- 要恢复初始设置则重新加载插件。
 - 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析、快速查词、Anki；推荐！）
 - ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，youdao限速，建议用google。目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
 
@@ -40,7 +40,6 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 1. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
 2. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
 3. Deepl返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但deepl日语效果不行。
-
 
 ### **日文资源**
 1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
