@@ -27,10 +27,12 @@
         "http://127.0.0.1:8083/*",
         "https://kakuyomu.jp/*",
         "https://syosetu.com/*",
+        "https://ncode.syosetu.com/*",
         "https://ebook.raindrop213.info/*",
         "https://reader.ttsu.app/*"
       ],
-      "js": ["src/content.js"]
+      "js": ["src/content.js"],
+      "css": ["css/styles.css"]
     }
   ],
   "background": {

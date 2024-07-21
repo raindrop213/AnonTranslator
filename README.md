@@ -6,7 +6,7 @@
 </h3>
 A chrome extension for light novel reading
 
-啃生肉工具，获取鼠标位置文本标签，复制到剪切板
+啃生肉工具，获取浏览器中的段落或句子，并复制到剪切板
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
 
@@ -15,8 +15,8 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases)【打开开发展模式；加载插件】（上架Chrome商店有点麻烦，就先从这下载吧）
-- [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases)：
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/latest)【打开开发展模式；加载插件】（上架Chrome商店有点麻烦，就先从这下载吧）
+- [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/latest)：
   下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型，还加了个WebSocket让插件与其进行网络通信。･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
 ### **使用场景**
@@ -25,19 +25,26 @@ A chrome extension for light novel reading
 
 ### **使用说明**
 1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；
-2. 键盘方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并且可以触发复制和朗读；
+2. 方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并触发复制和朗读；
 3. 空格键 <kbd>Backspace</kbd> 自动读书，一段接一段播放；
 4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；
 5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；
 
-- 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析；推荐！）
-- ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，建议用Luna的翻译，目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
+- 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析、快速查词、Anki；推荐！）
+- ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，youdao限速，建议用google。目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
 
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
-1. 浏览器中无法使用空格？ 答：空格键被插件的自动朗读占用了，所以建议去插件设置**对特定网站使用**比较好（注意只有用插件来接收vits才能实现播完自动跳转下一句，如果用luna的语音的话这个功能就不能正常工作）；
-2. 翻译返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但就像前面说的目前deepl翻译效果不行，建议还是用luna翻译。
+1. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
+2. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1::23456 说明能用，使用时请挂着别关。
+3. Deepl返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但deepl日语效果不行。
+
+
+### **日文资源**
+1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
+2. 下载党：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
+3. 电子书购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点，搜一搜就有了。
 
 ### **开发计划**
 - ~~去除振假名（假名注音）~~
@@ -46,13 +53,8 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 - ~~自动朗读~~
 - ~~翻译（Google、Youdao、DeepL）~~
 - 词典（moji、weblio）
-- 日本語形態素解析（MeCab、moji）
-- 联动Anki（提一下我另外写的一个小应用，主要是用来记录漫画生词的：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
-
-### **日文资源**
-1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
-2. 下载党：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
-3. 电子书购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点，搜一搜就有了。
+- 日本語形態素解析（MeCab）
+- 联动Anki（提一下我另外写的一个小应用，除了普通文本内容，还能附带漫画截图：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ---
 

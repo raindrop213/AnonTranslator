@@ -1,8 +1,0 @@
-.sentence {
-font-size: 20px;
-  transition: background-color 0.3s ease; /* 平滑过渡效果 */
-}
-
-.sentence:hover {
-  background-color: yellow !important; /* 鼠标悬停时的高亮颜色 */
-}

@@ -1,0 +1,19 @@
+#copy-notification {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #225d2e9c;
+    font-size: 0.8em;
+    line-height: normal;
+    opacity: 0;
+    transition:  opacity 1s ease-in-out;
+    z-index: 9999;
+    pointer-events: none; /* 使元素不可触碰 */
+    user-select: none; /* 使元素不可选中 */
+}
+
+#copy-notification.show {
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+}

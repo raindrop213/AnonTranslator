@@ -2,6 +2,7 @@
   "toggleSwitch": true,
   "copy": true,
   "ignoreFurigana": true,
+  "showCopyContent": true,
   "symbolPairs": "「」/『』/《》/“”/【】/（）",
   "sentenceDelimiters": "。/ ！/？",
   "sentenceThreshold": 50,
@@ -39,5 +40,6 @@
   "selectedBorderColor": "#94B505",
   "sentenceColor": "#d4e725",
   "fade": "30",
+  "scrollSwitch": true,
   "scrollIntoView": "smooth"
 }

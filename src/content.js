@@ -22,6 +22,14 @@ window.speechSynthesis.onvoiceschanged = function() {
     voicesLoaded = true;
 };
 
+// 存储定时器的变量
+let notificationTimeout;
+
+// 创建并添加复制通知元素到文档
+const copyNotification = document.createElement('div');
+copyNotification.id = 'copy-notification';
+document.body.appendChild(copyNotification);
+
 
 /* ------------------------------------------------------------文本模块 */
 
@@ -82,13 +90,33 @@ function cleanText(htmlString, symbolPairs) {
     return { text: finalText, textFurigana: textFurigana, space: leadingSpaces, symbolPair: symbolPair };
 }
 
+// 显示复制内容函数
+function showCopyNotification(text) {
+    const notification = document.getElementById('copy-notification');
+    notification.textContent = `${text}`;
+    notification.classList.add('show');
+
+    // 清除之前的定时器
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+
+    // 设置新的定时器
+    notificationTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 1000);
+}
+
 // 复制文本到剪贴板
 function copyTextToClipboard(text, callback) {
-    chrome.storage.sync.get('copy', (data) => {
+    chrome.storage.sync.get(['copy', 'showCopyContent'], (data) => {
         if (data.copy) {
             if (document.hasFocus()) { // 检查当前文档是否聚焦
                 navigator.clipboard.writeText(text).then(() => {
                     console.log(`Copy: ${text}`);
+                    if (data.showCopyContent) {
+                        showCopyNotification(text); // 显示复制通知
+                    }
                     if (callback) callback();
                 }).catch(err => {
                     console.log('Failed to copy text: ', err);
@@ -272,7 +300,7 @@ function translate(tag) {
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
 
         // 先检查标签中是否已经存在翻译
-        if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
+        if ((data.deepl || data.google || data.youdao) && !tag.querySelector('.translation-div')) {
             const translationDiv = document.createElement('div');
             translationDiv.className = 'translation-div';
             tag.appendChild(translationDiv);
@@ -356,7 +384,7 @@ function applyBlueBorder(tag) {
 
     // 为当前标签应用激活框
     chrome.storage.sync.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollIntoView'
+        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollSwitch', 'scrollIntoView'
     ], (data) => {
         tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
         tag.style.borderRadius = data.borderRadius;
@@ -367,7 +395,7 @@ function applyBlueBorder(tag) {
         const tagRect = tag.getBoundingClientRect();
 
         // 检查标签是否超出当前窗口大小，如果超过则跳过scrollIntoView.
-        if (tagRect.width <= window.innerWidth && tagRect.height <= window.innerHeight) {
+        if (data.scrollSwitch && tagRect.width <= window.innerWidth && tagRect.height <= window.innerHeight) {
             tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
         }
     });

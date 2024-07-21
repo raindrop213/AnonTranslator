@@ -103,3 +103,20 @@ document.getElementById('settingsForm').addEventListener('submit', (e) => {
   e.preventDefault();
   saveSettings();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+  // 通用函数来绑定滑竿和显示值的事件监听器
+  function bindSlider(sliderId, valueId) {
+    const slider = document.getElementById(sliderId);
+    const value = document.getElementById(valueId);
+    
+    slider.addEventListener('input', function () {
+      value.textContent = slider.value;
+    });
+  }
+
+  // 使用通用函数来绑定各个滑竿
+  bindSlider('rate', 'rateValue');
+  bindSlider('pitch', 'pitchValue');
+  bindSlider('length', 'lengthValue');
+});

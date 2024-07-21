@@ -1,24 +1,101 @@
-body {
-  margin: 10px;
-  padding: 5px;
-  width: 400px;
+:root {
+  --color1: hsl(4, 30%, 54%);
+  --color2: hsl(4, 48%, 36%);
+  --color3: hsl(4, 68%, 21%);
 }
 
-label {
-  display: block;
+body {
+  margin: 0px;
+  padding: 0px;
+  width: 350px;
+}
+
+.settings {
+  margin: 5px;
+}
+
+input[type="text"] {
+  width: 100%; /* 这里设置宽度 */
+}
+
+/* 滑動鈕 樣式 */
+[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  outline: 0;
+  background-color: transparent;
+  width: 80%;
+}
+
+/* 定义range控件轨道的样式 */
+[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: #eee;
+}
+
+/* 定义range控件容器的样式 */
+[type="range" i]::-webkit-slider-container {
+  height: 20px;
+  overflow: hidden;
+}
+
+/* 定义range控件拇指的样式 */
+[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--color2);
+  border: 1px solid transparent;
+  margin-top: -8px;
+  /* 使用border-image属性给拇指添加渐变边框 */
+  border-image: linear-gradient(var(--color2), var(--color2)) 0 fill / 8 20 8 0 /
+    0px 0px 0 2000px;
 }
 
 .save {
-  font-size: 20px;
-  color: #0a6b32;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 30px;
+  color: #ffffff;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   position: fixed; /* 固定位置 */
   top: 10px; /* 距离顶部10px */
   right: 10px; /* 距离右边10px */
   z-index: 1000; /* 确保按钮在最上层 */
+  background-color: var(--color2);
+  opacity: 0.8;
+}
+.save:hover {
+  opacity: 1;
 }
 
-/* 基本开关样式 */
+.gift {
+  height: 300px;
+}
+.upper-part {
+  background-image: url("img/img2.png"); /* 替换为你的背景图片路径 */
+  background-size: cover;
+  background-position: center;
+  padding: 10px;
+  height: 100px;
+}
+
+kbd {
+  background-color: var(--color1);
+  color: white; /* 文字颜色为白色 */
+  border: 2px solid var(--color3); /* 深绿色边框 */
+  border-radius: 4px; /* 圆角 */
+  padding: 2px 6px; /* 内边距 */
+  font-family: "Courier New", Courier, monospace; /* 等宽字体 */
+}
+
+.displayValue {
+  font-size: 1.5em;
+  margin-left: 10px;
+}
+
+/* 开关按钮1 */
 .switch {
   position: relative;
   display: inline-block;
@@ -42,7 +119,7 @@ label {
   right: 0;
   bottom: 0;
   background-color: #ccc;
-  transition: .4s;
+  transition: 0.4s;
 }
 
 .slider:before {
@@ -53,15 +130,15 @@ label {
   left: 4px;
   bottom: 4px;
   background-color: white;
-  transition: .4s;
+  transition: 0.4s;
 }
 
 input:checked + .slider {
-  background-color: #1c72e2;
+  background-color: var(--color1);
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px #1c72e2;
+  box-shadow: 0 0 1px var(--color1);
 }
 
 input:checked + .slider:before {
@@ -107,18 +184,74 @@ input:checked + .slider .off {
   opacity: 0;
 }
 
+/* 开关按钮2 */
+.cmn-toggle {
+  position: absolute;
+  margin-left: -9999px;
+  visibility: hidden;
+}
+.cmn-toggle + label {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+input.cmn-toggle-round-flat + label {
+  padding: 2px;
+  width: 40px;
+  height: 20px;
+  background-color: #dddddd;
+  border-radius: 15px;
+  transition: background 0.3s;
+}
+input.cmn-toggle-round-flat + label:before,
+input.cmn-toggle-round-flat + label:after {
+  display: block;
+  position: absolute;
+  content: "";
+}
+input.cmn-toggle-round-flat + label:before {
+  top: 2px;
+  left: 2px;
+  bottom: 2px;
+  right: 2px;
+  background-color: #fff;
+  border-radius: 15px;
+  transition: background 0.3s;
+}
+input.cmn-toggle-round-flat + label:after {
+  top: 4px;
+  left: 4px;
+  bottom: 4px;
+  width: 15px;
+  background-color: #dddddd;
+  border-radius: 10px;
+  transition: margin 0.3s, background 0.3s;
+}
+input.cmn-toggle-round-flat:checked + label {
+  background-color: var(--color1);
+}
+input.cmn-toggle-round-flat:checked + label:after {
+  margin-left: 21px;
+  background-color: var(--color2);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--color1);
+}
 
 .text-h1 {
-  font-size: 13px;
-  color: #1ec2b4;
-  font-family: Georgia, 'Times New Roman', Times, serif;
-  margin-bottom: 0;
+  display: contents;
+  font-size: 20px;
+  color: #880505;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
 }
 
 .text-s1 {
   font-size: 10px;
-  color: #bdbdbd;
-  margin: 5px 0;
+  color: #868686;
+  margin: 0px 0;
 }
 
 .text-s2 {
@@ -126,4 +259,50 @@ input:checked + .slider .off {
   text-align: right;
   color: #bdbdbd;
   margin: 5px 0;
+}
+
+.tab {
+  display: none;
+}
+
+.tab:checked + label + .tab-content {
+  display: block;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  background-color: var(--color2);
+  color: #ffffff;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 1.7em;
+}
+
+.tab-label:hover {
+  background-color: var(--color3);
+}
+
+.tab-label-color {
+  background-color: var(--color1);
+}
+
+.tab-label-color:hover {
+  background-color: var(--color2);
+}
+
+.tab-content {
+  display: none;
+  border: 1px solid #ccc;
+  margin-bottom: 5px;
+  padding: 10px;
 }
