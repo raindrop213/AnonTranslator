@@ -1,4 +1,4 @@
-// background.js
+/* background.js */
 
 // 读取并解析defaultSettings.json文件
 function loadDefaultSettings() {
@@ -23,47 +23,64 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// 接收消息并返回设置值
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'getSettings') {
+// 响应请求
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
+  if (message.type === 'getSettings') {
     chrome.storage.sync.get(null, (settings) => {
       sendResponse(settings);
     });
     return true;  // 表示将使用异步发送响应
+
+  // VitsTTS 响应
+  } else if (message.action === 'play_audio') {
+    const vits_url = message.vits_url;
+    const clipAPI = message.clipAPI;
+    fetch(`http://127.0.0.1:${clipAPI}/play`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: vits_url })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "completed") {
+        sendResponse({ status: "completed" });
+      } else if (data.error) {
+        sendResponse({ status: "error", error: data.error });
+      }
+    })
+    .catch(error => sendResponse({ error: error.message }));
+    return true;
+
+  // 翻译响应
+  } else if (message.action === "translate") {
+    let translateFunction;
+    switch (message.translator) {
+      case "google":
+        translateFunction = googleTranslate;
+        break;
+      case "deepl":
+        translateFunction = deeplTranslate;
+        break;
+      case "youdao":
+        translateFunction = youdaoTranslate;
+        break;
+      default:
+        sendResponse({ translatedText: "不支持的翻译器" });
+        return true;
+    }
+    translateFunction(message.text, message.from, message.to)
+      .then((translatedText) => {
+        sendResponse({ translatedText: translatedText });
+      })
+      .catch((error) => {
+        sendResponse({ translatedText: "翻译错误: " + error });
+      });
+    return true;
   }
 });
-
-
-/* ------------------------------------------------------------vits请求模块 */
-// background.js
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'play_audio') {
-      const vits_url = message.vits_url;
-      const clipAPI = message.clipAPI;
-
-      fetch(`http://127.0.0.1:${clipAPI}/play`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ url: vits_url })
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.status === "completed") {
-              sendResponse({ status: "completed" });
-          } else if (data.error) {
-              sendResponse({ status: "error", error: data.error });
-          }
-      })
-      .catch(error => sendResponse({ error: error.message }));
-
-      return true;
-  }
-});
-
-
-/* ------------------------------------------------------------翻译请求模块 */
 
 // DeepL API
 function deeplTranslate(text, from, to) {
@@ -199,36 +216,3 @@ function youdaoTranslate(text, from, to) {
     });
   });
 }
-
-// 响应翻译请求
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.action === "translate") {
-    let translateFunction;
-
-    switch (request.translator) {
-      case "google":
-        translateFunction = googleTranslate;
-        break;
-      case "deepl":
-        translateFunction = deeplTranslate;
-        break;
-      case "youdao":
-        translateFunction = youdaoTranslate;
-        break;
-      default:
-        sendResponse({ translatedText: "不支持的翻译器" });
-        return;
-    }
-
-    translateFunction(request.text, request.from, request.to)
-      .then((translatedText) => {
-        sendResponse({ translatedText: translatedText });
-      })
-      .catch((error) => {
-        sendResponse({ translatedText: "翻译错误: " + error });
-      });
-
-    // 为了使异步消息处理有效，返回 true
-    return true;
-  }
-});

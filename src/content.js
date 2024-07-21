@@ -339,6 +339,48 @@ function getValidTag(currentTag, direction = 'down') {
     return tag;
 }
 
+// 分割句子的函数
+function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
+
+    const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
+    const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
+    let parts = text.split(sentenceEndings);
+
+    // 合并分割的句子和标点符号
+    let sentences = [];
+    for (let i = 0; i < parts.length; i += 2) {
+        let sentence = parts[i];
+        if (i + 1 < parts.length) {
+            sentence += parts[i + 1];
+        }
+        sentences.push(sentence);
+    }
+
+    // 控制句子长度
+    let mergedSentences = [];
+    let tempSentence = '';
+
+    sentences.forEach(sentence => {
+        if (tempSentence.length + sentence.length > sentenceThreshold) {
+            if (tempSentence.length === 0) {
+                mergedSentences.push(`<span class="sentence">${sentence}</span>`);
+            } else {
+                mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
+                tempSentence = sentence;
+            }
+        } else {
+            tempSentence += sentence;
+        }
+    });
+
+    // 添加最后一个句子
+    if (tempSentence.length > 0) {
+        mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
+    }
+
+    return mergedSentences.join('');
+}
+
 // 处理点击事件
 function handleClick(event) {
     stopAutoReading(); // 停止自动阅读
@@ -430,48 +472,6 @@ function highlightAndCopyPtag(doc) {
             }
         }, true);
     });
-}
-
-// 分割句子的函数
-function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
-
-    const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
-    const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
-    let parts = text.split(sentenceEndings);
-
-    // 合并分割的句子和标点符号
-    let sentences = [];
-    for (let i = 0; i < parts.length; i += 2) {
-        let sentence = parts[i];
-        if (i + 1 < parts.length) {
-            sentence += parts[i + 1];
-        }
-        sentences.push(sentence);
-    }
-
-    // 控制句子长度
-    let mergedSentences = [];
-    let tempSentence = '';
-
-    sentences.forEach(sentence => {
-        if (tempSentence.length + sentence.length > sentenceThreshold) {
-            if (tempSentence.length === 0) {
-                mergedSentences.push(`<span class="sentence">${sentence}</span>`);
-            } else {
-                mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
-                tempSentence = sentence;
-            }
-        } else {
-            tempSentence += sentence;
-        }
-    });
-
-    // 添加最后一个句子
-    if (tempSentence.length > 0) {
-        mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
-    }
-
-    return mergedSentences.join('');
 }
 
 // 为文档添加鼠标和键盘监听器
@@ -569,7 +569,6 @@ function addMouseListener(doc) {
         });
     });
 }
-
 
 // 为主文档添加监听器
 addMouseListener(document);

@@ -291,8 +291,7 @@ input[type="checkbox"] {
   align-items: center;
   cursor: pointer;
   padding: 8px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
+  margin-top: 4px;
   background-color: var(--color2);
   color: #ffffff;
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
@@ -314,6 +313,6 @@ input[type="checkbox"] {
 .tab-content {
   display: none;
   border: 1px solid #ccc;
-  margin-bottom: 5px;
+  margin: 2px 0px;
   padding: 10px;
 }
