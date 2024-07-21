@@ -22,21 +22,21 @@ window.speechSynthesis.onvoiceschanged = function() {
     voicesLoaded = true;
 };
 
-function parseStringToArray(str) {
-    return str.split('/'); // 将字符串按 `/` 分割并返回数组
-}
+// 存储定时器的变量
+let notificationTimeout;
+
+// 创建并添加复制通知元素到文档
+const copyNotification = document.createElement('div');
+copyNotification.id = 'copy-notification';
+document.body.appendChild(copyNotification);
+
 
 /* ------------------------------------------------------------文本模块 */
 
-// 获取下一个或上一个非空标签
-function getValidTag(currentTag, direction = 'down') {
-    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
-    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
-        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
-    }
-    return tag;
+// 分割成列表
+function parseStringToArray(str) {
+    return str.split('/'); // 将字符串按 `/` 分割并返回数组
 }
-
 
 // 清理文本
 function cleanText(htmlString, symbolPairs) {
@@ -90,17 +90,42 @@ function cleanText(htmlString, symbolPairs) {
     return { text: finalText, textFurigana: textFurigana, space: leadingSpaces, symbolPair: symbolPair };
 }
 
+// 显示复制内容函数
+function showCopyNotification(text) {
+    const notification = document.getElementById('copy-notification');
+    notification.textContent = `${text}`;
+    notification.classList.add('show');
+
+    // 清除之前的定时器
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+
+    // 设置新的定时器
+    notificationTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 1000);
+}
+
 // 复制文本到剪贴板
 function copyTextToClipboard(text, callback) {
-    chrome.storage.sync.get('copy', (data) => {
+    chrome.storage.sync.get(['copy', 'showCopyContent'], (data) => {
         if (data.copy) {
-            navigator.clipboard.writeText(text).then(() => {
-                console.log(`Copy: ${text}`);
+            if (document.hasFocus()) { // 检查当前文档是否聚焦
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log(`Copy: ${text}`);
+                    if (data.showCopyContent) {
+                        showCopyNotification(text); // 显示复制通知
+                    }
+                    if (callback) callback();
+                }).catch(err => {
+                    console.log('Failed to copy text: ', err);
+                    if (callback) callback();
+                });
+            } else {
+                console.log('Document is not focused, cannot copy text.');
                 if (callback) callback();
-            }).catch(err => {
-                console.log('Failed to copy text: ', err);
-                if (callback) callback();
-            });
+            }
         }
     });
 }
@@ -132,41 +157,28 @@ function windows_tts(text, callback) {
 
 // 朗读文本(vitsTTS)
 function vits_tts(text, callback) {
-    chrome.storage.sync.get(['vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
-        const encodedText = encodeURIComponent(text); // 对文本进行编码
+    chrome.storage.sync.get(['clipAPI', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], (data) => {
+        const encodedText = encodeURIComponent(text);
         const params = new URLSearchParams({
             id: data.vitsVoice,
+            lang: data.vitsLang,
             length: data.length,
             noise: data.noise,
             noisew: data.noisew,
             max: data.max,
             streaming: data.streaming
-          });
-          if (data.vitsLang !== 'auto') {
-            params.append('lang', data.vitsLang);
-          }
-
+        });
+        const clipAPI = data.clipAPI;
         const vitsAPI = data.vitsAPI;
-        const clip_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
+        const vits_url = `http://127.0.0.1:${vitsAPI}/voice/vits?text=${encodedText}&${params.toString()}`; // 构建正确格式的 URL
 
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ url: clip_url }));
-        }
-
-        // 监听WebSocket消息以获取语音流
-        socket.onmessage = function(event) {
-            try {
-                const responseData = parseStringToArray(event.data);
-                
-                if (responseData.status === "finished") {
-                    console.log("Voice playback finished");
-                    if (callback) callback();
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket response:", error);
+        // 将请求发送到background script
+        chrome.runtime.sendMessage({ action: 'play_audio', vits_url: vits_url, clipAPI: clipAPI }, (response) => {
+            if (response.status === "completed" && callback) {
+                callback();
             }
-        };
-    })
+        });
+    });
 }
 
 // 复制并朗读指定标签的文本
@@ -212,7 +224,6 @@ function copyAndReadSentence(tag) {
         }
     });
 }
-
 
 
 /* ------------------------------------------------------------自动阅读控制模块 */
@@ -289,7 +300,7 @@ function translate(tag) {
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
 
         // 先检查标签中是否已经存在翻译
-        if ((data.deepl || data.google) && !tag.querySelector('.translation-div')) {
+        if ((data.deepl || data.google || data.youdao) && !tag.querySelector('.translation-div')) {
             const translationDiv = document.createElement('div');
             translationDiv.className = 'translation-div';
             tag.appendChild(translationDiv);
@@ -319,8 +330,19 @@ function translate(tag) {
 
 /* ------------------------------------------------------------用户界面交互模块 */
 
+// 获取下一个或上一个非空标签
+function getValidTag(currentTag, direction = 'down') {
+    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
+    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
+        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
+    }
+    return tag;
+}
+
 // 处理点击事件
 function handleClick(event) {
+    stopAutoReading(); // 停止自动阅读
+
     let targetElement = event.target;
 
     // 向上遍历DOM树，找到包含点击元素的目标标签（处理点击文字不触发情况）
@@ -347,7 +369,7 @@ function handleClick(event) {
     }
 }
 
-// 为指定标签添加蓝色边框
+// 为指定标签添加激活框
 function applyBlueBorder(tag) {
     // 如果有上一个被点击的标签且不是当前标签
     if (lastClickedPtag && lastClickedPtag !== tag) {
@@ -355,40 +377,45 @@ function applyBlueBorder(tag) {
         const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
         existingTranslations.forEach(div => div.remove());
 
-        // 移除上一个蓝框
-        lastClickedPtag.style.border = "";
+        // 移除上一个激活框
+        lastClickedPtag.style.outline = "";
         lastClickedPtag.classList.remove('blue-highlighted');
     }
 
-    // 为当前标签应用蓝框
+    // 为当前标签应用激活框
     chrome.storage.sync.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollIntoView'
+        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollSwitch', 'scrollIntoView'
     ], (data) => {
-        tag.style.border = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
+        tag.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.selectedBorderColor}`;
+        tag.style.borderRadius = data.borderRadius;
         tag.style.borderRadius = data.borderRadius;
         tag.classList.add('blue-highlighted');
         lastClickedPtag = tag; // 更新最后点击的标签
 
-        tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'start'});
+        const tagRect = tag.getBoundingClientRect();
+
+        // 检查标签是否超出当前窗口大小，如果超过则跳过scrollIntoView.
+        if (data.scrollSwitch && tagRect.width <= window.innerWidth && tagRect.height <= window.innerHeight) {
+            tag.scrollIntoView({ behavior: data.scrollIntoView, block: 'center', inline: 'center'});
+        }
     });
 }
 
-
-// 为 target 标签添加红框，并绑定点击事件
+// 为指定标签添加预选框，并绑定点击事件
 function highlightAndCopyPtag(doc) {
     chrome.storage.sync.get([
         'borderWidth', 'borderStyle', 'borderRadius', 'freeBorderColor', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
         doc.addEventListener('mouseenter', (event) => {
             if (target.includes(event.target.nodeName) && !event.target.classList.contains('highlighted') && event.target.textContent.trim()) {
-                event.target.style.border = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
+                event.target.style.outline = `${data.borderWidth} ${data.borderStyle} ${data.freeBorderColor}`;
                 event.target.style.borderRadius = data.borderRadius;
                 event.target.classList.add('highlighted');
                 event.target.addEventListener('click', handleClick);
 
                 // 分割句子并用 <span> 标签包裹
                 if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img, a')) {
-                    const sentences = splitSentences(event.target.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
+                    const sentences = splitSentences(event.target.innerHTML.replace(/<span[^>]*>|<\/span>/g, ''), data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
                     event.target.innerHTML = sentences;
                     event.target.classList.add('split-sentences');
                 }
@@ -398,7 +425,7 @@ function highlightAndCopyPtag(doc) {
         doc.addEventListener('mouseleave', (event) => {
             if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
                 setTimeout(() => {
-                    event.target.style.border = "";
+                    event.target.style.outline = "";
                 }, data.fade);
                 event.target.classList.remove('highlighted');
                 event.target.removeEventListener('click', handleClick);
@@ -406,10 +433,6 @@ function highlightAndCopyPtag(doc) {
         }, true);
     });
 }
-
-
-
-
 
 // 分割句子的函数
 function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
@@ -453,9 +476,6 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
     return mergedSentences.join('');
 }
 
-
-
-
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
     chrome.storage.sync.get(['sentenceColor'], (data) => {
@@ -498,6 +518,7 @@ function addMouseListener(doc) {
         // 使用 mousedown 事件监听鼠标中键
         doc.addEventListener('mousedown', function(event) {
             if (event.button === 1) { // 检查鼠标中键
+                stopAutoReading();
                 if (currentHighlightedSentence) {
                     copyAndReadSentence(currentHighlightedSentence); // 传递HTML内容以便处理振假名
                 }
@@ -509,6 +530,36 @@ function addMouseListener(doc) {
             if (event.target.classList.contains('sentence')) {
                 event.target.style.backgroundColor = data.sentenceColor; // 设置背景颜色
                 currentHighlightedSentence = event.target; // 设置当前高亮的句子
+            }
+
+            // 检查标签是否包含 img 或 svg>image 但不包含 a ，打开大图
+            if (event.target.nodeName !== 'A' && (event.target.querySelector('img') || event.target.querySelector('svg image'))) {
+                const img = event.target.querySelector('img');
+                const svgImage = event.target.querySelector('svg image');
+
+                if (img && (!img.parentElement || img.parentElement.nodeName !== 'A')) {
+                    img.style.cursor = 'pointer';
+
+                    // 检查是否已经有点击事件监听器
+                    if (!img.hasAttribute('data-click-listener-added')) {
+                        img.addEventListener('click', function() {
+                            window.open(img.src, '_blank');
+                        });
+                        img.setAttribute('data-click-listener-added', 'true');
+                    }
+                }
+
+                if (svgImage && (!svgImage.parentElement || svgImage.parentElement.nodeName !== 'A')) {
+                    svgImage.style.cursor = 'pointer';
+
+                    // 检查是否已经有点击事件监听器
+                    if (!svgImage.hasAttribute('data-click-listener-added')) {
+                        svgImage.addEventListener('click', function() {
+                            window.open(svgImage.getAttribute('xlink:href'), '_blank');
+                        });
+                        svgImage.setAttribute('data-click-listener-added', 'true');
+                    }
+                }
             }
         });
 
@@ -522,36 +573,8 @@ function addMouseListener(doc) {
 }
 
 
-
 // 为主文档添加监听器
 addMouseListener(document);
-
-
-/* ------------------------------------------------------------网络通信模块 */
-
-// 在脚本开始处添加 WebSocket 连接（vits tts需要用的）
-let socket = null;
-function connectWebSocket() {
-    chrome.storage.sync.get(['clipAPI'], (data) => {
-        socket = new WebSocket(`ws://127.0.0.1:${data.clipAPI}`);
-
-        socket.onopen = function(e) {
-        console.log("[WebSocket] Connection established");
-        };
-
-        socket.onerror = function(error) {
-        console.log(`[WebSocket] Error: ${error.message}`);
-        };
-
-        // socket.onclose = function(e) {
-        //   console.log('WebSocket connection closed unexpectedly. Reconnecting...');
-        //   setTimeout(connectWebSocket, 5000); // 5秒后重连
-        // };
-    })
-}
-
-// 在脚本开始处初始化WebSocket连接
-connectWebSocket();
 
 
 /* ------------------------------------------------------------DOM 变更监听 */

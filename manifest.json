@@ -7,6 +7,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://www2.deepl.com/*",
+    "http://127.0.0.1:8666/*",
     "https://translate.google.com/m*",
     "https://aidemo.youdao.com/trans*"
   ],
@@ -23,12 +24,15 @@
     {
       "matches": [
         "http://localhost:8083/*",
+        "http://127.0.0.1:8083/*",
         "https://kakuyomu.jp/*",
         "https://syosetu.com/*",
+        "https://ncode.syosetu.com/*",
         "https://ebook.raindrop213.info/*",
         "https://reader.ttsu.app/*"
       ],
-      "js": ["src/content.js"]
+      "js": ["src/content.js"],
+      "css": ["css/styles.css"]
     }
   ],
   "background": {

@@ -1,54 +1,25 @@
 // background.js
 
-// 初始设置值
-const defaultSettings = {
-  toggleSwitch: true,
-  copy: true,
-  ignoreFurigana: true,
-  symbolPairs: '「」/『』/《》/“”/【】/（）',
-  sentenceDelimiters: '。/ ！/？',
-  sentenceThreshold: 50,
-  useWindowsTTS: true,
-  winVoice: 5,
-  rate: 1,
-  pitch: 1,
-  useVITS: false,
-  clipAPI: 8666,
-  vitsAPI: 23456,
-  vitsVoice: 342,
-  vitsLang: 'ja',
-  length: 1,
-  noise: 0.33,
-  noisew: 0.4,
-  max: 50,
-  streaming: false,
-  readingInterval: 200,
-  google: true,
-  googleColor: '#D4B102',
-  googleFrom: 'auto',
-  googleTo: 'zh-CN',
-  deepl: true,
-  deeplColor: '#E39D7D',
-  deeplFrom: 'auto',
-  deeplTo: 'ZH',
-  youdao: true,
-  youdaoColor: '#C8E37D',
-  youdaoFrom: 'auto',
-  youdaoTo: 'zh-CHS',
-  borderWidth: '2px',
-  borderStyle: 'solid',
-  borderRadius: '8px',
-  freeBorderColor: '#225D2E',
-  selectedBorderColor: '#94B505',
-  sentenceColor: '#d4e725',
-  fade: '30',
-  scrollIntoView: 'smooth'
-};
+// 读取并解析defaultSettings.json文件
+function loadDefaultSettings() {
+  return fetch(chrome.runtime.getURL('defaultSettings.json'))
+    .then(response => response.json())
+    .catch(error => {
+      console.error("Error loading default settings:", error);
+      return null;
+    });
+}
 
 // 初始化设置
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set(defaultSettings, () => {
-    console.log("Default settings saved.");
+  loadDefaultSettings().then(defaultSettings => {
+    if (defaultSettings) {
+      chrome.storage.sync.set(defaultSettings, () => {
+        console.log("Default settings saved.");
+      });
+    } else {
+      console.error("Failed to load default settings.");
+    }
   });
 });
 
@@ -62,6 +33,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+
+/* ------------------------------------------------------------vits请求模块 */
+// background.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'play_audio') {
+      const vits_url = message.vits_url;
+      const clipAPI = message.clipAPI;
+
+      fetch(`http://127.0.0.1:${clipAPI}/play`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url: vits_url })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === "completed") {
+              sendResponse({ status: "completed" });
+          } else if (data.error) {
+              sendResponse({ status: "error", error: data.error });
+          }
+      })
+      .catch(error => sendResponse({ error: error.message }));
+
+      return true;
+  }
+});
+
+
+/* ------------------------------------------------------------翻译请求模块 */
 
 // DeepL API
 function deeplTranslate(text, from, to) {
@@ -77,8 +79,6 @@ function deeplTranslate(text, from, to) {
       }
     };
 
-    const source_lang = from;
-    const target_lang = to;
     const translate_text = text || "";
 
     if (translate_text !== "") {
@@ -90,8 +90,8 @@ function deeplTranslate(text, from, to) {
         params: {
           splitting: "newlines",
           lang: {
-            source_lang_user_selected: source_lang,
-            target_lang: target_lang,
+            source_lang_user_selected: from,
+            target_lang: to,
           },
           texts: [{ text: translate_text, requestAlternatives: 3 }],
           timestamp: getTimeStamp(translate_text.split("i").length - 1),
@@ -199,7 +199,6 @@ function youdaoTranslate(text, from, to) {
     });
   });
 }
-
 
 // 响应翻译请求
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
