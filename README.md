@@ -15,17 +15,17 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- [AnonTranslator](https://github.com/raindrop213/AnonTranslator/releases/latest)【打开开发展模式；加载插件】（上架Chrome商店有点麻烦，就先从这下载吧）
+- [AnonTranslator](https://github.com/raindrop213/AnonTranslator)（直接 [Download ZIP](https://github.com/raindrop213/AnonTranslator/archive/refs/heads/main.zip)；Chrome打开开发者模式；加载已解压的扩展程序）
 - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/latest)：
-  下载解压后打开 <kbd>RD213.bat</kbd> 需要刷新一下浏览器页面程序就会自动挂上（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型，还加了个WebSocket让插件与其进行网络通信。･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
+  下载解压后打开 <kbd>RD213.bat</kbd>（注：请避免路径中含中文，放在哪里都行。该 API 来自项目 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) ，感谢该项目的开发人员！！！本整合包里面包含所需的模型。能力有限，无论如何都绕不开限制，就加了个api来桥接插件･ﾟ･(つд`ﾟ)･ﾟ･ 就是随意，能用就行）
 
 ### **使用场景**
 1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）；
-2. 由于是在 Calibre-web 进行测试，别的阅读器不一定能用。因为默认提取网页中  \<p\> \<h1\> \<h2\> \<h3\> 标签，有些不规范的电子书可能不适用。（有时间的话可以适配一下，有时间的话......）。
+2. 由于主要适配 Calibre-web，别的阅读器和网站不一定能用。插件默认提取网页中  \<p\> \<h1\> ~ \<h6\> 标签。这里放一个简单好用的阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
 
 ### **使用说明**
 1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；
-2. 方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并触发复制和朗读；
+2. 方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并触发复制和朗读，也对应备用键位 <kbd>Num 2</kbd> 和 <kbd>Num 1</kbd>；
 3. 空格键 <kbd>Backspace</kbd> 自动读书，一段接一段播放；
 4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；
 5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；
