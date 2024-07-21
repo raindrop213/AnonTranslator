@@ -51,6 +51,8 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 2. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
 3. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
 
+![Demo_v1.1.0](https://private-user-images.githubusercontent.com/53202747/350798594-c63adcfc-2a3c-46ee-9aaa-387665005d06.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjE1OTkzOTEsIm5iZiI6MTcyMTU5OTA5MSwicGF0aCI6Ii81MzIwMjc0Ny8zNTA3OTg1OTQtYzYzYWRjZmMtMmEzYy00NmVlLTlhYWEtMzg3NjY1MDA1ZDA2LmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA3MjElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNzIxVDIxNTgxMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJjMDM3MWY0ZTAzNDg2MzI1ZjJiMGRjMzVjM2M4ZTUwYWU2Y2Y5ZmM4M2ExY2Y3NzI4NmZmNjdiNDI1ZTIwNjUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.YmIF0QUdsIIV3uneKCdK2DJA2es_VaLtaw9HJP4Ogx0)
+
 ### **日文资源**
 1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
 2. 下载党：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
@@ -65,5 +67,4 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 - 联动 Anki（提一下另外写的小应用，除了普通文本内容，还能附带漫画截图：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ---
-
 ![tips](img/img2.png)

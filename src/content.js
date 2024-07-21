@@ -46,10 +46,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'togglePlugin') {
         chrome.storage.sync.get(['pluginSwitch'], (data) => {
             if (data.pluginSwitch) {
-                console.log("ttttttttttttt")
                 addEventListeners();
             } else {
-                console.log("fffffffffffff")
                 removeEventListeners();
             }
         })
@@ -82,12 +80,13 @@ function cleanText(htmlString, symbolPairs) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 生成带有振假名的版本
+    // 移除所有 rp 标签，并将 rt 转换为括号
     div.querySelectorAll('ruby').forEach(ruby => {
-        const rb = ruby.querySelector('rb').textContent;
-        const rt = ruby.querySelector('rt').textContent;
-        const parentNode = ruby.parentNode;
-        parentNode.replaceChild(document.createTextNode(`${rb}(${rt})`), ruby);
+        ruby.querySelectorAll('rp').forEach(rp => rp.remove());
+        ruby.querySelectorAll('rt').forEach(rt => {
+            const textNode = document.createTextNode(`(${rt.textContent})`);
+            rt.parentNode.replaceChild(textNode, rt);
+        });
     });
 
     let textFurigana = div.textContent;
