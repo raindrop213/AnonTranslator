@@ -74,7 +74,7 @@ input[type="text"] {
   height: 300px;
 }
 .upper-part {
-  background-image: url("img/img2.png"); /* 替换为你的背景图片路径 */
+  background-image: url("../img/img2.png"); /* 替换为你的背景图片路径 */
   background-size: cover;
   background-position: center;
   padding: 10px;
