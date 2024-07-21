@@ -9,7 +9,7 @@ A chrome extension for light novel reading
 啃生肉工具，获取浏览器中的段落或句子，并复制到剪切板
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
-![tips](img/preview2.gif)
+![tips](img/preview3.png)
 
 ---
 
@@ -21,7 +21,6 @@ A chrome extension for light novel reading
 ### **使用场景**
 1. 推荐配合 [Calibre-web](https://github.com/janeczku/calibre-web) 使用（当然使用它的前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！这里放一下我的[书库](https://ebook.raindrop213.info/)）；
 2. 由于主要适配 Calibre-web，别的阅读器和网站不一定能用。插件默认提取网页中  \<p\> \<h1\> ~ \<h6\> \<img\>标签。这里放一个简单好用的阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
-3. 建议设置成 <kbd>在特定网站上</kbd> 。也可在 <kbd>manifest.json</kbd> 中的 <code>matches</code> 硬设置使用插件的网页。
 
 ### **使用说明**
 1. 点击 <kbd>Click</kbd> 文本段落就可以朗读和复制到剪切板；
@@ -37,9 +36,19 @@ A chrome extension for light novel reading
 https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
 
 ### **常见问题**
-1. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
-2. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
-3. Deepl返回“接口请求错误 - {}”？ 答：移除之后重新加载插件可能可以解决，但deepl日语效果不行。
+1. ※ 当插件设置成 <kbd>在特定网站上</kbd> 时翻译会失效！<kbd>在所有网站上</kbd> 则没问题。还有个办法是在 <kbd>manifest.json</kbd> 中的 <code>matches</code> 中硬设置使用插件的网页。如：
+    ```
+    "matches": [
+      "http://localhost:8083/*",
+      "http://127.0.0.1:8083/*",
+      "https://kakuyomu.jp/*",
+      "https://*.syosetu.com/*",
+      "https://ebook.raindrop213.info/*",
+      "https://reader.ttsu.app/*"
+      ],
+    ```
+2. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
+3. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
 
 ### **日文资源**
 1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；
