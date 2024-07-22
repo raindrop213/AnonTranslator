@@ -33,7 +33,7 @@ A chrome extension for light novel reading
 - ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，youdao限速，建议用google。目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
 
 ↓↓↓ v1.1.0 演示
-![Demo_v1.1.0](https://raw.githubusercontent.com/raindrop213/picx-images-hosting/master/bbs/anontranslator-v1.1.0-demo.1022a26u19.gif)
+![Demo_v1.1.0](https://cdn.jsdelivr.net/gh/raindrop213/picx-images-hosting@master/bbs/anontranslator-v1.1.0-demo.1022a26u19.gif)
 
 ↓↓↓ v0.4.0 演示(旧版本)（仅作为LunaTranslator的演示）
 
