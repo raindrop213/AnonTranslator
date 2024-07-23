@@ -24,7 +24,12 @@ function fetchLatestVersion() {
     .then(response => response.json())
     .then(data => {
       if (data && data.tag_name) {
-        document.getElementById('newVersion').textContent = `New:${data.tag_name}`;
+        const latestVersion = data.tag_name.replace(/^v/, '');
+        if (latestVersion !== version) {
+          document.getElementById('newVersion').innerHTML = `<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">NEW ${latestVersion}&#x21BB;</a>`;
+        } else {
+          document.getElementById('newVersion').textContent = '';
+        }
       }
     })
     .catch(error => {
@@ -108,6 +113,13 @@ function bindSlider(sliderId, valueId) {
   slider.addEventListener('input', () => {
     value.textContent = slider.value;
   });
+}
+
+// 保存开关状态
+function saveSwitchState(switchElement) {
+  const settings = {};
+  settings[switchElement.id] = switchElement.checked;
+  chrome.storage.sync.set(settings);
 }
 
 // 加载 Windows TTS 语音列表

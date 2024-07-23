@@ -1,4 +1,4 @@
-# **AnonTranslator v1.1.0**
+# **AnonTranslator**
 ![tips](img/icon128.png)
 <h3>
 <ruby>千早<rt>ちはや</rt></ruby>
@@ -68,4 +68,4 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
 - 联动 Anki（提一下另外写的小应用，除了普通文本内容，还能附带漫画截图：[anki-scene-memory](https://github.com/raindrop213/anki-scene-memory)）
 
 ---
-![tips](img/img2.png)
+![tips](img/img1.png)
