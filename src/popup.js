@@ -2,7 +2,7 @@
 
 // 读取元数据
 const version = chrome.runtime.getManifest().version;
-document.getElementById('extensionVersion').textContent = `Ver ${version}`;
+document.getElementById('extensionVersion').textContent = `Ver ${version} `;
 
 // 页面加载时加载设置并绑定事件
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
   bindSlider('rate', 'rateValue');
   bindSlider('pitch', 'pitchValue');
   bindSlider('length', 'lengthValue');
+  fetchLatestVersion();
 });
+
+function fetchLatestVersion() {
+  fetch('https://api.github.com/repos/raindrop213/AnonTranslator/releases/latest')
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.tag_name) {
+        document.getElementById('newVersion').textContent = `New:${data.tag_name}`;
+      }
+    })
+    .catch(error => {
+      console.log('Error fetching latest version:', error);
+    });
+}
 
 // 加载保存的设置
 function loadSettings() {
@@ -75,14 +89,14 @@ function saveSettings() {
   });
 
   chrome.storage.sync.set(settings, () => {
-    console.log("Settings saved.");
-    // 发送消息给内容脚本
-    const isEnabled = settings.pluginSwitch || false;
-    chrome.tabs.query({}, (tabs) => {
-      for (let tab of tabs) {
-        chrome.tabs.sendMessage(tab.id, { action: 'togglePlugin', enabled: isEnabled });
-      }
-    });
+    // Provide feedback to the user that settings have been saved
+    const saveButton = document.querySelector('.save');
+    saveButton.classList.add('saved');
+    saveButton.textContent = '√';
+    setTimeout(() => {
+      saveButton.classList.remove('saved');
+      saveButton.textContent = 'save';
+    }, 1000);
   });
 }
 
