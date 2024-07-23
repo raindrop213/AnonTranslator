@@ -173,46 +173,51 @@ function googleTranslate(text, from, to) {
 function youdaoTranslate(text, from, to) {
   return new Promise((resolve, reject) => {
     const headers = {
-        "authority": "aidemo.youdao.com",
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-language": "zh-CN,zh;q=0.9",
-        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "origin": "https://ai.youdao.com",
-        "referer": "https://ai.youdao.com/",
-        "sec-ch-ua": '"Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Origin": "https://m.youdao.com",
+      "Pragma": "no-cache",
+      "Referer": "https://m.youdao.com/translate",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "same-origin",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1",
+      "sec-ch-ua": '"Microsoft Edge";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
     };
 
     const data = new URLSearchParams();
-    data.append("q", text);
-    data.append("from", from);
-    data.append("to", to);
+    data.append("inputtext", text);
+    data.append("type", from + "2" + to);
 
-    fetch("https://aidemo.youdao.com/trans", {
-        method: "POST",
-        headers: headers,
-        body: data,
-    })
-    .then(response => {
-      if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    fetch("https://m.youdao.com/translate", {
+      method: "POST",
+      headers: headers,
+      body: data,
+      cookies: {
+        "_yd_btn_fanyi_29": "true",
+        "_yd_newbanner_day": "29",
       }
-      return response.json();
     })
-    .then(json => {
-      if (json && json.translation && json.translation[0]) {
-        resolve(json.translation[0]);
+    .then(response => response.text())
+    .then(responseText => {
+      const result = responseText.match(
+        /<ul id="translateResult">[\s\S]*?<li>([\s\S]*?)<\/li>[\s\S]*?<\/ul>/
+      );
+      if (result && result[1]) {
+        resolve(result[1].replace(/<\/?[^>]+(>|$)/g, ""));
       } else {
-        throw new Error(`Unexpected response format: ${JSON.stringify(json)}`);
+        reject("翻译结果未找到");
       }
     })
     .catch(error => {
-      reject("Translation error: " + error.message);
+      reject("接口请求错误 - " + error);
     });
   });
 }
