@@ -33,39 +33,15 @@ document.body.appendChild(copyNotification);
 
 /* ------------------------------------------------------------总开关 */
 
-// 初始设置
+// 首先检查开关状态
 chrome.storage.sync.get(['pluginSwitch'], (data) => {
-    if (!data.pluginSwitch) {
-      // 如果插件被禁用，取消所有绑定事件或功能
-      removeEventListeners();
+    if (data.pluginSwitch) {
+        // 启动鼠标和键盘监听器
+        addMouseListener(document);
+        // 配置并启动观察器
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 });
-
-// 接收来自 popup 的消息
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'togglePlugin') {
-        chrome.storage.sync.get(['pluginSwitch'], (data) => {
-            if (data.pluginSwitch) {
-                addEventListeners();
-            } else {
-                removeEventListeners();
-            }
-        })
-    }
-});
-
-// 启用插件功能
-function addEventListeners() {
-    addMouseListener(document);
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-// 禁用插件功能
-function removeEventListeners() {
-    window.speechSynthesis.cancel();
-    document.removeEventListener('click', handleClick);
-    observer.disconnect();
-}
 
 
 /* ------------------------------------------------------------文本模块 */
@@ -608,9 +584,6 @@ function addMouseListener(doc) {
     });
 }
 
-// 为主文档添加监听器
-addMouseListener(document);
-
 
 /* ------------------------------------------------------------DOM 变更监听 */
 
@@ -633,5 +606,3 @@ const observer = new MutationObserver((mutations) => {
     });
 });
 
-// 配置并启动观察器
-observer.observe(document.body, { childList: true, subtree: true });

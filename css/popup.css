@@ -86,25 +86,10 @@ input[type="text"] {
     0px 0px 0 2000px;
 }
 
-.save {
-  font-size: 28px;
-  color: #ffffff;
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-  position: fixed; /* 固定位置 */
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-  border-radius: 5px;
-  background-color: var(--color2);
-  opacity: 0.8;
-}
-.save:hover {
-  opacity: 1;
-}
-
 .gift {
   height: 300px;
 }
+
 .upper-part {
   background-image: url("../img/img2.png"); /* 替换为你的背景图片路径 */
   background-size: cover;
@@ -128,15 +113,41 @@ kbd {
   margin-left: 10px;
 }
 
+/* 保存键 */
+.save {
+  cursor: pointer;
+  font-size: 28px;
+  color: #ffffff;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  position: absolute; /* 固定位置 */
+  display: inline-block;
+  top: 10px;
+  right: 10px;
+  width: 70;
+  text-align: center;
+  z-index: 1000;
+  border-radius: 5px;
+  background-color: var(--color2);
+  opacity: 1;
+  transition: background-color 1s ease, color 1s ease; /* 添加颜色变化的渐变 */
+}
+.save:hover {
+  opacity: 0.8;
+}
+.save.saved {
+  background-color: green;
+  transition: none; /* 瞬间变绿，不渐变 */
+}
+
 /* 总开关按钮ON/OFF */
 .switch {
   position: absolute;
   display: inline-block;
   width: 70px;
   height: 34px;
-  bottom: 10px; /* 调整距离底部的距离 */
-  right: 10px; /* 调整距离右边的距离 */
-  z-index: 1000; /* 确保开关在最上层 */
+  bottom: 10px;
+  right: 10px;
+  z-index: 1000;
 }
 /* 隐藏默认的checkbox */
 .switch input {
