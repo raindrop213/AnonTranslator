@@ -9,7 +9,7 @@ A chrome extension for light novel reading
 啃生肉工具，获取浏览器中的段落或句子，并复制到剪切板
 
 **日文轻小说 - Chrome插件/扩展 - 烤肉**
-![tips](img/preview3.png)
+![tips](img/preview.gif)
 
 ---
 
@@ -28,12 +28,7 @@ A chrome extension for light novel reading
 4. 键盘 <kbd>Num 0</kbd> 或 <kbd>F1</kbd> 触发复制和朗读当前段落；
 5. <kbd>鼠标中键</kbd> 复制和朗读高亮句子；
 
-- 要恢复初始设置则重新加载插件。
 - 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析、快速查词、Anki；推荐！）
-- ※ 机器总是会犯错的，比如本插件中的用到的deepl效果就很差，youdao限速，建议用google。目前没有任何一款翻译器能完全正确翻译，即便是GPT4也时有翻错的；注音会出错；TTS也会出错；多去理解，多多查词，这只是个复制器/复读机，让你开始去读书。
-
-↓↓↓ v1.1.0 演示
-![Demo_v1.1.0](https://github.com/raindrop213/picx-images-hosting/blob/master/bbs/anontranslator-v1.1.0-demo.1022a26u19.gif)
 
 ↓↓↓ v0.4.0 演示(旧版本)（仅作为LunaTranslator的演示）
 
@@ -52,7 +47,6 @@ https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da
       ],
     ```
 2. vits怎么用？ 答：打开 RD213.bat ，等小黑窗出现 127.0.0.1:23456 说明能用，使用时请挂着别关。
-3. 改键位？ 答：在src/content.js里的addMouseListener函数自行修改，附 [键位对照表](https://www.ecomcn.com/Website/show_id468.html)；
 
 ### **日文资源**
 1. 在线阅读：各种在线网站都可以用，如 [カクヨム](https://kakuyomu.jp/)、[小説家になろう](https://syosetu.com/)。但在 [青空文庫](https://www.aozora.gr.jp/) 上面不能正常工作，因为是纯文本，没有标签（可使用 [AozoraZip2Mobi](https://github.com/ccneko-emitan/AozoraZip2Mobi) 制作青空文库的epub）；

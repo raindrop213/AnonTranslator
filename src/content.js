@@ -377,36 +377,23 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
     const cleanText = div.innerHTML;
 
     // 分割句子
-    const sentenceEndings = new Set(sentenceDelimiters);
-    const sentences = [];
-    let tempSentence = '';
-    let rubyOpen = false;
+    const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
+    const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
+    let parts = cleanText.split(sentenceEndings);
 
-    for (let i = 0; i < cleanText.length; i++) {
-        const char = cleanText[i];
-        tempSentence += char;
-
-        if (char === '<' && cleanText.slice(i, i + 5).toLowerCase() === '<ruby') {
-            rubyOpen = true;
+    // 合并分割的句子和标点符号
+    let sentences = [];
+    for (let i = 0; i < parts.length; i += 2) {
+        let sentence = parts[i];
+        if (i + 1 < parts.length) {
+            sentence += parts[i + 1];
         }
-
-        if (char === '>' && rubyOpen && cleanText.slice(i - 5, i + 1).toLowerCase().includes('</ruby')) {
-            rubyOpen = false;
-        }
-
-        if (sentenceEndings.has(char) && !rubyOpen) {
-            sentences.push(tempSentence);
-            tempSentence = '';
-        }
-    }
-
-    if (tempSentence.length > 0) {
-        sentences.push(tempSentence);
+        sentences.push(sentence);
     }
 
     // 控制句子长度
     let mergedSentences = [];
-    tempSentence = '';
+    let tempSentence = '';
 
     sentences.forEach(sentence => {
         if (tempSentence.length + sentence.length > sentenceThreshold) {
@@ -421,6 +408,7 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
         }
     });
 
+    // 添加最后一个句子
     if (tempSentence.length > 0) {
         mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
     }
@@ -461,7 +449,7 @@ function handleClick(event) {
 // 为指定标签添加激活框
 function applyBlueBorder(tag) {
     chrome.storage.sync.get([
-        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollSwitch', 'scrollIntoView'
+        'borderWidth', 'borderStyle', 'borderRadius', 'selectedBorderColor', 'scrollSwitch', 'scrollIntoView', 'sentenceThreshold', 'sentenceDelimiters'
     ], (data) => {
 
         // 如果有上一个被点击的标签且不是当前标签
@@ -472,6 +460,13 @@ function applyBlueBorder(tag) {
             // 移除上一个激活框
             lastClickedPtag.style.outline = "";
             lastClickedPtag.classList.remove('blue-highlighted');
+        }
+
+        // 检查并分割句子
+        if (!tag.classList.contains('split-sentences') && !tag.querySelector('img, a')) {
+            const sentences = splitSentences(tag.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
+            tag.innerHTML = sentences;
+            tag.classList.add('split-sentences');
         }
 
         // 为当前标签应用激活框
