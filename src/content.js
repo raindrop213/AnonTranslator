@@ -309,12 +309,13 @@ function translate(tag) {
         'symbolPairs',
         'google', 'googleFrom', 'googleTo', 'googleColor',
         'deepl', 'deeplFrom', 'deeplTo', 'deeplColor',
-        'youdao', 'youdaoFrom', 'youdaoTo', 'youdaoColor'
+        'youdao', 'youdaoFrom', 'youdaoTo', 'youdaoColor',
+        'caiyun', 'caiyunFrom', 'caiyunTo', 'caiyunColor',
     ], (data) => {
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
 
         // 先检查标签中是否已经存在翻译
-        if ((data.deepl || data.google || data.youdao) && !tag.querySelector('.translation-div')) {
+        if ((data.deepl || data.google || data.youdao || data.caiyun) && !tag.querySelector('.translation-div')) {
             const translationDiv = document.createElement('div');
             translationDiv.className = 'translation-div';
             tag.appendChild(translationDiv);
@@ -337,6 +338,9 @@ function translate(tag) {
             if (data.youdao) {
                 requestTranslation(tag, textObj['text'], data.youdaoFrom, data.youdaoTo, "youdao", data.youdaoColor, translatedTextCallback);
             }
+            if (data.caiyun) {
+                requestTranslation(tag, textObj['text'], data.caiyunFrom, data.caiyunTo, "caiyun", data.caiyunColor, translatedTextCallback);
+            }
         }
     });
 }
@@ -355,24 +359,54 @@ function getValidTag(currentTag, direction = 'down') {
 
 // 分割句子的函数
 function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
+    // 创建一个临时的div元素来处理HTML字符串
+    const div = document.createElement('div');
+    div.innerHTML = text;
 
-    const escapedDelimiters = sentenceDelimiters.join('').replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"); // 转义正则表达式特殊字符
-    const sentenceEndings = new RegExp(`([${escapedDelimiters}])`, 'g');
-    let parts = text.split(sentenceEndings);
-
-    // 合并分割的句子和标点符号
-    let sentences = [];
-    for (let i = 0; i < parts.length; i += 2) {
-        let sentence = parts[i];
-        if (i + 1 < parts.length) {
-            sentence += parts[i + 1];
+    // 移除所有的 <span> 标签，但保留其内部内容
+    const spans = div.querySelectorAll('span');
+    spans.forEach(span => {
+        const parent = span.parentNode;
+        while (span.firstChild) {
+            parent.insertBefore(span.firstChild, span);
         }
-        sentences.push(sentence);
+        parent.removeChild(span);
+    });
+
+    // 获取清理后的文本
+    const cleanText = div.innerHTML;
+
+    // 分割句子
+    const sentenceEndings = new Set(sentenceDelimiters);
+    const sentences = [];
+    let tempSentence = '';
+    let rubyOpen = false;
+
+    for (let i = 0; i < cleanText.length; i++) {
+        const char = cleanText[i];
+        tempSentence += char;
+
+        if (char === '<' && cleanText.slice(i, i + 5).toLowerCase() === '<ruby') {
+            rubyOpen = true;
+        }
+
+        if (char === '>' && rubyOpen && cleanText.slice(i - 5, i + 1).toLowerCase().includes('</ruby')) {
+            rubyOpen = false;
+        }
+
+        if (sentenceEndings.has(char) && !rubyOpen) {
+            sentences.push(tempSentence);
+            tempSentence = '';
+        }
+    }
+
+    if (tempSentence.length > 0) {
+        sentences.push(tempSentence);
     }
 
     // 控制句子长度
     let mergedSentences = [];
-    let tempSentence = '';
+    tempSentence = '';
 
     sentences.forEach(sentence => {
         if (tempSentence.length + sentence.length > sentenceThreshold) {
@@ -387,7 +421,6 @@ function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
         }
     });
 
-    // 添加最后一个句子
     if (tempSentence.length > 0) {
         mergedSentences.push(`<span class="sentence">${tempSentence}</span>`);
     }
@@ -469,7 +502,7 @@ function highlightAndCopyPtag(doc) {
                 event.target.style.borderRadius = data.borderRadius;
                 // 分割句子并用 <span> 标签包裹
                 if (!event.target.classList.contains('split-sentences') && !event.target.querySelector('img, a')) {
-                    const sentences = splitSentences(event.target.innerHTML.replace(/<span[^>]*>|<\/span>/g, ''), data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
+                    const sentences = splitSentences(event.target.innerHTML, data.sentenceThreshold, parseStringToArray(data.sentenceDelimiters));
                     event.target.innerHTML = sentences;
                     event.target.classList.add('split-sentences');
                 }
