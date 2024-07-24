@@ -332,11 +332,11 @@ function translate(tag) {
             if (data.google) {
                 requestTranslation(tag, textObj['text'], data.googleFrom, data.googleTo, "google", data.googleColor, translatedTextCallback);
             }
-            if (data.deepl) {
-                requestTranslation(tag, textObj['text'], data.deeplFrom, data.deeplTo, "deepl", data.deeplColor, translatedTextCallback);
-            }
             if (data.youdao) {
                 requestTranslation(tag, textObj['text'], data.youdaoFrom, data.youdaoTo, "youdao", data.youdaoColor, translatedTextCallback);
+            }
+            if (data.deepl) {
+                requestTranslation(tag, textObj['text'], data.deeplFrom, data.deeplTo, "deepl", data.deeplColor, translatedTextCallback);
             }
             if (data.caiyun) {
                 requestTranslation(tag, textObj['text'], data.caiyunFrom, data.caiyunTo, "caiyun", data.caiyunColor, translatedTextCallback);

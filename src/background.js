@@ -1,6 +1,6 @@
 /* background.js */
 
-// 读取并解析defaultSettings.json文件
+// 读取并解析 defaultSettings.json 文件
 function loadDefaultSettings() {
   return fetch(chrome.runtime.getURL('config/defaultSettings.json'))
     .then(response => response.json())
@@ -25,59 +25,51 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // 响应请求
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
   if (message.type === 'getSettings') {
     chrome.storage.sync.get(null, (settings) => {
       sendResponse(settings);
     });
     return true;  // 表示将使用异步发送响应
 
-  // VitsTTS 响应
   } else if (message.action === 'play_audio') {
-    const vits_url = message.vits_url;
-    const clipAPI = message.clipAPI;
+    const { vits_url, clipAPI } = message;
     fetch(`http://127.0.0.1:${clipAPI}/play`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: vits_url })
     })
     .then(response => response.json())
     .then(data => {
-      if (data.status === "completed") {
-        sendResponse({ status: "completed" });
-      } else if (data.error) {
-        sendResponse({ status: "error", error: data.error });
-      }
+      sendResponse({ status: data.status || "error", error: data.error });
     })
     .catch(error => sendResponse({ error: error.message }));
     return true;
 
-  // 翻译响应
   } else if (message.action === "translate") {
+    const { text, from, to, translator } = message;
     let translateFunction;
-    switch (message.translator) {
+
+    switch (translator) {
       case "google":
         translateFunction = googleTranslate;
+        break;
+      case "youdao":
+        translateFunction = youdaoTranslate;
         break;
       case "deepl":
         translateFunction = deeplTranslate;
         break;
-      case "youdao":
-        translateFunction = youdaoTranslate;
+      case "caiyun":
+        translateFunction = caiyunTranslate;
         break;
       default:
         sendResponse({ translatedText: "不支持的翻译器" });
         return true;
     }
-    translateFunction(message.text, message.from, message.to)
-      .then((translatedText) => {
-        sendResponse({ translatedText: translatedText });
-      })
-      .catch((error) => {
-        sendResponse({ translatedText: "翻译错误: " + error });
-      });
+
+    translateFunction(text, from, to)
+      .then(translatedText => sendResponse({ translatedText }))
+      .catch(error => sendResponse({ translatedText: "翻译错误: " + error }));
     return true;
   }
 });
@@ -220,4 +212,88 @@ function youdaoTranslate(text, from, to) {
       reject("接口请求错误 - " + error);
     });
   });
+}
+
+// Caiyun API 出错！！！
+async function caiyunTranslate(text, from, to) {
+  const token = "token:qgemv4jr1y38jyq6vhvi";
+  const bid = "beba19f9d7f10c74c98334c9e8afcd34";
+
+  const headers = {
+      "authority": "api.interpreter.caiyunai.com",
+      "accept": "application/json, text/plain, */*",
+      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      "app-name": "xy",
+      "cache-control": "no-cache",
+      "content-type": "application/json;charset=UTF-8",
+      "origin": "https://fanyi.caiyunapp.com",
+      "os-type": "web",
+      "pragma": "no-cache",
+      "referer": "https://fanyi.caiyunapp.com/",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "cross-site",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.52",
+      "x-authorization": token,
+  };
+
+  const json_data = {
+      "browser_id": bid,
+  };
+
+  const init_response = await fetch("https://api.interpreter.caiyunai.com/v1/user/jwt/generate", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(json_data)
+  });
+
+  const init_data = await init_response.json();
+  const jwt = init_data["jwt"];
+
+  const translate_headers = {
+      ...headers,
+      "t-authorization": jwt,
+  };
+
+  const translate_data = {
+      "source": text,
+      "trans_type": `${from}2${to}`,
+      "request_id": "web_fanyi",
+      "media": "text",
+      "os_type": "web",
+      "dict": true,
+      "cached": true,
+      "replaced": true,
+      "detect": true,
+      "browser_id": bid,
+  };
+
+  const translate_response = await fetch("https://api.interpreter.caiyunai.com/v1/translator", {
+      method: "POST",
+      headers: translate_headers,
+      body: JSON.stringify(translate_data)
+  });
+
+  const translate_result = await translate_response.json();
+  return decrypt(translate_result["target"]);
+}
+
+function crypt(if_de = true) {
+  const normal_key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=.+-_/";
+  const cipher_key = "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm0123456789=.+-_/";
+  const keyFrom = if_de ? cipher_key : normal_key;
+  const keyTo = if_de ? normal_key : cipher_key;
+  return Object.fromEntries(keyFrom.split('').map((k, i) => [k, keyTo[i]]));
+}
+
+function encrypt(plain_text) {
+  const encrypt_dictionary = crypt(false);
+  const _cipher_text = Buffer.from(plain_text).toString('base64');
+  return _cipher_text.split('').map(k => encrypt_dictionary[k]).join('');
+}
+
+function decrypt(cipher_text) {
+  const decrypt_dictionary = crypt();
+  const _ciphertext = cipher_text.split('').map(k => decrypt_dictionary[k]).join('');
+  return Buffer.from(_ciphertext, 'base64').toString('utf-8');
 }

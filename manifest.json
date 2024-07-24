@@ -23,7 +23,8 @@
     "http://127.0.0.1:8666/*",
     "https://www2.deepl.com/*",
     "https://translate.google.com/m*",
-    "https://aidemo.youdao.com/trans*"
+    "https://aidemo.youdao.com/trans*",
+    "https://api.interpreter.caiyunai.com/v1/*"
   ],
   "action": {"default_popup": "popup.html"},
   "background": {"service_worker": "src/background.js"}

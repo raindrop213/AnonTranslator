@@ -170,6 +170,38 @@
             </div>
           </div>
 
+          <input type="checkbox" id="tabYoudao" name="translatorTab" class="tab" />
+          <label for="tabYoudao" class="tab-label tab-label-color">Youdao 
+            <input id="youdao" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
+            <label for="youdao"></label>
+          </label>
+          <div class="tab-content">
+            <div class="settings">
+              <label>Youdao: <input type="color" id="youdaoColor" /></label>
+            </div>
+            <div class="settings">
+              <label>From: 
+                <select id="youdaoFrom">
+                  <option value="auto">auto</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                  <option value="zh-CHS">zh</option>
+                  <option value="zh-CHT">cht</option>
+                </select>
+              </label>
+            </div>
+            <div class="settings">
+              <label>To: 
+                <select id="youdaoTo">
+                  <option value="zh-CHS">zh</option>
+                  <option value="zh-CHT">cht</option>
+                  <option value="ja">ja</option>
+                  <option value="en">en</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
           <input type="checkbox" id="tabDeepl" name="translatorTab" class="tab" />
           <label for="tabDeepl" class="tab-label tab-label-color">Deepl 
             <input id="deepl" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
@@ -200,31 +232,27 @@
             </div>
           </div>
 
-          <input type="checkbox" id="tabYoudao" name="translatorTab" class="tab" />
-          <label for="tabYoudao" class="tab-label tab-label-color">Youdao 
-            <input id="youdao" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
-            <label for="youdao"></label>
+          <input type="checkbox" id="tabCaiyun" name="translatorTab" class="tab" />
+          <label for="tabCaiyun" class="tab-label tab-label-color">Caiyun 
+            <input id="caiyun" class="cmn-toggle cmn-toggle-round-flat" type="checkbox">
+            <label for="caiyun"></label>
           </label>
           <div class="tab-content">
             <div class="settings">
-              <label>Youdao: <input type="color" id="youdaoColor" /></label>
+              <label>Caiyun: <input type="color" id="caiyunColor" /></label>
             </div>
             <div class="settings">
               <label>From: 
-                <select id="youdaoFrom">
-                  <option value="auto">auto</option>
+                <select id="caiyunFrom">
                   <option value="ja">ja</option>
                   <option value="en">en</option>
-                  <option value="zh-CHS">zh</option>
-                  <option value="zh-CHT">cht</option>
                 </select>
               </label>
             </div>
             <div class="settings">
               <label>To: 
-                <select id="youdaoTo">
-                  <option value="zh-CHS">zh</option>
-                  <option value="zh-CHT">cht</option>
+                <select id="caiyunTo">
+                  <option value="zh">zh</option>
                   <option value="ja">ja</option>
                   <option value="en">en</option>
                 </select>
