@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AnonTranslator",
-  "version": "1.1.2",
+  "version": "1.1.0",
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
   "icons": {

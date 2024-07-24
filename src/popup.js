@@ -20,21 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function fetchLatestVersion() {
-  fetch('https://api.github.com/repos/raindrop213/AnonTranslator/releases/latest')
-    .then(response => response.json())
-    .then(data => {
-      if (data && data.tag_name) {
-        const latestVersion = data.tag_name.replace(/^v/, '');
-        if (latestVersion !== version) {
-          document.getElementById('newVersion').innerHTML = `<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">NEW ${latestVersion}&#x21BB;</a>`;
-        } else {
-          document.getElementById('newVersion').textContent = '';
+  try { 
+    fetch('https://api.github.com/repos/raindrop213/AnonTranslator/releases/latest')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.tag_name) {
+          const latestVersion = data.tag_name.replace(/^v/, '');
+          if (latestVersion !== version) {
+            document.getElementById('newVersion').innerHTML = `<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">NEW ${latestVersion}&#x21BB;</a>`;
+          } else {
+            document.getElementById('newVersion').textContent = '';
+          }
         }
-      }
-    })
-    .catch(error => {
-      console.log('Error fetching latest version:', error);
-    });
+      })
+      .catch(error => {
+        console.log('Error fetching latest version:', error);
+      });
+  } catch (e) {
+    document.getElementById('newVersion').textContent = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">UpdateError</a>';
+  }
 }
 
 // 加载保存的设置
