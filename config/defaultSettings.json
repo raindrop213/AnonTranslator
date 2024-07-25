@@ -44,7 +44,6 @@
   "freeBorderColor": "#225D2E",
   "selectedBorderColor": "#94B505",
   "sentenceColor": "#d4e725",
-  "fade": "30",
   "scrollSwitch": true,
   "scrollIntoView": "smooth"
 }

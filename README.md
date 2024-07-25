@@ -39,7 +39,7 @@ A chrome extension for light novel reading
 https://github.com/user-attachments/assets/169b6d31-6655-4f48-9dd9-80988322e62f
 
 ### **常见问题**
-1. ※ 当插件设置成 <kbd>在特定网站上</kbd> 时翻译会失效！！<kbd>在所有网站上</kbd> 则没问题。我推荐在 <kbd>manifest.json</kbd> 中的 <kbd>matches</kbd> 中硬设置使用插件的网页。如：
+1. ※ 当插件设置成 <kbd>在特定网站上</kbd> 时翻译会失效！！<kbd>在所有网站上</kbd> 则没问题。我推荐在 <kbd>manifest.json</kbd> 中的 <kbd>matches</kbd> 硬设置使用插件的网页。如：
     ```
     "matches": [
       "http://localhost:8083/*",
