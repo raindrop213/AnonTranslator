@@ -21,7 +21,7 @@ A chrome extension for light novel reading
   - [青空文庫](https://www.aozora.gr.jp/)（不能正常工作，因为是纯文本没html标签。但可以使用 [青空助手](https://aohelp.club/) | [作者B站视频](https://www.bilibili.com/video/BV1Xa4y1h7MW/)）；
   - [本人自用书库](https://ebook.raindrop213.info/)
 - 下载党：EPUB / HTML 格式
-  - [Calibre-web](https://github.com/janeczku/calibre-web) 使用（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！
+  - [Calibre-web](https://github.com/janeczku/calibre-web) 自建书库（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
   - Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
   - 电子书购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点，搜一搜就有了。
   - 这里放一个简单好用的epub阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
@@ -38,7 +38,7 @@ A chrome extension for light novel reading
 
 **效果演示**
 
-https://github.com/user-attachments/assets/22837335-3ac7-4951-8249-6b16dea65133
+https://github.com/user-attachments/assets/169b6d31-6655-4f48-9dd9-80988322e62f
 
 ### **常见问题**
 1. ※ 当插件设置成 <kbd>在特定网站上</kbd> 时翻译会失效！！<kbd>在所有网站上</kbd> 则没问题。我推荐在 <kbd>manifest.json</kbd> 中的 <kbd>matches</kbd> 中硬设置使用插件的网页。如：
