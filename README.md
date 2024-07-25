@@ -15,10 +15,10 @@ A chrome extension for light novel reading
 - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/v1.1.0)：下载解压后打开 <kbd>RD213.bat</kbd>（注：原项目来自 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 。该整合包里面包含所需的vits模型([vits-uma-genshin-honkai](https://huggingface.co/spaces/zomehwh/vits-uma-genshin-honkai))。能力有限，无论如何都绕不开限制，就加了个api来桥接插件･ﾟ･(つд`ﾟ)･ﾟ･ 主打一个能用就行）。
 
 ### **使用场景**
-- 在线阅读：很多在线网站都可以用：
-  - [カクヨム](https://kakuyomu.jp/)；
+- 在线阅读：很多在线网站都可以用
   - [小説家になろう](https://syosetu.com/)；
-  - [青空文庫](https://www.aozora.gr.jp/)（不能正常工作，因为是纯文本没html标签。但可以使用 [青空助手](https://aohelp.club/) | [作者B站视频](https://www.bilibili.com/video/BV1Xa4y1h7MW/)）；
+  - [カクヨム](https://kakuyomu.jp/)；
+  - [青空文庫](https://www.aozora.gr.jp/)（不能正常工作，因为是纯文本没html标签。但可以使用 [青空助手](https://aohelp.club/) 下载epub或者html看 | [作者B站视频](https://www.bilibili.com/video/BV1Xa4y1h7MW/)）；
   - [本人自用书库](https://ebook.raindrop213.info/)
 - 下载党：EPUB / HTML 格式
   - [Calibre-web](https://github.com/janeczku/calibre-web) 自建书库（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
@@ -35,8 +35,6 @@ A chrome extension for light novel reading
 5. 方向键 <kbd>↑</kbd> 上一段 和 <kbd>↓</kbd> 下一段，并复制、朗读、翻译文本段落，也对应备用键位 <kbd>Num 2</kbd> 和 <kbd>Num 1</kbd>；
 
 - 通过剪切板可以搭配 [LunaTranslator](https://github.com/HIllya51/LunaTranslator)（多方翻译、语素分析、快速查词、Anki；推荐！）
-
-**效果演示**
 
 https://github.com/user-attachments/assets/169b6d31-6655-4f48-9dd9-80988322e62f
 
