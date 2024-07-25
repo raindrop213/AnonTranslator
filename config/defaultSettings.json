@@ -3,6 +3,7 @@
   "copy": true,
   "ignoreFurigana": true,
   "showCopyContent": true,
+  "extraImage": false,
   "symbolPairs": "「」/『』/《》/“”/【】/（）",
   "sentenceDelimiters": "。/ ！/？",
   "sentenceThreshold": 50,

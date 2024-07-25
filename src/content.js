@@ -518,7 +518,7 @@ function highlightAndCopyPtag(doc) {
 
 // 为文档添加鼠标和键盘监听器
 function addMouseListener(doc) {
-    chrome.storage.sync.get(['sentenceColor'], (data) => {
+    chrome.storage.sync.get(['sentenceColor', 'extraImage'], (data) => {
         highlightAndCopyPtag(doc);
 
         // 键盘事件，包括箭头键和数字键盘 0
@@ -573,7 +573,7 @@ function addMouseListener(doc) {
             }
 
             // 检查标签是否包含 img 或 svg>image 但不包含 a ，打开大图
-            if (event.target.nodeName !== 'A' && (event.target.querySelector('img') || event.target.querySelector('svg image'))) {
+            if (data.extraImage && event.target.nodeName !== 'A' && (event.target.querySelector('img') || event.target.querySelector('svg image'))) {
                 const img = event.target.querySelector('img');
                 const svgImage = event.target.querySelector('svg image');
 
