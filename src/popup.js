@@ -19,26 +19,30 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchLatestVersion();
 });
 
+// 查看版本更新
 function fetchLatestVersion() {
-  try { 
-    fetch('https://api.github.com/repos/raindrop213/AnonTranslator/releases/latest')
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.tag_name) {
-          const latestVersion = data.tag_name.replace(/^v/, '');
-          if (latestVersion !== version) {
-            document.getElementById('newVersion').innerHTML = `<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Update:${latestVersion}&#x21BB;</a>`;
-          } else {
-            document.getElementById('newVersion').innerHTML = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Latest √</a>';
-          }
+  const timeout = setTimeout(() => {
+    document.getElementById('newVersion').innerHTML = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Update:×</a>';
+  }, 3000);
+
+  fetch('https://api.github.com/repos/raindrop213/AnonTranslator/releases/latest')
+    .then(response => response.json())
+    .then(data => {
+      clearTimeout(timeout);
+      if (data && data.tag_name) {
+        const latestVersion = data.tag_name.replace(/^v/, '');
+        if (latestVersion !== version) {
+          document.getElementById('newVersion').innerHTML = `<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Update:${latestVersion}&#x21BB;</a>`;
+        } else {
+          document.getElementById('newVersion').innerHTML = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Latest:√</a>';
         }
-      })
-      .catch(error => {
-        console.log('Error fetching latest version:', error);
-      });
-  } catch (e) {
-    document.getElementById('newVersion').textContent = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Update:×</a>';
-  }
+      }
+    })
+    .catch(error => {
+      clearTimeout(timeout);
+      console.log('Error fetching latest version:', error);
+      document.getElementById('newVersion').innerHTML = '<a href="https://github.com/raindrop213/AnonTranslator/releases/latest" target="_blank">Update:×</a>';
+    });
 }
 
 // 加载保存的设置
