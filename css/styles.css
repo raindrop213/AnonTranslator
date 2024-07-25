@@ -1,8 +1,8 @@
 #copy-notification {
     position: fixed;
     bottom: 25px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 10px;
+    bottom: 10px;
     color: #225d2e9c;
     font-size: 0.8em;
     line-height: normal;

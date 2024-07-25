@@ -2,7 +2,7 @@
 
 /* ------------------------------------------------------------全局变量 */
 
-// 最后点击的 <p> 标签
+// 记录最后点击的段落
 let lastClickedPtag = null;
 
 // 记录当前高亮的句子
@@ -14,7 +14,7 @@ let isAutoReading = false;
 // 目标标签
 let target = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
 
-// 标记声音是否已加载
+// 标记声音是否已加载（WindowsTTS）
 let voicesLoaded = false;
 
 // 当声音列表变化时，设置 voicesLoaded 标志为 true
@@ -180,7 +180,8 @@ function vits_tts(text, callback) {
             noise: data.noise,
             noisew: data.noisew,
             max: data.max,
-            streaming: data.streaming
+            streaming: data.streaming,
+            format: 'mp3'
         });
         const clipAPI = data.clipAPI;
         const vitsAPI = data.vitsAPI;
@@ -200,11 +201,7 @@ function copyAndReadText(tag, callback) {
     chrome.storage.sync.get([
         'ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'
     ], (data) => {
-        let originalContent = tag.cloneNode(true); // 克隆节点，以便不修改原始内容
-        let translationDivs = originalContent.querySelectorAll('.translation-div');
-        translationDivs.forEach(div => div.remove()); // 移除翻译部分
-
-        let textObj = cleanText(originalContent.innerHTML, parseStringToArray(data.symbolPairs));
+        let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
         let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
         
 
@@ -223,7 +220,9 @@ function copyAndReadText(tag, callback) {
 
 // 复制并朗读指定标签的文本的句子
 function copyAndReadSentence(tag) {
-    chrome.storage.sync.get(['ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'], (data) => {
+    chrome.storage.sync.get([
+        'ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'
+    ], (data) => {
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
         let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
 
@@ -288,18 +287,22 @@ function requestTranslation(tag, text, fromLang, toLang, translator, color, call
         translator: translator
     }, function(response) {
         const translationDiv = tag.querySelector('.translation-div');
-        const p = document.createElement('div');
-        p.style.color = color;
-        if (text !== '-') {
+        if (!translationDiv) {
+            console.log('Translation div not found.');
+            return;
+        }
+        if (response && response.translatedText) {
+            const p = document.createElement('div');
+            p.style.color = color;
             if (callback) {
                 callback(response.translatedText, p);
             } else {
                 p.textContent = response.translatedText;
             }
+            translationDiv.appendChild(p);
         } else {
-            p.textContent = '-';
+            console.log('Translation error or no text returned.', response);
         }
-        translationDiv.appendChild(p);
     });
 }
 
@@ -555,14 +558,20 @@ function addMouseListener(doc) {
             }
         });
 
-        // 使用 mousedown 事件监听鼠标中键
+        // 框内阻止默认的右键菜单弹出
+        doc.addEventListener('contextmenu', function(event) {
+            if (event.target.classList.contains('sentence') || event.target.classList.contains('highlighted') || event.target.classList.contains('blue-highlighted')) {
+                event.preventDefault(); // 阻止右键菜单的默认行为
+            }
+        });
+
+        // 使用 mousedown 事件监听鼠标右键
         doc.addEventListener('mousedown', function(event) {
-            if (event.button === 1) { // 检查鼠标中键
+            if (event.button === 2) { // 检查鼠标
                 stopAutoReading();
                 if (currentHighlightedSentence) {
                     copyAndReadSentence(currentHighlightedSentence); // 传递HTML内容以便处理振假名
                 }
-                event.preventDefault(); // 防止默认行为
             }
         });
 

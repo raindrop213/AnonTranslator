@@ -281,6 +281,11 @@ input[type="checkbox"] {
   color: #880505;
   font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
 }
+.text-h1 a{
+  font-size: 15px;
+  color: #fffb00;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+}
 
 .text-s1 {
   font-size: 10px;
