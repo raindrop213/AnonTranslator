@@ -38,7 +38,7 @@ A chrome extension for light novel reading
 
 **效果演示**
 
-https://github.com/raindrop213/AnonTranslator/assets/53202747/32f940ad-bf29-40da-ba10-a65f1fe166d6
+https://github.com/user-attachments/assets/22837335-3ac7-4951-8249-6b16dea65133
 
 ### **常见问题**
 1. ※ 当插件设置成 <kbd>在特定网站上</kbd> 时翻译会失效！！<kbd>在所有网站上</kbd> 则没问题。我推荐在 <kbd>manifest.json</kbd> 中的 <kbd>matches</kbd> 中硬设置使用插件的网页。如：
