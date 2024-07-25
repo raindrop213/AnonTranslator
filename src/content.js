@@ -509,6 +509,7 @@ function highlightAndCopyPtag(doc) {
 
         doc.addEventListener('mouseleave', (event) => {
             if (target.includes(event.target.nodeName) && event.target !== lastClickedPtag) {
+                event.target.removeAttribute('style');
                 event.target.classList.remove('highlighted');
                 event.target.removeEventListener('click', handleClick);
             }
