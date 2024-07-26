@@ -201,6 +201,8 @@ function copyAndReadText(tag, callback) {
     chrome.storage.sync.get([
         'ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'
     ], (data) => {
+        const existingTranslations = tag.querySelectorAll('.translation-div');
+        existingTranslations.forEach(div => div.remove());
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
         let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
         
