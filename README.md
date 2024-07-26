@@ -21,10 +21,10 @@ A chrome extension for light novel reading
   - [青空文庫](https://www.aozora.gr.jp/)（不能正常工作，因为是纯文本没html标签。但可以使用 [青空助手](https://aohelp.club/) 下载epub或者html看 | [作者B站视频](https://www.bilibili.com/video/BV1Xa4y1h7MW/)）；
   - [本人自用书库](https://ebook.raindrop213.info/)
 - 下载党：EPUB / HTML 格式
-  - [Calibre-web](https://github.com/janeczku/calibre-web) 自建书库（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
-  - Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；
-  - 电子书购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点，搜一搜就有了。
-  - 这里放一个简单好用的epub阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
+  - 管理：[Calibre-web](https://github.com/janeczku/calibre-web) 自建书库（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
+  - 下载：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；[小説図書館](https://yonde.itazuraneko.org/)
+  - 购买：[bookwalker](https://bookwalker.jp/)、[Amazon](https://www.amazon.co.jp/kindle-dbs/storefront) 和 [Rakuten](https://books.rakuten.co.jp/e-book/) ，其中bookwalker解锁（DeDRM）稍难点，另外两个解锁相对简单一点
+  - 阅读：这里放一个简单好用的epub阅读器 [ッツ Ebook Reader](https://reader.ttsu.app)
   
 
 ### **使用说明**
