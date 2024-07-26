@@ -56,6 +56,11 @@ function cleanText(htmlString, symbolPairs) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
+    // 移除 class 为 translation-div 的 div 标签
+    div.querySelectorAll('.translation-div').forEach(translationDiv => {
+        translationDiv.parentNode.removeChild(translationDiv);
+    });
+
     // 移除所有 rp 标签，并将 rt 转换为括号
     div.querySelectorAll('ruby').forEach(ruby => {
         ruby.querySelectorAll('rp').forEach(rp => rp.remove());
@@ -69,6 +74,11 @@ function cleanText(htmlString, symbolPairs) {
 
     // 生成去除振假名的版本
     div.innerHTML = htmlString;
+    // 移除 class 为 translation-div 的 div 标签
+    div.querySelectorAll('.translation-div').forEach(translationDiv => {
+        translationDiv.parentNode.removeChild(translationDiv);
+    });
+
     div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
 
     let originalText = div.textContent;
@@ -201,8 +211,6 @@ function copyAndReadText(tag, callback) {
     chrome.storage.sync.get([
         'ignoreFurigana', 'symbolPairs', 'useVITS', 'useWindowsTTS'
     ], (data) => {
-        const existingTranslations = tag.querySelectorAll('.translation-div');
-        existingTranslations.forEach(div => div.remove());
         let textObj = cleanText(tag.innerHTML, parseStringToArray(data.symbolPairs));
         let textToCopy = data.ignoreFurigana ? textObj.text : textObj.textFurigana;
         
@@ -247,6 +255,7 @@ function copyAndReadSentence(tag) {
 function startAutoReading() {
     isAutoReading = true;
     let currentTag = lastClickedPtag;
+    lastClickedPtag.querySelectorAll('.translation-div').forEach(div => div.remove());
 
     function readNext() {
         chrome.storage.sync.get(['readingInterval'], (data) => {
@@ -441,11 +450,8 @@ function handleClick(event) {
     // 清除当前选择
     } else {
         if (lastClickedPtag) {
-            lastClickedPtag.style.border = "";
+            lastClickedPtag.style.outline = "";
             lastClickedPtag.classList.remove('blue-highlighted');
-
-            const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-            existingTranslations.forEach(div => div.remove());
             lastClickedPtag = null;
         }
     }
@@ -460,8 +466,7 @@ function applyBlueBorder(tag) {
         // 如果有上一个被点击的标签且不是当前标签
         if (lastClickedPtag && lastClickedPtag !== tag) {
             // 移除上一个标签的翻译内容
-            const existingTranslations = lastClickedPtag.querySelectorAll('.translation-div');
-            existingTranslations.forEach(div => div.remove());
+            lastClickedPtag.querySelectorAll('.translation-div').forEach(div => div.remove());
             // 移除上一个激活框
             lastClickedPtag.style.outline = "";
             lastClickedPtag.classList.remove('blue-highlighted');
