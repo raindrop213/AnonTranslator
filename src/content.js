@@ -364,12 +364,81 @@ function translate(tag) {
 
 // 获取下一个或上一个非空标签
 function getValidTag(currentTag, direction = 'down') {
-    let tag = direction === 'down' ? currentTag.nextElementSibling : currentTag.previousElementSibling;
-    while (tag && (!target.includes(tag.nodeName) || !tag.textContent.trim())) {
-        tag = direction === 'down' ? tag.nextElementSibling : tag.previousElementSibling;
+    let tag = direction === 'down' ? getNextElement(currentTag) : getPreviousElement(currentTag);
+
+    while (tag && (!tag.textContent.trim() || !target.includes(tag.nodeName))) {
+        tag = direction === 'down' ? getNextElement(tag) : getPreviousElement(tag);
     }
+
     return tag;
 }
+
+function getNextElement(element) {
+    if (element.nextElementSibling) {
+        return target.includes(element.nextElementSibling.nodeName)
+            ? element.nextElementSibling
+            : element.nextElementSibling.nodeName === 'DIV'
+                ? getFirstChild(element.nextElementSibling)
+                : element.nextElementSibling;
+    }
+
+    while (element.parentElement) {
+        element = element.parentElement;
+        if (element.nextElementSibling) {
+            return target.includes(element.nextElementSibling.nodeName)
+                ? element.nextElementSibling
+                : element.nextElementSibling.nodeName === 'DIV'
+                    ? getFirstChild(element.nextElementSibling)
+                    : element.nextElementSibling;
+        }
+    }
+
+    return null;
+}
+
+function getPreviousElement(element) {
+    if (element.previousElementSibling) {
+        return target.includes(element.previousElementSibling.nodeName)
+            ? element.previousElementSibling
+            : element.previousElementSibling.nodeName === 'DIV'
+                ? getLastChild(element.previousElementSibling)
+                : element.previousElementSibling;
+    }
+
+    while (element.parentElement) {
+        element = element.parentElement;
+        if (element.previousElementSibling) {
+            return target.includes(element.previousElementSibling.nodeName)
+                ? element.previousElementSibling
+                : element.previousElementSibling.nodeName === 'DIV'
+                    ? getLastChild(element.previousElementSibling)
+                    : element.previousElementSibling;
+        }
+    }
+
+    return null;
+}
+
+function getFirstChild(element) {
+    while (element.firstElementChild) {
+        element = element.firstElementChild;
+        if (target.includes(element.nodeName)) {
+            return element;
+        }
+    }
+    return null;
+}
+
+function getLastChild(element) {
+    while (element.lastElementChild) {
+        element = element.lastElementChild;
+        if (target.includes(element.nodeName)) {
+            return element;
+        }
+    }
+    return null;
+}
+
 
 // 分割句子的函数
 function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
