@@ -519,7 +519,7 @@ function handleClick(event) {
     // 清除当前选择
     } else {
         if (lastClickedPtag) {
-            lastClickedPtag.style.outline = "";
+            lastClickedPtag.removeAttribute('style');
             lastClickedPtag.classList.remove('blue-highlighted');
             lastClickedPtag = null;
         }
@@ -537,7 +537,7 @@ function applyBlueBorder(tag) {
             // 移除上一个标签的翻译内容
             lastClickedPtag.querySelectorAll('.translation-div').forEach(div => div.remove());
             // 移除上一个激活框
-            lastClickedPtag.style.outline = "";
+            lastClickedPtag.removeAttribute('style');
             lastClickedPtag.classList.remove('blue-highlighted');
         }
 
