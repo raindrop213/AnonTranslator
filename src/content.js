@@ -56,45 +56,41 @@ function cleanText(htmlString, symbolPairs) {
     const div = document.createElement('div');
     div.innerHTML = htmlString;
 
-    // 移除 class 为 translation-div 的 div 标签
-    div.querySelectorAll('.translation-div').forEach(translationDiv => {
-        translationDiv.parentNode.removeChild(translationDiv);
-    });
-
-    // 移除所有 rp 标签，并将 rt 转换为括号
-    div.querySelectorAll('ruby').forEach(ruby => {
-        ruby.querySelectorAll('rp').forEach(rp => rp.remove());
-        ruby.querySelectorAll('rt').forEach(rt => {
-            const textNode = document.createTextNode(`(${rt.textContent})`);
-            rt.parentNode.replaceChild(textNode, rt);
+    function removeTranslationDivs(element) {
+        element.querySelectorAll('.translation-div').forEach(translationDiv => {
+            translationDiv.parentNode.removeChild(translationDiv);
         });
-    });
+    }
 
+    function processRubyTags(element, withFurigana) {
+        element.querySelectorAll('ruby').forEach(ruby => {
+            ruby.querySelectorAll('rp').forEach(rp => rp.remove());
+            ruby.querySelectorAll('rt').forEach(rt => {
+                const textNode = withFurigana ? document.createTextNode(`(${rt.textContent})`) : document.createTextNode('');
+                rt.parentNode.replaceChild(textNode, rt);
+            });
+        });
+    }
+
+    // 初次处理：移除 translation-div 和处理 ruby 标签（保留振假名）
+    removeTranslationDivs(div);
+    processRubyTags(div, true);
     let textFurigana = div.textContent;
 
-    // 生成去除振假名的版本
+    // 再次处理：仅移除 translation-div 和去除所有 rt, rp 标签（去除振假名）
     div.innerHTML = htmlString;
-    // 移除 class 为 translation-div 的 div 标签
-    div.querySelectorAll('.translation-div').forEach(translationDiv => {
-        translationDiv.parentNode.removeChild(translationDiv);
-    });
-
+    removeTranslationDivs(div);
     div.querySelectorAll('rt, rp').forEach(tag => tag.remove());
-
     let originalText = div.textContent;
-    let trimmedText = originalText.trimStart();
 
-    // 截取前导空格部分（包括全角和半角空格）
+    let trimmedText = originalText.trimStart();
     let leadingSpaces = originalText.substring(0, originalText.length - trimmedText.length);
 
-    // 如果去除两边空格后的文本为空，则返回 '-'
     if (!trimmedText) {
         return { text: '-', textFurigana: '-', space: leadingSpaces, symbolPair: null };
     }
 
     let finalText = trimmedText.trim();
-
-    // 遍历 symbolPairs 数组，检查首尾是否有符号对
     let hasEnclosingSymbols = symbolPairs.some(pair => {
         return finalText.startsWith(pair[0]) && finalText.endsWith(pair[1]);
     });
@@ -493,7 +489,6 @@ function splitSentences(inner, sentenceThreshold, sentenceDelimiters) {
 
     sentences.forEach(sentence => {
         const textContent = getTextContentWithoutRuby(tempSentence + sentence);
-        console.log(`当前句子长度: ${textContent.length}`, textContent);
         if (textContent.length > sentenceThreshold) {
             if (tempSentence.length === 0) {
                 mergedSentences.push(`<span class="sentence">${sentence}</span>`);
