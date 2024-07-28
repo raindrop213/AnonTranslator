@@ -5,7 +5,7 @@
   "showCopyContent": true,
   "extraImage": false,
   "symbolPairs": "「」/『』/《》/“”/【】/（）",
-  "sentenceDelimiters": "。/ ！/？",
+  "sentenceDelimiters": "。/！/？",
   "sentenceThreshold": 50,
   "useWindowsTTS": true,
   "winVoice": 5,

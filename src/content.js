@@ -441,10 +441,10 @@ function getLastChild(element) {
 
 
 // 分割句子的函数
-function splitSentences(text, sentenceThreshold, sentenceDelimiters) {
+function splitSentences(inner, sentenceThreshold, sentenceDelimiters) {
     // 创建一个临时的div元素来处理HTML字符串
     const div = document.createElement('div');
-    div.innerHTML = text;
+    div.innerHTML = inner;
 
     // 移除所有的 <span> 标签，但保留其内部内容
     const spans = div.querySelectorAll('span');
