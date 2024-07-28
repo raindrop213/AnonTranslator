@@ -478,8 +478,23 @@ function splitSentences(inner, sentenceThreshold, sentenceDelimiters) {
     let mergedSentences = [];
     let tempSentence = '';
 
+    function getTextContentWithoutRuby(html) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const rubies = tempDiv.querySelectorAll('ruby');
+        rubies.forEach(ruby => {
+            const rt = ruby.querySelector('rt');
+            if (rt) {
+                rt.remove();
+            }
+        });
+        return tempDiv.textContent || '';
+    }
+
     sentences.forEach(sentence => {
-        if (tempSentence.length + sentence.length > sentenceThreshold) {
+        const textContent = getTextContentWithoutRuby(tempSentence + sentence);
+        console.log(`当前句子长度: ${textContent.length}`, textContent);
+        if (textContent.length > sentenceThreshold) {
             if (tempSentence.length === 0) {
                 mergedSentences.push(`<span class="sentence">${sentence}</span>`);
             } else {
