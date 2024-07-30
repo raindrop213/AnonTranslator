@@ -11,7 +11,7 @@ A chrome extension for light novel reading
 ---
 
 ### **插件安装**
-- AnonTranslator：① 直接 [Download ZIP](https://github.com/raindrop213/AnonTranslator/archive/refs/heads/main.zip)；② Chrome打开开发者模式；③ 加载已解压的扩展程序；
+- AnonTranslator：[Chrome商店](https://chromewebstore.google.com/detail/anontranslator/echegehpmakkcfcadfjljpcallkhpldi)下载 或 [Download ZIP](https://github.com/raindrop213/AnonTranslator/archive/refs/heads/main.zip)加载；
 - [vitsTTS整合包](https://github.com/raindrop213/AnonTranslator/releases/v1.1.0)：下载解压后打开 <kbd>RD213.bat</kbd>（注：原项目来自 [vits-simple-api](https://github.com/Artrajz/vits-simple-api) 。该整合包里面包含所需的vits模型([vits-uma-genshin-honkai](https://huggingface.co/spaces/zomehwh/vits-uma-genshin-honkai))。能力有限，无论如何都绕不开限制，就加了个api来桥接插件･ﾟ･(つд`ﾟ)･ﾟ･ 主打一个能用就行）。
 
 ### **使用场景**
