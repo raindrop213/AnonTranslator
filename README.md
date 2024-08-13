@@ -19,7 +19,7 @@ A chrome extension for light novel reading
   - [小説家になろう](https://syosetu.com/)；
   - [カクヨム](https://kakuyomu.jp/)；
   - [青空文庫](https://www.aozora.gr.jp/)（不能正常工作，因为是纯文本没html标签。但可以使用 [青空助手](https://aohelp.club/) 下载epub或者html看 | [作者B站视频](https://www.bilibili.com/video/BV1Xa4y1h7MW/)）；
-  - [本人自用书库](https://ebook.raindrop213.info/)
+  - [本人自用书库](https://ebook.raindrop213.com/)
 - 下载党：EPUB / HTML 格式
   - 管理：[Calibre-web](https://github.com/janeczku/calibre-web) 自建书库（前提是你已经用 [Calibre](https://calibre-ebook.com/) 存好电子书了，最好用的书籍管理软件！！！）
   - 下载：Z-Lib就不用多说了，那你也可能还知道安娜的档案和各种DLRaw网站；[小説図書館](https://yonde.itazuraneko.org/)
@@ -46,7 +46,7 @@ https://github.com/user-attachments/assets/169b6d31-6655-4f48-9dd9-80988322e62f
       "http://127.0.0.1:8083/*",
       "https://kakuyomu.jp/*",
       "https://*.syosetu.com/*",
-      "https://ebook.raindrop213.info/*",
+      "https://ebook.raindrop213.com/*",
       "https://reader.ttsu.app/*"
     ],
     ```
