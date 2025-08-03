@@ -4,6 +4,18 @@
 const version = chrome.runtime.getManifest().version;
 document.getElementById('extensionVersion').textContent = `Ver ${version} `;
 
+// 更新背景图片状态的函数
+function updateBackgroundImage(isPluginOn) {
+  const upperPart = document.querySelector('.upper-part');
+  if (isPluginOn) {
+    upperPart.classList.remove('plugin-off');
+    upperPart.classList.add('plugin-on');
+  } else {
+    upperPart.classList.remove('plugin-on');
+    upperPart.classList.add('plugin-off');
+  }
+}
+
 // 页面加载时加载设置并绑定事件
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
@@ -11,6 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     saveSettings();
   });
+
+  // 监听插件开关变化
+  const pluginSwitch = document.getElementById('pluginSwitch');
+  if (pluginSwitch) {
+    pluginSwitch.addEventListener('change', (e) => {
+      updateBackgroundImage(e.target.checked);
+    });
+  }
 
   // 使用通用函数来绑定各个滑竿
   bindSlider('rate', 'rateValue');
@@ -76,6 +96,9 @@ function loadSettings() {
     }
     loadWindowsVoices(settings.winVoice); // 传递保存的 Windows 语音序号
     loadVitsVoices(settings.vitsVoice);   // 传递保存的 VITS 语音序号
+    
+    // 根据插件开关状态更新背景图片
+    updateBackgroundImage(settings.pluginSwitch || false);
   });
 }
 
@@ -110,6 +133,9 @@ function saveSettings() {
       saveButton.classList.remove('saved');
       saveButton.textContent = 'save';
     }, 1000);
+    
+    // 保存后立即更新背景图片状态
+    updateBackgroundImage(settings.pluginSwitch || false);
   });
 }
 

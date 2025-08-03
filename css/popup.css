@@ -91,12 +91,23 @@ input[type="text"] {
 }
 
 .upper-part {
-  background-image: url("../img/img1.png"); /* 替换为你的背景图片路径 */
+  background-image: url("../img/img3.jpg"); /* 默认使用关闭状态的黑白图片 */
   background-size: cover;
   background-position: center;
   padding: 6px;
   height: 100px;
-  position: relative; /* 添加这个属性 */
+  position: relative;
+  transition: background-image 0.3s ease-in-out; /* 添加过渡效果 */
+}
+
+/* 插件开启状态的背景图片 */
+.upper-part.plugin-on {
+  background-image: url("../img/img2.jpg"); /* 开启状态使用彩色图片 */
+}
+
+/* 插件关闭状态的背景图片 */
+.upper-part.plugin-off {
+  background-image: url("../img/img3.jpg"); /* 关闭状态使用黑白图片 */
 }
 
 kbd {
