@@ -1,31 +1,48 @@
 {
   "manifest_version": 3,
   "name": "AnonTranslator",
-  "version": "1.1.4",
+  "version": "1.6.4",
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
   "icons": {
-    "16": "img/icon16.png",
-    "48": "img/icon48.png",
-    "128": "img/icon128.png"
+    "16": "assets/img/icon16.png",
+    "48": "assets/img/icon48.png",
+    "128": "assets/img/icon128.png"
   },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "https://translate-pa.googleapis.com/*",
+    "https://m.youdao.com/*",
+    "https://translate.volcengine.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "content_scripts": [
     {
       "matches": [
         "<all_urls>"
       ],
-      "js": ["src/content.js"],
-      "css": ["css/styles.css"]
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle",
+      "js": [
+        "dist/chrome/content.js"
+      ],
+      "css": [
+        "dist/chrome/reader.css"
+      ]
     }
   ],
-  "permissions": ["storage"],
-  "host_permissions": [
-    "http://127.0.0.1:8666/*",
-    "https://www2.deepl.com/*",
-    "https://translate.google.com/m*",
-    "https://aidemo.youdao.com/trans*",
-    "https://api.interpreter.caiyunai.com/v1/*"
-  ],
-  "action": {"default_popup": "popup.html"},
-  "background": {"service_worker": "src/background.js"}
+  "action": {
+    "default_popup": "dist/chrome/popup.html"
+  },
+  "background": {
+    "service_worker": "dist/chrome/background.js"
+  }
 }

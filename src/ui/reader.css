@@ -1,0 +1,15 @@
+.at-notification {
+  position: fixed; bottom: 10px; left: 10px; max-width: min(600px, 90vw);
+  padding: 6px 10px; background: none; color: var(--at-notice-color, #225d2e);
+  border-radius: 6px; font: 14px/1.5 sans-serif; white-space: pre-wrap;
+  opacity: 0; transition: opacity .2s; z-index: 2147483646; pointer-events: none;
+}
+.at-notification.at-visible { opacity: .5; }
+.at-sentence-hover { background-color: var(--at-sentence-color, #d4e725) !important; }
+.at-sentence-selected, .at-sentence-speaking {
+  background-color: var(--at-sentence-color, #d4e725) !important;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.at-translation { white-space: pre-wrap; font-size: .95em; }
+.at-translation, .at-translation-row { display: block; }
+.at-sentence-translation { margin-block: .3em; }

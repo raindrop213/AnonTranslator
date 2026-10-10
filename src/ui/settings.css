@@ -1,0 +1,56 @@
+:host { all: initial; }
+body { margin: 0; width: 380px; }
+.at-settings, .at-dialog-panel, body {
+  --at-bg: #fafaf8; --at-surface: #ffffff; --at-text: #26332e;
+  --at-muted: #766461; --at-line: #dbc7c4; --at-button: #f3e6e3; --at-accent: #a33b35; --at-bar: #9b3833;
+  color-scheme: light;
+}
+[data-at-theme=night] {
+  --at-bg: #191e22; --at-surface: #242b30; --at-text: #e2e9e5;
+  --at-muted: #c5b2ae; --at-line: #654743; --at-button: #51312e; --at-accent: #e99c91; --at-bar: #85332f;
+  color-scheme: dark;
+}
+.at-settings { box-sizing: border-box; margin: 0; padding: 16px; background: var(--at-bg); color: var(--at-text); font: 14px/1.5 system-ui, sans-serif; }
+.at-settings * { box-sizing: border-box; }
+.at-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+.at-header { --at-letter-shadow: 1px 1px 0 #fff, 2px 2px 0 #fff; position: relative; overflow: hidden; border: 2px solid var(--at-bar); border-radius: 6px; }
+.at-header-art { display: block; width: 100%; aspect-ratio: 5 / 2; object-fit: cover; }
+.at-version { position: absolute; top: 5px; left: 7px; color: #8c2825; text-shadow: var(--at-letter-shadow); font: 800 20px/1.2 system-ui, sans-serif; }
+.at-header-actions { position: absolute; top: 8px; right: 8px; display: grid; grid-template-columns: repeat(2, 40px); gap: 6px; }
+.at-header-actions button { width: 40px; height: 36px; padding: 0; background: transparent; color: #8c2825; border: 0; font: 25px/1 system-ui, sans-serif; cursor: pointer; text-shadow: var(--at-letter-shadow); }
+.at-header-actions button:hover { opacity: .65; }
+.at-power { position: absolute; left: 76%; top: 58%; width: 23%; height: 29%; cursor: pointer; }
+.at-power input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; z-index: 1; cursor: pointer; }
+.at-power:has(input:focus-visible), .at-header-actions button:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 3px; }
+.at-settings .at-save-status { margin: 8px 0; font-size: 12px; color: var(--at-accent); }
+.at-settings .at-save-status:empty { display: none; }
+.at-settings-sections { margin-top: 10px; border: 1px solid var(--at-line); border-radius: 6px; overflow: hidden; background: var(--at-surface); }
+.at-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--at-bar); padding: 3px 3px 0; gap: 2px; }
+.at-tabs button { min-width: 0; padding: 9px 0; border: 0; border-radius: 4px 4px 0 0; background: transparent; color: #fff; font: 600 13px/1.4 system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.at-tabs button[aria-selected=true] { background: var(--at-surface); color: var(--at-accent); }
+.at-tabs button:hover { opacity: .8; }
+.at-tabs button:focus-visible { outline: 2px solid var(--at-accent); outline-offset: 1px; }
+.at-tab-panel { display: flow-root; margin: 0; background: var(--at-surface); }
+.at-tab-panel[hidden] { display: none; }
+.at-tab-panel > .at-guide { margin: 10px; }
+.at-settings fieldset { min-width: 0; margin: 8px; padding: 0; border: 1px solid var(--at-line); border-radius: 4px; }
+.at-settings legend { padding: 0 6px; color: var(--at-muted); }
+.at-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; }
+.at-setting > span { flex: 1; min-width: 190px; }
+.at-setting input, .at-setting select { font: inherit; max-width: 100%; accent-color: var(--at-accent); }
+.at-setting input[type=text], .at-setting input[type=password], .at-setting input[type=number], .at-setting select { width: 100%; padding: 5px 8px; border: 1px solid var(--at-line); border-radius: 4px; background: var(--at-surface); color: var(--at-text); }
+.at-setting input:invalid { border-color: #b63939; }
+.at-setting button { padding: 4px 10px; background: var(--at-button); color: var(--at-text); border: 1px solid var(--at-line); border-radius: 4px; font: inherit; cursor: pointer; }
+.at-setting input[type=range] { width: calc(100% - 48px); }
+.at-color-pair { flex-wrap: nowrap; }
+.at-color-pair > span { min-width: 0; }
+.at-color-pair input[type=color] { width: 34px; height: 28px; padding: 2px; border: 1px solid var(--at-line); border-radius: 4px; background: var(--at-surface); cursor: pointer; }
+.at-settings .at-color-guide { margin: 8px 10px 0; text-align: right; }
+.at-service-permission { padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.at-service-permission > span { flex: 1; }
+.at-service-permission button { padding: 5px 8px; border: 1px solid var(--at-line); border-radius: 4px; background: var(--at-button); color: var(--at-text); cursor: pointer; }
+.at-service-permission button:disabled { opacity: .6; cursor: default; }
+.at-settings .at-guide { font-size: 12px; color: var(--at-muted); }
+.at-dialog { position: fixed; inset: 0; display: flex; justify-content: flex-end; background: #0005; z-index: 2147483647; }
+.at-dialog-panel { position: relative; width: min(420px, 100vw); height: 100%; overflow-y: auto; background: var(--at-bg); box-shadow: -4px 0 20px #0003; }
+.at-close { position: sticky; top: 0; display: block; margin-left: auto; padding: 6px 12px; border: 0; color: var(--at-text); background: var(--at-button); cursor: pointer; font: 14px system-ui, sans-serif; z-index: 1; }

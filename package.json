@@ -1,0 +1,12 @@
+{
+  "name": "anon-translator",
+  "version": "1.6.4",
+  "private": true,
+  "description": "Shared reading tool for Chrome and Tampermonkey",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
+    "test:browser": "node scripts/build.mjs && node tests/browser.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
