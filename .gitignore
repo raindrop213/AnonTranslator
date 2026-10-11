@@ -1,4 +1,3 @@
-dist/
 node_modules/
-test-results/
-release-assets/
+dist/
+*.zip

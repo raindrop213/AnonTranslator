@@ -15,11 +15,9 @@ body { margin: 0; width: 380px; }
 .at-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .at-header { --at-letter-shadow: 1px 1px 0 #fff, 2px 2px 0 #fff; position: relative; overflow: hidden; border: 2px solid var(--at-bar); border-radius: 6px; }
 .at-header-art { display: block; width: 100%; aspect-ratio: 5 / 2; object-fit: cover; }
-.at-version { position: absolute; top: 5px; left: 7px; color: #8c2825; text-shadow: var(--at-letter-shadow); font: 800 20px/1.2 system-ui, sans-serif; }
-.at-update { position: absolute; top: 31px; left: 8px; max-width: calc(100% - 112px); color: #8c2825; text-shadow: var(--at-letter-shadow); font: 600 12px/1.4 system-ui, sans-serif; text-decoration: none; }
-.at-update:hover { text-decoration: underline; }
-.at-update[data-state=available] { font-weight: 800; }
-.at-update:focus-visible { outline: 2px solid #8c2825; outline-offset: 2px; }
+.at-version { position: absolute; top: 5px; left: 7px; max-width: calc(100% - 110px); color: #8c2825; text-shadow: var(--at-letter-shadow); font: 800 20px/1.2 system-ui, sans-serif; }
+.at-header .at-update { color: #a66a00; font: 700 12px/1.2 system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
+.at-author { display: block; margin-top: 2px; color: #805752; font: 10px/1.3 system-ui, sans-serif; }
 .at-header-actions { position: absolute; top: 8px; right: 8px; display: grid; grid-template-columns: repeat(2, 40px); gap: 6px; }
 .at-header-actions button { width: 40px; height: 36px; padding: 0; background: transparent; color: #8c2825; border: 0; font: 25px/1 system-ui, sans-serif; cursor: pointer; text-shadow: var(--at-letter-shadow); }
 .at-header-actions button:hover { opacity: .65; }
@@ -55,6 +53,8 @@ body { margin: 0; width: 380px; }
 .at-service-permission button { padding: 5px 8px; border: 1px solid var(--at-line); border-radius: 4px; background: var(--at-button); color: var(--at-text); cursor: pointer; }
 .at-service-permission button:disabled { opacity: .6; cursor: default; }
 .at-settings .at-guide { font-size: 12px; color: var(--at-muted); }
+.at-settings fieldset > .at-guide { margin: 8px 10px; }
+.at-settings a { color: var(--at-accent); overflow-wrap: anywhere; }
 .at-dialog { position: fixed; inset: 0; display: flex; justify-content: flex-end; background: #0005; z-index: 2147483647; }
 .at-dialog-panel { position: relative; width: min(420px, 100vw); height: 100%; overflow-y: auto; background: var(--at-bg); box-shadow: -4px 0 20px #0003; }
 .at-close { position: sticky; top: 0; display: block; margin-left: auto; padding: 6px 12px; border: 0; color: var(--at-text); background: var(--at-button); cursor: pointer; font: 14px system-ui, sans-serif; z-index: 1; }

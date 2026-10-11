@@ -1,18 +1,37 @@
-App.createChromePlatform = () => ({
-  servicePermissions: App.chromeServices,
-  hasServiceAccess(service, settings) { return chrome.permissions.contains({ origins: App.serviceOrigins(service, settings) }); },
+import { defaults, normalizeSetting } from '../settings/settings.js';
+
+export const chromeServices = {
+  google: { name: 'Google', section: '翻译', origins: ['https://translate-pa.googleapis.com/*'] },
+  youdao: { name: '有道', section: '翻译', origins: ['https://m.youdao.com/*'] },
+  vits: { name: 'VITS', section: '语音', origins: ['http://127.0.0.1/*'] },
+  huosh: { name: '火山语音', section: '语音', origins: ['https://translate.volcengine.com/*'] },
+  update: { name: '版本更新', section: '帮助', origins: ['https://api.github.com/*'] }
+};
+export function servicePermissionError(service, origin) {
+  const error = new Error(`Chrome 未授权访问 ${service.name} 接口（${new URL(origin).hostname}）。请打开扩展设置，在“${service.section}”栏点击“授权 ${service.name} 接口”，然后重试。`);
+  error.code = 'HOST_PERMISSION_MISSING';
+  return error;
+}
+export function serviceOrigins(id, settings = defaults) {
+  if (id !== 'vits') return chromeServices[id].origins;
+  const custom = normalizeSetting('vitsCustomAPI', settings.vitsCustomAPI || '');
+  const address = new URL(custom || normalizeSetting('vitsAPI', settings.vitsAPI ?? defaults.vitsAPI));
+  return [`${address.protocol}//${address.hostname}/*`];
+}
+
+export const createChromePlatform = () => ({
+  updateURL: 'https://chromewebstore.google.com/detail/anontranslator/echegehpmakkcfcadfjljpcallkhpldi',
+  servicePermissions: chromeServices,
+  serviceOrigins,
+  hasServiceAccess(service, settings) { return chrome.permissions.contains({ origins: serviceOrigins(service, settings) }); },
   // Called directly by a popup button, before any await, preserving user activation.
-  requestServiceAccess(service, settings) { return chrome.permissions.request({ origins: App.serviceOrigins(service, settings) }); },
+  requestServiceAccess(service, settings) { return chrome.permissions.request({ origins: serviceOrigins(service, settings) }); },
   watchServiceAccess(listener) {
     chrome.permissions.onAdded.addListener(listener);
     chrome.permissions.onRemoved.addListener(listener);
     return () => { chrome.permissions.onAdded.removeListener(listener); chrome.permissions.onRemoved.removeListener(listener); };
   },
-  async getSettings() {
-    const settings = await chrome.runtime.sendMessage({ type: 'getSettings' });
-    if (!settings || settings.error) throw new Error(settings?.error || '后台未响应');
-    return settings;
-  },
+  getSettings() { return chrome.storage.local.get(null); },
   async setSettings(patch) { await chrome.storage.local.set(patch); },
   watchSettings(listener) {
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -26,6 +45,11 @@ App.createChromePlatform = () => ({
     if (response.error) throw new Error(response.error);
     return response;
   },
+  playAudio(response, rate, scope) {
+    return this.send({ action: 'play_audio', ...response, rate, scope });
+  },
+  stopAudio(scope) { return this.send({ action: 'stop_audio', scope }); },
+  setAudioRate(rate, scope) { return this.send({ action: 'audio_rate', rate, scope }); },
   async copy(text) {
     if (navigator.clipboard?.writeText) {
       try { await navigator.clipboard.writeText(text); return; } catch { /* Frame policy can deny the modern API. */ }
@@ -46,3 +70,4 @@ App.createChromePlatform = () => ({
     }
   }
 });
+

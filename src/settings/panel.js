@@ -1,28 +1,33 @@
+import { defaults, settingOptions, numericRules, normalizeSetting, shortcutActions, shortcutFromEvent, validateShortcuts, huoshanVoices } from './settings.js';
+import metadata from '../../package.json' with { type: 'json' };
+import settingsOn from '../../assets/settings-on.jpg';
+import settingsOff from '../../assets/settings-off.jpg';
+const headerImages = { on: settingsOn, off: settingsOff };
 const settingsGroups = [
   ['复制', ['copy', 'targetTags', 'ignoreFurigana', 'showCopyContent', 'extraImage', 'ignoreSymbolPairs', 'symbolPairs', 'sentenceDelimiters']],
   ['语音', ['readingInterval', 'splitSpeech']],
   ['翻译', []],
   ['外观', ['borderWidth', 'borderStyle', 'borderRadius', 'scrollSwitch', 'scrollIntoView']],
-  ['快捷键', Object.keys(App.shortcutActions)],
+  ['快捷键', Object.keys(shortcutActions)],
   ['帮助', []]
 ];
 const settingLabels = {
   pluginSwitch: '启用阅读工具', copy: '复制文本', ignoreFurigana: '忽略振假名', showCopyContent: '显示复制内容', extraImage: '点击打开图片',
-  targetTags: '目标文本标签（用逗号分隔）',
-  ignoreSymbolPairs: '忽略首尾符号对', symbolPairs: '首尾符号对（用 / 分隔）', splitSpeech: '把段落切成句子', sentenceDelimiters: '断句符号（用 / 分隔）', readingInterval: '自动朗读间隔（毫秒）',
+  targetTags: '目标文本标签',
+  ignoreSymbolPairs: '忽略首尾符号对', symbolPairs: '首尾符号对', splitSpeech: '把段落切成句子', sentenceDelimiters: '断句符号', readingInterval: '自动朗读间隔（毫秒）',
   shortcutPreviousParagraph: '上一段', shortcutNextParagraph: '下一段', shortcutPreviousSentence: '上一句', shortcutNextSentence: '下一句',
   shortcutReadCurrent: '重读当前选择', shortcutAutoRead: '自动阅读 / 暂停', shortcutStop: '停止朗读',
   useWindowsTTS: '启用系统语音', winVoice: '系统声音', rate: '语速', pitch: '音调', useVITS: '启用 VITS',
-  useHuoshTTS: '启用火山语音', huoshVoice: '火山声音', huoshRate: '播放速度（倍，1 为正常）',
-  vitsAPI: 'VITS 服务地址', vitsVoice: 'VITS 声音', vitsLang: 'VITS 语言', length: '发音长度（越大越慢）',
-  noise: '声音随机性', noisew: '发音时长随机性', max: '合成分段阈值（segment_size）', streaming: '服务端流式响应（获取完整音频后播放）',
+  useHuoshTTS: '启用火山语音', huoshVoice: '火山声音', huoshRate: '播放速度',
+  vitsAPI: '服务地址', vitsVoice: '声线（id）', vitsLang: '语言（lang）', length: '发音长度（length 越大越慢）',
+  noise: '声音随机性（noise）', noisew: '发音时长随机性（noisew）', max: '合成分段阈值（segment_size）', vitsCustomAPI: '完整 API 地址（可选）',
   google: '启用 Google', youdao: '启用有道',
-  borderWidth: '框宽度（例如 2px）', borderStyle: '框样式', borderRadius: '框圆角（例如 8px）',
+  borderWidth: '框宽度', borderStyle: '框样式', borderRadius: '框圆角',
   freeBorderColor: '预选框颜色', selectedBorderColor: '激活框颜色', sentenceColor: '句子高亮颜色', scrollSwitch: '自动滚动到段落/句子', scrollIntoView: '滚动方式'
 };
-const selectOptions = App.settingOptions;
+const selectOptions = settingOptions;
 
-function mountSettings(root, store, platform) {
+export function mountSettings(root, store, platform) {
   const doc = root.ownerDocument;
   const controls = new Map();
   const permissionRows = [];
@@ -35,13 +40,14 @@ function mountSettings(root, store, platform) {
   header.className = 'at-header';
   const artwork = doc.createElement('img');
   artwork.className = 'at-header-art'; artwork.alt = '';
-  const title = doc.createElement('h1'), version = doc.createElement('span');
+  const title = doc.createElement('h1'), version = doc.createElement('div');
   title.className = 'at-sr-only'; title.textContent = 'AnonTranslator';
-  version.className = 'at-version'; version.textContent = `Ver ${App.version}`;
-  const updateLink = doc.createElement('a');
-  updateLink.className = 'at-update'; updateLink.href = App.release.page;
-  updateLink.target = '_blank'; updateLink.rel = 'noopener noreferrer';
-  updateLink.setAttribute('aria-live', 'polite'); updateLink.textContent = '检查更新…';
+  version.className = 'at-version'; version.textContent = `Ver ${metadata.version}`;
+  const update = doc.createElement('a'), author = doc.createElement('small');
+  update.className = 'at-update'; update.id = 'newVersion'; update.textContent = 'Update:…';
+  update.href = platform.updateURL; update.target = '_blank'; update.rel = 'noopener noreferrer'; update.setAttribute('aria-live', 'polite');
+  author.className = 'at-author'; author.textContent = `By: ${metadata.author}`;
+  version.append(' ', update, author);
   const actions = doc.createElement('div'); actions.className = 'at-header-actions';
   const themeButton = doc.createElement('button');
   themeButton.type = 'button'; themeButton.className = 'at-theme-toggle';
@@ -52,7 +58,7 @@ function mountSettings(root, store, platform) {
   resetButton.type = 'button'; resetButton.className = 'at-reset';
   resetButton.textContent = '↺'; resetButton.title = '重置设置'; resetButton.setAttribute('aria-label', '重置设置');
   resetButton.addEventListener('click', () => {
-    if (!doc.defaultView.confirm('确定重置所有设置吗？自定义快捷键、颜色和语音参数会恢复默认，阅读工具将关闭。')) return;
+    if (!doc.defaultView.confirm('确定重置所有设置吗？')) return;
     revision++;
     queue = queue.then(() => store.reset()).then(() => {
       for (const input of controls.values()) input.setCustomValidity('');
@@ -65,7 +71,7 @@ function mountSettings(root, store, platform) {
   powerInput.checked = store.values.pluginSwitch; powerInput.setAttribute('aria-label', '启用阅读工具');
   power.append(powerInput); controls.set('pluginSwitch', powerInput);
   actions.append(themeButton, resetButton);
-  header.append(artwork, title, version, updateLink, actions, power); form.append(header);
+  header.append(artwork, title, version, actions, power); form.append(header);
   const updateTheme = values => {
     root.dataset.atTheme = form.dataset.atTheme = values.nightMode ? 'night' : 'day';
     themeButton.textContent = values.nightMode ? '☾' : '☀';
@@ -74,7 +80,7 @@ function mountSettings(root, store, platform) {
     themeButton.setAttribute('aria-pressed', String(values.nightMode));
     const state = values.pluginSwitch ? 'on' : 'off';
     if (artwork.dataset.state !== state) {
-      artwork.dataset.state = state; artwork.src = App.headerImages[state];
+      artwork.dataset.state = state; artwork.src = headerImages[state];
     }
     power.title = values.pluginSwitch ? '关闭阅读工具' : '启用阅读工具';
     controls.get('symbolPairs')?.toggleAttribute('disabled', !values.ignoreSymbolPairs);
@@ -109,13 +115,14 @@ function mountSettings(root, store, platform) {
     else if (key.endsWith('Color')) input.type = 'color';
     else if (['rate', 'huoshRate', 'pitch', 'length'].includes(key)) {
       input.type = 'range';
-      input.min = App.numericRules[key][0]; input.max = App.numericRules[key][1]; input.step = '0.1';
-    } else if (App.numericRules[key]) {
+      input.min = numericRules[key][0]; input.max = numericRules[key][1]; input.step = '0.1';
+    } else if (numericRules[key]) {
       input.type = 'number';
-      input.min = App.numericRules[key][0]; input.max = App.numericRules[key][1];
-      input.step = App.numericRules[key][2] ? '1' : '0.01';
+      input.min = numericRules[key][0]; input.max = numericRules[key][1];
+      input.step = numericRules[key][2] ? '1' : '0.01';
     } else input.type = 'text';
     if (key === 'vitsAPI') { input.placeholder = 'http://127.0.0.1:23456'; input.spellcheck = false; }
+    if (key === 'vitsCustomAPI') { input.placeholder = 'http://127.0.0.1:23456/voice/vits?id=0&lang=ja'; input.spellcheck = false; }
     if (key === 'targetTags') { input.placeholder = 'p,h1,h2,h3,h4,h5,h6'; input.spellcheck = false; }
     if (input.type === 'checkbox') input.checked = value;
     else input.value = value;
@@ -129,12 +136,12 @@ function mountSettings(root, store, platform) {
         if (input.dataset.recording !== 'true') return;
         event.preventDefault(); event.stopPropagation();
         if (/^(Control|Alt|Shift|Meta)/.test(event.code)) return;
-        input.value = App.shortcutFromEvent(event);
+        input.value = shortcutFromEvent(event);
         delete input.dataset.recording; record.textContent = '录制';
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       input.addEventListener('blur', () => { delete input.dataset.recording; record.textContent = '录制'; });
-      reset.addEventListener('click', () => { input.value = App.defaults[key]; input.dispatchEvent(new Event('input', { bubbles: true })); });
+      reset.addEventListener('click', () => { input.value = defaults[key]; input.dispatchEvent(new Event('input', { bubbles: true })); });
       row.append(record, reset);
     }
     if (input.type === 'range') {
@@ -189,14 +196,24 @@ function mountSettings(root, store, platform) {
       for (const key of keys) addControl(fieldset, key);
       section.append(fieldset);
       if (serviceId) serviceGroups.set(serviceId, fieldset);
+      return fieldset;
     };
     if (name === '语音') {
       addGroup('系统语音', ['useWindowsTTS', 'winVoice', 'rate', 'pitch']);
       addGroup('火山语音', ['useHuoshTTS', 'huoshVoice', 'huoshRate'], 'huosh');
-      addGroup('VITS', ['useVITS', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max', 'streaming'], 'vits');
+      const vits = addGroup('VITS', ['useVITS', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max'], 'vits');
       const refresh = doc.createElement('button'); refresh.type = 'button'; refresh.className = 'at-refresh-voices'; refresh.textContent = '刷新声音列表';
       refresh.addEventListener('click', () => { void refreshVits(); });
       controls.get('vitsVoice').parentElement.append(refresh);
+      const download = doc.createElement('p'); download.className = 'at-guide';
+      const link = doc.createElement('a'); link.textContent = 'VITS 整合包下载';
+      link.href = 'https://github.com/raindrop213/LunaTranslator-re/releases/tag/v0.0.3'; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      download.append(link, '：选择需要的版本，解压后运行 start.bat，待服务地址出现即可使用。');
+      vits.append(download);
+      addControl(vits, 'vitsCustomAPI');
+      const customHelp = doc.createElement('p'); customHelp.className = 'at-guide';
+      customHelp.textContent = '如果你熟悉此项目，可填入完整的 API 调用”链接。非空时优先使用此地址，声音、语言等参数以该链接为准。text 可填可不填，会自动替换或补上当前选中的文本。';
+      vits.append(customHelp);
     }
     if (name === '翻译') {
       addGroup('Google', ['google', 'googleFrom', 'googleTo'], 'google');
@@ -224,7 +241,9 @@ function mountSettings(root, store, platform) {
     }
     if (permissionRows.some(row => row.service.section === name)) {
       const help = doc.createElement('p'); help.className = 'at-guide';
-      help.textContent = '只允许指定阅读网站时，还需允许访问以上接口。授权仅请求按钮列出的服务域名；授权后重新选择文本即可。'; section.append(help);
+      help.textContent = name === '帮助'
+        ? '授权后查询 GitHub 最新 Release，点击顶部更新状态打开对应平台的更新页。'
+        : '只允许指定阅读网站时，还需允许访问以上接口。授权仅请求按钮列出的服务域名；授权后重新选择文本即可。'; section.append(help);
     }
     if (name === '外观') {
       const colors = ['googleColor', 'youdaoColor', 'freeBorderColor', 'selectedBorderColor', 'sentenceColor'];
@@ -242,9 +261,17 @@ function mountSettings(root, store, platform) {
       help.textContent = '点击“录制”后按下新键位，支持 Ctrl / Alt / Shift。可手工填写多个备用键，用 / 分隔；清空即可禁用。1/2 控制段落，4/5 控制句子。'; section.append(help);
     }
     if (name === '帮助') {
-      const guide = doc.createElement('p'); guide.className = 'at-guide';
-      guide.textContent = '左键选择整段；右键选择句子。默认 1/2：下一段/上一段；4/5：下一句/上一句（主键盘与小键盘均可）。F1/Num 0 重读，空格自动阅读，Esc 停止。句子模式只翻译选中句子，译文跟在该句后；自动阅读沿当前模式前进。';
-      section.append(guide);
+      for (const text of [
+        '左键点击正文拾取整段，右键点击句子拾取单句。开启“复制文本”后自动复制，开启“显示复制内容”可查看拾取结果。',
+        '默认拾取 p、h1–h6 标签。正文无法选中时，可在“复制 → 目标文本标签”补充 li、div 等标签，用逗号分隔。',
+        '默认忽略振假名（ruby 读音），保留正文中的换行，不重复拾取插件译文。可在“复制”栏调整振假名、首尾符号对和断句符号；段落与句子导航的键位可在“快捷键”栏查看。'
+      ]) {
+        const guide = doc.createElement('p'); guide.className = 'at-guide'; guide.textContent = text; section.append(guide);
+      }
+      const project = doc.createElement('p'); project.className = 'at-guide';
+      const link = doc.createElement('a'); link.textContent = 'raindrop213/AnonTranslator';
+      link.href = 'https://github.com/raindrop213/AnonTranslator'; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      project.append('项目地址：', link); section.append(project);
     }
     sections.append(section);
   }
@@ -260,8 +287,8 @@ function mountSettings(root, store, platform) {
     if (output) output.textContent = value;
     const current = ++revision;
     try {
-      const normalized = App.normalizeSetting(input.name, value);
-      App.validateShortcuts({ ...store.values, [input.name]: normalized });
+      const normalized = normalizeSetting(input.name, value);
+      validateShortcuts({ ...store.values, [input.name]: normalized });
       input.setCustomValidity('');
     } catch (error) {
       input.setCustomValidity(error.message);
@@ -309,63 +336,47 @@ function mountSettings(root, store, platform) {
   };
   loadVoices();
   window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
-  populate(controls.get('huoshVoice'), App.huoshanVoices.map(voice => ({ value: voice.id, name: `${voice.lang} · ${voice.name}` })), store.values.huoshVoice);
+  populate(controls.get('huoshVoice'), huoshanVoices.map(voice => ({ value: voice.id, name: `${voice.lang} · ${voice.name}` })), store.values.huoshVoice);
   let mounted = true, voiceRequest = 0;
-  let updateState = 'checking', updatePending = false;
-  const updateStatus = (state, text, title, url = App.release.page) => {
-    updateState = updateLink.dataset.state = state;
-    updateLink.textContent = text; updateLink.title = title; updateLink.href = url;
-    updateLink.setAttribute('aria-busy', String(state === 'checking'));
-  };
-  const checkUpdate = async (force = false) => {
-    if (updatePending || !mounted) return;
-    updatePending = true;
-    updateStatus('checking', '检查更新…', '正在检查 GitHub 正式发布版本');
+  let updateRevision = 0, updateAccess;
+  const refreshUpdate = async (granted = true) => {
+    const current = ++updateRevision;
+    update.textContent = 'Update:…';
     try {
-      if (platform.hasServiceAccess && !await platform.hasServiceAccess('updates', store.values)) {
-        if (mounted) updateStatus('permission', '授权检查更新', '点击允许访问 GitHub 版本接口');
-        return;
-      }
-      const result = await platform.send({ action: 'check_update', force });
-      if (!mounted) return;
-      const labels = { available: `建议更新v${result.version}`, current: '当前为最新版本', unpublished: '尚无公开版本' };
-      if (!(result.state in labels)) throw new Error('版本检查响应无效');
-      updateStatus(result.state, labels[result.state], result.state === 'available'
-        ? '仅提示版本；点击查看 GitHub 发布页，安装更新请使用对应平台'
-        : '以 GitHub 正式版为准；点击重新检查', result.url);
+      if (!granted) throw new Error('请在“帮助”栏授权版本更新接口');
+      const latest = await platform.send({ action: 'check_update' });
+      if (!mounted || current !== updateRevision) return;
+      update.textContent = latest.available ? `Update:${latest.version}↻` : 'Latest:√';
+      update.title = latest.available ? `发现新版本 ${latest.version}，点击前往更新页` : '当前已是最新版本，点击查看更新页';
     } catch (error) {
-      if (mounted) updateStatus('error', '检查失败 · 重试', `${error.message}；点击重试`);
-    } finally { updatePending = false; }
+      if (!mounted || current !== updateRevision) return;
+      update.textContent = 'Update:×'; update.title = `${error.message}；点击查看更新页`;
+    }
   };
-  updateLink.addEventListener('click', event => {
-    if (updateState === 'available') return;
-    event.preventDefault();
-    if (updateState === 'permission') {
-      // Preserve user activation for Chrome's origin permission prompt.
-      platform.requestServiceAccess('updates', store.values).then(granted => {
-        if (!mounted) return;
-        if (granted) void checkUpdate(true);
-        else updateStatus('permission', '授权检查更新', '未授权；点击重试');
-      }).catch(error => { if (mounted) updateStatus('permission', '授权检查更新', error.message); });
-    } else void checkUpdate(true);
-  });
-  void checkUpdate();
   let permissionRevision = 0;
   const refreshPermissions = async () => {
     const revision = ++permissionRevision;
     await Promise.all(permissionRows.map(async ({ id, service, text, button }) => {
       try {
-        button.title = App.serviceOrigins(id, store.values).map(origin => new URL(origin).hostname).join('、');
+        button.title = platform.serviceOrigins(id, store.values).map(origin => new URL(origin).hostname).join('、');
         const granted = await platform.hasServiceAccess(id, store.values);
         if (!mounted || revision !== permissionRevision) return;
         text.textContent = `${service.name} 接口：${granted ? '已授权' : '未授权'}`;
         button.disabled = granted;
+        if (id === 'update' && granted !== updateAccess) { updateAccess = granted; void refreshUpdate(granted); }
       } catch (error) {
-        if (mounted && revision === permissionRevision) { text.textContent = `权限检查失败：${error.message}`; button.disabled = false; }
+        if (mounted && revision === permissionRevision) {
+          text.textContent = `权限检查失败：${error.message}`; button.disabled = false;
+          if (id === 'update') {
+            updateRevision++; updateAccess = undefined;
+            update.textContent = 'Update:×'; update.title = `${error.message}；点击查看更新页`;
+          }
+        }
       }
     }));
   };
   void refreshPermissions();
+  if (!platform.servicePermissions?.update) void refreshUpdate();
   const unwatchPermissions = permissionRows.length ? platform.watchServiceAccess(() => { void refreshPermissions(); }) : () => {};
   const refreshVits = async () => {
     if (!platform) return;
@@ -391,7 +402,8 @@ function mountSettings(root, store, platform) {
   };
   void refreshVits();
   const unwatchVits = store.subscribe((_values, patch) => {
-    if ('vitsAPI' in patch) { void refreshPermissions(); void refreshVits(); }
+    if ('vitsAPI' in patch || 'vitsCustomAPI' in patch) void refreshPermissions();
+    if ('vitsAPI' in patch) void refreshVits();
   });
   return () => {
     mounted = false; unwatchVits(); unwatchPermissions();
@@ -401,4 +413,4 @@ function mountSettings(root, store, platform) {
   };
 }
 
-App.mountSettings = mountSettings;
+

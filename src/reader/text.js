@@ -1,4 +1,4 @@
-function cleanParagraph(element, settings) {
+export function cleanParagraph(element, settings) {
   const plain = [], annotated = [];
   // Read once without cloning or modifying the page; generated UI never becomes source text.
   const visit = node => {
@@ -20,12 +20,13 @@ function cleanParagraph(element, settings) {
   }
   return { text, furigana, space, pair };
 }
-function unwrapSentences(element) {
+
+export function unwrapSentences(element) {
   element.querySelectorAll('.at-sentence').forEach(span => span.replaceWith(...span.childNodes));
   element.classList.remove('at-split');
   element.normalize();
 }
-function sentenceGroups(paragraph) {
+export function sentenceGroups(paragraph) {
   const groups = new Map();
   paragraph.querySelectorAll('.at-sentence').forEach(fragment => {
     const index = Number(fragment.dataset.atSentence);
@@ -34,12 +35,12 @@ function sentenceGroups(paragraph) {
   });
   return [...groups.values()].filter(group => group.fragments.some(fragment => fragment.textContent.trim()));
 }
-function sentenceElement(group) {
+export function sentenceElement(group) {
   const element = group.paragraph.ownerDocument.createElement('span');
   element.append(...group.fragments.map(fragment => fragment.cloneNode(true)));
   return element;
 }
-function wrapSentences(element, settings) {
+export function wrapSentences(element, settings) {
   if (element.classList.contains('at-split') || element.querySelector('img,a,button,input,textarea,select,[contenteditable]')) return;
   const endings = new Set(settings.sentenceDelimiters.split('/'));
   const closers = new Set(Array.from('」』”’）)】》〉』"'));
@@ -48,10 +49,9 @@ function wrapSentences(element, settings) {
   const begin = text => {
     if (boundary && text.trim() && !endings.has(text[0]) && !closers.has(text[0])) { index++; boundary = false; }
   };
-  const fragment = nodes => {
+  const fragment = (sentenceIndex = index) => {
     const span = doc.createElement('span');
-    span.className = 'at-sentence'; span.dataset.atSentence = index;
-    span.append(...nodes);
+    span.className = 'at-sentence'; span.dataset.atSentence = sentenceIndex;
     return span;
   };
   // Wrap text fragments inside their existing ancestors. A sentence can span
@@ -63,8 +63,7 @@ function wrapSentences(element, settings) {
         let buffer = '', bufferIndex = index;
         const flush = () => {
           if (!buffer) return;
-          const span = doc.createElement('span');
-          span.className = 'at-sentence'; span.dataset.atSentence = bufferIndex;
+          const span = fragment(bufferIndex);
           span.textContent = buffer; replacement.append(span); buffer = '';
         };
         for (const char of node.textContent) {
@@ -80,7 +79,7 @@ function wrapSentences(element, settings) {
           const clone = node.cloneNode(true);
           clone.querySelectorAll('rt,rp').forEach(annotation => annotation.remove());
           begin(clone.textContent);
-          const span = fragment([]);
+          const span = fragment();
           node.before(span); span.append(node);
           if (endings.has(clone.textContent.trim().slice(-1))) boundary = true;
         } else if (node.tagName === 'BR') boundary = true;
@@ -91,4 +90,4 @@ function wrapSentences(element, settings) {
   visit(element);
   element.classList.add('at-split');
 }
-Object.assign(App, { cleanParagraph, wrapSentences, unwrapSentences, sentenceGroups, sentenceElement });
+

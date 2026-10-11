@@ -1,13 +1,9 @@
 {
   "name": "anon-translator",
-  "version": "1.7.0",
+  "version": "1.9.0",
+  "author": "raindrop213",
   "private": true,
   "type": "module",
-  "description": "Shared reading tool for Chrome and Tampermonkey",
-  "scripts": {
-    "build": "node scripts/build.mjs",
-    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
-    "test:browser": "node scripts/build.mjs && node tests/browser.mjs"
-  },
-  "engines": { "node": ">=18" }
+  "scripts": { "build": "node build.mjs" },
+  "devDependencies": { "esbuild": "0.28.2" }
 }

@@ -1,4 +1,64 @@
-App.huoshanVoices = [
+export const defaults = {
+  "pluginSwitch": false,
+  "settingsTab": "复制",
+  "copy": true,
+  "targetTags": "p,h1,h2,h3,h4,h5,h6",
+  "ignoreFurigana": true,
+  "showCopyContent": true,
+  "extraImage": false,
+  "ignoreSymbolPairs": false,
+  "symbolPairs": "「」/『』/《》/“”/【】/（）",
+  "sentenceDelimiters": "。/！/？",
+  "shortcutPreviousParagraph": "ArrowUp/Numpad2/Digit2",
+  "shortcutNextParagraph": "ArrowDown/Numpad1/Digit1",
+  "shortcutPreviousSentence": "Numpad5/Digit5",
+  "shortcutNextSentence": "Numpad4/Digit4",
+  "shortcutReadCurrent": "F1/Numpad0",
+  "shortcutAutoRead": "Space",
+  "shortcutStop": "Escape",
+  "useWindowsTTS": false,
+  "splitSpeech": true,
+  "winVoice": 5,
+  "rate": 1,
+  "pitch": 1,
+  "useVITS": false,
+  "vitsAPI": "http://127.0.0.1:23456",
+  "vitsCustomAPI": "",
+  "vitsVoice": 0,
+  "useHuoshTTS": false,
+  "huoshVoice": "jp_female_mai",
+  "huoshRate": 1,
+  "vitsLang": "ja",
+  "length": 1,
+  "noise": 0.33,
+  "noisew": 0.4,
+  "max": 50,
+  "readingInterval": 120,
+  "google": false,
+  "googleFrom": "auto",
+  "googleTo": "zh-CN",
+  "googleColor": "#C8E37D",
+  "nightGoogleColor": "#AACFA2",
+  "youdao": false,
+  "youdaoFrom": "auto",
+  "youdaoTo": "zh-CHS",
+  "youdaoColor": "#D4B102",
+  "nightYoudaoColor": "#F1CE78",
+  "borderWidth": "2px",
+  "borderStyle": "solid",
+  "borderRadius": "8px",
+  "freeBorderColor": "#225D2E",
+  "selectedBorderColor": "#94B505",
+  "sentenceColor": "#d4e725",
+  "nightMode": false,
+  "nightFreeBorderColor": "#6C9387",
+  "nightSelectedBorderColor": "#B4C982",
+  "nightSentenceColor": "#405343",
+  "scrollSwitch": true,
+  "scrollIntoView": "smooth"
+};
+
+export const huoshanVoices = [
   {"id":"tts.other.BV570_streaming","name":"阿语男声","lang":"ar"},
   {"id":"tts.other.BV531_streaming","name":"葡语男声","lang":"br"},
   {"id":"pt_female_alice","name":"葡语女声","lang":"br"},
@@ -37,7 +97,42 @@ App.huoshanVoices = [
   {"id":"tts.other.BV026_streaming","name":"粤语男声","lang":"zh"},
 ];
 
-// App is scoped to each generated bundle; no variables leak into the host page.
+export const shortcutActions = {
+  shortcutPreviousParagraph: 'previousParagraph', shortcutNextParagraph: 'nextParagraph',
+  shortcutPreviousSentence: 'previousSentence', shortcutNextSentence: 'nextSentence',
+  shortcutReadCurrent: 'readCurrent', shortcutAutoRead: 'autoRead', shortcutStop: 'stop'
+};
+const shortcutModifiers = ['Ctrl', 'Alt', 'Shift', 'Meta'];
+export function normalizeShortcut(value) {
+  if (!value.trim()) return '';
+  const alternatives = value.split('/').map(binding => {
+    const pieces = binding.trim().split('+');
+    const code = pieces.pop();
+    if (!/^(Key[A-Z]|Digit\d|Numpad\d|F([1-9]|1\d|2[0-4])|Arrow(Up|Down|Left|Right)|Space|Escape|Enter|Tab|Home|End|PageUp|PageDown|Backspace|Delete|Insert|Comma|Period|Slash|Semicolon|Quote|BracketLeft|BracketRight|Backslash|Minus|Equal|Backquote|Numpad(Add|Subtract|Multiply|Divide|Decimal|Enter))$/.test(code) || pieces.some(piece => !shortcutModifiers.includes(piece)) || new Set(pieces).size !== pieces.length) {
+      throw new Error('使用按键代码，例如 Digit4、Numpad4、Ctrl+ArrowRight；备用键用 / 分隔');
+    }
+    return [...shortcutModifiers.filter(modifier => pieces.includes(modifier)), code].join('+');
+  });
+  return [...new Set(alternatives)].join('/');
+}
+export function shortcutFromEvent(event) {
+  return [...shortcutModifiers.filter(modifier => event[{ Ctrl: 'ctrlKey', Alt: 'altKey', Shift: 'shiftKey', Meta: 'metaKey' }[modifier]]), event.code].join('+');
+}
+export function validateShortcuts(values) {
+  const used = new Map();
+  for (const key of Object.keys(shortcutActions)) {
+    for (const binding of (values[key] || '').split('/').filter(Boolean)) {
+      if (used.has(binding)) throw new Error(`${binding} 已用于另一个操作，请先修改或清空那个快捷键`);
+      used.set(binding, key);
+    }
+  }
+}
+export function shortcutAction(event, values) {
+  const binding = shortcutFromEvent(event);
+  return Object.entries(shortcutActions).find(([key]) => (values[key] || '').split('/').includes(binding))?.[1];
+}
+
+
 const speechSwitches = ['useWindowsTTS', 'useVITS', 'useHuoshTTS'];
 const numericRules = {
   readingInterval: [0, 60000, true],
@@ -47,7 +142,7 @@ const numericRules = {
 };
 const settingOptions = {
   settingsTab: ['复制', '语音', '翻译', '外观', '快捷键', '帮助'],
-  huoshVoice: App.huoshanVoices.map(voice => voice.id),
+  huoshVoice: huoshanVoices.map(voice => voice.id),
   vitsLang: ['auto', 'ja', 'zh'],
   googleFrom: ['auto', 'zh-CN', 'zh-TW', 'ja', 'en'], googleTo: ['zh-CN', 'zh-TW', 'ja', 'en'],
   youdaoFrom: ['auto', 'ja', 'en', 'zh-CHS', 'zh-CHT'], youdaoTo: ['zh-CHS', 'zh-CHT', 'ja', 'en'],
@@ -56,7 +151,7 @@ const settingOptions = {
 };
 
 function normalizeSetting(key, value) {
-  const fallback = App.defaults[key];
+  const fallback = defaults[key];
   if (fallback === undefined) throw new Error(`未知设置: ${key}`);
   if (typeof fallback === 'boolean') return value === true || value === 'true';
   if (numericRules[key]) {
@@ -80,7 +175,16 @@ function normalizeSetting(key, value) {
       return address.href.replace(/\/+$/, '');
     } catch { throw new Error('请输入完整的 HTTP / HTTPS 服务地址，例如 http://127.0.0.1:23456'); }
   }
-  if (key.startsWith('shortcut')) return App.normalizeShortcut(text);
+  if (key === 'vitsCustomAPI') {
+    const api = text.trim();
+    if (!api) return '';
+    try {
+      const address = new URL(api);
+      if (!/^https?:\/\//i.test(api) || !['http:', 'https:'].includes(address.protocol) || address.username || address.password) throw new Error();
+      return address.href;
+    } catch { throw new Error('请输入完整的 HTTP / HTTPS 音频 API 地址，或留空使用上方设置'); }
+  }
+  if (key.startsWith('shortcut')) return normalizeShortcut(text);
   if (settingOptions[key] && !settingOptions[key].includes(text)) throw new Error('请选择有效选项');
   if (key.endsWith('Color') && !/^#[\da-f]{6}$/i.test(text)) throw new Error('请输入六位十六进制颜色');
   if (['borderWidth', 'borderRadius'].includes(key) && !/^\d+(\.\d+)?(px|em|rem)$/.test(text)) throw new Error('请输入带单位的非负长度，例如 2px');
@@ -90,7 +194,7 @@ function normalizeSetting(key, value) {
 }
 
 function normalizeSettings(saved = {}) {
-  const result = { ...App.defaults };
+  const result = { ...defaults };
   for (const key of Object.keys(result)) {
     if (saved[key] === undefined) continue;
     try {
@@ -101,8 +205,14 @@ function normalizeSettings(saved = {}) {
   return result;
 }
 
-function createSettingsStore(platform) {
-  let values = { ...App.defaults };
+export { speechSwitches, numericRules, settingOptions, normalizeSetting, normalizeSettings };
+
+// Keep existing setting keys as the day palette for storage compatibility.
+export const colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'freeBorderColor', 'selectedBorderColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
+
+
+export function createSettingsStore(platform) {
+  let values = { ...defaults };
   const listeners = new Set();
   const publish = patch => {
     const enabled = speechSwitches.find(key => patch[key] === true);
@@ -129,14 +239,14 @@ function createSettingsStore(platform) {
       const patch = speechSwitches.includes(key) && normalized
         ? { ...Object.fromEntries(speechSwitches.filter(other => other !== key).map(other => [other, false])), [key]: true }
         : { [key]: normalized };
-      App.validateShortcuts({ ...values, ...patch });
+      validateShortcuts({ ...values, ...patch });
       if (Object.entries(patch).every(([name, next]) => values[name] === next)) return;
       await platform.setSettings(patch);
       publish(patch);
     },
     async reset() {
       // Write all defaults together, bypassing transient shortcut conflicts.
-      const patch = { ...App.defaults };
+      const patch = { ...defaults };
       await platform.setSettings(patch);
       publish(patch);
     },
@@ -144,6 +254,4 @@ function createSettingsStore(platform) {
   };
 }
 
-Object.assign(App, { speechSwitches, numericRules, settingOptions, normalizeSetting, normalizeSettings, createSettingsStore });
-// Existing keys remain the day palette, preserving earlier custom colors.
-App.colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'freeBorderColor', 'selectedBorderColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
+
