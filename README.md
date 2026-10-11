@@ -2,7 +2,7 @@
 
 用于浏览器阅读日语小说的文本复制、语音朗读（TTS）与翻译工具，支持 **Chrome 扩展** 和 **Tampermonkey 油猴脚本**。
 
-![阅读操作演示（旧版）](assets/preview.gif)
+![阅读操作演示（旧版）](assets/preview2.png)
 
 ## 使用场景
 
