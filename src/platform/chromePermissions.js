@@ -2,7 +2,8 @@ const chromeServices = {
   google: { name: 'Google', section: '翻译', origins: ['https://translate-pa.googleapis.com/*'] },
   youdao: { name: '有道', section: '翻译', origins: ['https://m.youdao.com/*'] },
   vits: { name: 'VITS', section: '语音', origins: ['http://127.0.0.1/*'] },
-  huosh: { name: '火山语音', section: '语音', origins: ['https://translate.volcengine.com/*'] }
+  huosh: { name: '火山语音', section: '语音', origins: ['https://translate.volcengine.com/*'] },
+  updates: { name: '版本更新', section: '帮助', origins: ['https://api.github.com/*'] }
 };
 function servicePermissionError(service, origin) {
   const error = new Error(`Chrome 未授权访问 ${service.name} 接口（${new URL(origin).hostname}）。请打开扩展设置，在“${service.section}”栏点击“授权 ${service.name} 接口”，然后重试。`);

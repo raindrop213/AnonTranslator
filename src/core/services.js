@@ -55,13 +55,13 @@ async function youdaoChunk(text, from, to, request) {
     const result = html.match(/<ul id="translateResult">([\s\S]*?)<\/ul>/)?.[1];
     const rows = result && [...result.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)];
     if (!rows?.length) throw new Error('有道未返回翻译结果');
-    return rows.map(row => decodeHtml(row[1])).join('\n');
+    return rows.map(row => decodeHtml(row[1])).join('');
   } catch (error) {
     if (error.status !== 413 || Array.from(text).length < 2) throw error;
     const pieces = translationChunks(text, Math.max(1, Math.floor(Array.from(text).length / 2)));
     const result = [];
     for (const piece of pieces) result.push(await youdaoChunk(piece, from, to, request));
-    return result.join('\n');
+    return result.join('');
   }
 }
 // Website client key from the user-supplied google.py implementation.
@@ -87,11 +87,18 @@ async function translateText(message, request) {
   if (!providerNames.includes(translator)) throw new Error('不支持的翻译器');
   if (typeof text !== 'string' || !text.trim()) throw new Error('没有提供翻译文本');
   if (typeof from !== 'string' || typeof to !== 'string') throw new Error('缺少翻译语言');
+  // Preserve source line breaks, but never insert breaks at Youdao chunk boundaries.
+  const lines = translator === 'youdao' ? text.split(/\r\n|[\n\r]/) : [text];
   const result = [];
-  const chunks = translationChunks(text, translator === 'youdao' ? 180 : 1000);
-  for (const chunk of chunks) {
-    if (result.length) await new Promise(resolve => setTimeout(resolve, 250));
-    result.push(await (translator === 'youdao' ? youdaoChunk : googleChunk)(chunk, from, to, request));
+  let sent = false;
+  for (const line of lines) {
+    const translated = [];
+    for (const chunk of translationChunks(line, translator === 'youdao' ? 180 : 1000)) {
+      if (sent) await new Promise(resolve => setTimeout(resolve, 250));
+      sent = true;
+      translated.push(await (translator === 'youdao' ? youdaoChunk : googleChunk)(chunk, from, to, request));
+    }
+    result.push(translated.join(translator === 'youdao' ? '' : '\n'));
   }
   return result.join('\n');
 }
@@ -177,6 +184,7 @@ function audioBase64(buffer) {
   return btoa(binary);
 }
 async function handleServiceMessage(message, request = fetchRequest) {
+  if (message.action === 'check_update') return App.checkForUpdate(request, message.force === true);
   if (message.action === 'cancel_translation') {
     for (const [lane, job] of readerJobs) {
       if (JSON.parse(lane)[0] === message.scope) job.controller.abort();

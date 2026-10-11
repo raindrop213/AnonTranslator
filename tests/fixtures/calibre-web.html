@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>Calibre-Web / EPUB.js 模拟阅读页</title>
+<style>body { margin: 20px; } iframe { width: 680px; height: 620px; border: 1px solid #ccc; }</style>
+<div id="viewer"><div class="epub-container"><div class="epub-view"><iframe id="chapter"></iframe></div></div></div>
+<template id="content"><!doctype html><meta charset="utf-8"><style>body { writing-mode: vertical-rl; font: 20px/1.8 serif; }</style>
+<div class="chapter"><p data-first>「<ruby>空<rt>そら</rt></ruby>を見た。星が光った！」</p><p data-second><em data-live>次の朝。</em>旅に出た。</p></div>
+</template>
+<script>document.getElementById('chapter').srcdoc = document.getElementById('content').innerHTML;</script>

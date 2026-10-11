@@ -1,12 +1,18 @@
 function cleanParagraph(element, settings) {
-  const clone = element.cloneNode(true);
-  clone.querySelectorAll('.at-translation, rp, script, style').forEach(node => node.remove());
-  const plain = clone.cloneNode(true);
-  plain.querySelectorAll('rt').forEach(node => node.remove());
-  clone.querySelectorAll('rt').forEach(node => node.replaceWith(`(${node.textContent})`));
-  const original = plain.textContent;
+  const plain = [], annotated = [];
+  // Read once without cloning or modifying the page; generated UI never becomes source text.
+  const visit = node => {
+    if (node.nodeType === 3) { plain.push(node.textContent); annotated.push(node.textContent); return; }
+    if (node.nodeType !== 1) return;
+    if (node.matches('.at-translation,[data-at-ui],rp,script,style')) return;
+    if (node.tagName === 'RT') { annotated.push(`(${node.textContent})`); return; }
+    if (node.tagName === 'BR') { plain.push('\n'); annotated.push('\n'); return; }
+    node.childNodes.forEach(visit);
+  };
+  visit(element);
+  const original = plain.join('');
   const space = original.slice(0, original.length - original.trimStart().length);
-  let text = original.trim(), furigana = clone.textContent.trim();
+  let text = original.trim(), furigana = annotated.join('').trim();
   const pair = settings.ignoreSymbolPairs && settings.symbolPairs.split('/').map(value => Array.from(value)).find(([left, right]) => text.startsWith(left) && text.endsWith(right));
   if (pair) {
     text = text.slice(pair[0].length, -pair[1].length).trim();
@@ -69,7 +75,7 @@ function wrapSentences(element, settings) {
         }
         flush(); node.replaceWith(replacement);
       } else if (node.nodeType === 1) {
-        if (node.matches('.at-translation,rt,rp,script,style')) continue;
+        if (node.matches('.at-translation,[data-at-ui],rt,rp,script,style')) continue;
         if (node.tagName === 'RUBY') {
           const clone = node.cloneNode(true);
           clone.querySelectorAll('rt,rp').forEach(annotation => annotation.remove());

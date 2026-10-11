@@ -26,5 +26,23 @@ App.createChromePlatform = () => ({
     if (response.error) throw new Error(response.error);
     return response;
   },
-  async copy(text) { await navigator.clipboard.writeText(text); }
+  async copy(text) {
+    if (navigator.clipboard?.writeText) {
+      try { await navigator.clipboard.writeText(text); return; } catch { /* Frame policy can deny the modern API. */ }
+    }
+    // HTTP reading sites lack Clipboard API; clipboardWrite permits legacy copy.
+    const active = document.activeElement, selection = document.getSelection();
+    const ranges = Array.from({ length: selection?.rangeCount || 0 }, (_, i) => selection.getRangeAt(i).cloneRange());
+    const input = document.createElement('textarea');
+    input.value = text; input.readOnly = true; input.setAttribute('data-at-ui', '');
+    input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.append(input);
+    try {
+      input.select();
+      if (!document.execCommand('copy')) throw new Error('浏览器拒绝复制，请检查扩展的剪贴板权限');
+    } finally {
+      input.remove(); active?.focus({ preventScroll: true });
+      selection?.removeAllRanges(); ranges.forEach(range => selection.addRange(range));
+    }
+  }
 });

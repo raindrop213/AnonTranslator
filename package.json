@@ -1,7 +1,8 @@
 {
   "name": "anon-translator",
-  "version": "1.6.4",
+  "version": "1.7.0",
   "private": true,
+  "type": "module",
   "description": "Shared reading tool for Chrome and Tampermonkey",
   "scripts": {
     "build": "node scripts/build.mjs",

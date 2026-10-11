@@ -16,6 +16,10 @@ body { margin: 0; width: 380px; }
 .at-header { --at-letter-shadow: 1px 1px 0 #fff, 2px 2px 0 #fff; position: relative; overflow: hidden; border: 2px solid var(--at-bar); border-radius: 6px; }
 .at-header-art { display: block; width: 100%; aspect-ratio: 5 / 2; object-fit: cover; }
 .at-version { position: absolute; top: 5px; left: 7px; color: #8c2825; text-shadow: var(--at-letter-shadow); font: 800 20px/1.2 system-ui, sans-serif; }
+.at-update { position: absolute; top: 31px; left: 8px; max-width: calc(100% - 112px); color: #8c2825; text-shadow: var(--at-letter-shadow); font: 600 12px/1.4 system-ui, sans-serif; text-decoration: none; }
+.at-update:hover { text-decoration: underline; }
+.at-update[data-state=available] { font-weight: 800; }
+.at-update:focus-visible { outline: 2px solid #8c2825; outline-offset: 2px; }
 .at-header-actions { position: absolute; top: 8px; right: 8px; display: grid; grid-template-columns: repeat(2, 40px); gap: 6px; }
 .at-header-actions button { width: 40px; height: 36px; padding: 0; background: transparent; color: #8c2825; border: 0; font: 25px/1 system-ui, sans-serif; cursor: pointer; text-shadow: var(--at-letter-shadow); }
 .at-header-actions button:hover { opacity: .65; }

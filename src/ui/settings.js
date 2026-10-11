@@ -1,5 +1,5 @@
 const settingsGroups = [
-  ['复制', ['copy', 'ignoreFurigana', 'showCopyContent', 'extraImage', 'ignoreSymbolPairs', 'symbolPairs', 'sentenceDelimiters']],
+  ['复制', ['copy', 'targetTags', 'ignoreFurigana', 'showCopyContent', 'extraImage', 'ignoreSymbolPairs', 'symbolPairs', 'sentenceDelimiters']],
   ['语音', ['readingInterval', 'splitSpeech']],
   ['翻译', []],
   ['外观', ['borderWidth', 'borderStyle', 'borderRadius', 'scrollSwitch', 'scrollIntoView']],
@@ -8,6 +8,7 @@ const settingsGroups = [
 ];
 const settingLabels = {
   pluginSwitch: '启用阅读工具', copy: '复制文本', ignoreFurigana: '忽略振假名', showCopyContent: '显示复制内容', extraImage: '点击打开图片',
+  targetTags: '目标文本标签（用逗号分隔）',
   ignoreSymbolPairs: '忽略首尾符号对', symbolPairs: '首尾符号对（用 / 分隔）', splitSpeech: '把段落切成句子', sentenceDelimiters: '断句符号（用 / 分隔）', readingInterval: '自动朗读间隔（毫秒）',
   shortcutPreviousParagraph: '上一段', shortcutNextParagraph: '下一段', shortcutPreviousSentence: '上一句', shortcutNextSentence: '下一句',
   shortcutReadCurrent: '重读当前选择', shortcutAutoRead: '自动阅读 / 暂停', shortcutStop: '停止朗读',
@@ -37,6 +38,10 @@ function mountSettings(root, store, platform) {
   const title = doc.createElement('h1'), version = doc.createElement('span');
   title.className = 'at-sr-only'; title.textContent = 'AnonTranslator';
   version.className = 'at-version'; version.textContent = `Ver ${App.version}`;
+  const updateLink = doc.createElement('a');
+  updateLink.className = 'at-update'; updateLink.href = App.release.page;
+  updateLink.target = '_blank'; updateLink.rel = 'noopener noreferrer';
+  updateLink.setAttribute('aria-live', 'polite'); updateLink.textContent = '检查更新…';
   const actions = doc.createElement('div'); actions.className = 'at-header-actions';
   const themeButton = doc.createElement('button');
   themeButton.type = 'button'; themeButton.className = 'at-theme-toggle';
@@ -60,7 +65,7 @@ function mountSettings(root, store, platform) {
   powerInput.checked = store.values.pluginSwitch; powerInput.setAttribute('aria-label', '启用阅读工具');
   power.append(powerInput); controls.set('pluginSwitch', powerInput);
   actions.append(themeButton, resetButton);
-  header.append(artwork, title, version, actions, power); form.append(header);
+  header.append(artwork, title, version, updateLink, actions, power); form.append(header);
   const updateTheme = values => {
     root.dataset.atTheme = form.dataset.atTheme = values.nightMode ? 'night' : 'day';
     themeButton.textContent = values.nightMode ? '☾' : '☀';
@@ -111,6 +116,7 @@ function mountSettings(root, store, platform) {
       input.step = App.numericRules[key][2] ? '1' : '0.01';
     } else input.type = 'text';
     if (key === 'vitsAPI') { input.placeholder = 'http://127.0.0.1:23456'; input.spellcheck = false; }
+    if (key === 'targetTags') { input.placeholder = 'p,h1,h2,h3,h4,h5,h6'; input.spellcheck = false; }
     if (input.type === 'checkbox') input.checked = value;
     else input.value = value;
     row.append(input);
@@ -305,6 +311,45 @@ function mountSettings(root, store, platform) {
   window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
   populate(controls.get('huoshVoice'), App.huoshanVoices.map(voice => ({ value: voice.id, name: `${voice.lang} · ${voice.name}` })), store.values.huoshVoice);
   let mounted = true, voiceRequest = 0;
+  let updateState = 'checking', updatePending = false;
+  const updateStatus = (state, text, title, url = App.release.page) => {
+    updateState = updateLink.dataset.state = state;
+    updateLink.textContent = text; updateLink.title = title; updateLink.href = url;
+    updateLink.setAttribute('aria-busy', String(state === 'checking'));
+  };
+  const checkUpdate = async (force = false) => {
+    if (updatePending || !mounted) return;
+    updatePending = true;
+    updateStatus('checking', '检查更新…', '正在检查 GitHub 正式发布版本');
+    try {
+      if (platform.hasServiceAccess && !await platform.hasServiceAccess('updates', store.values)) {
+        if (mounted) updateStatus('permission', '授权检查更新', '点击允许访问 GitHub 版本接口');
+        return;
+      }
+      const result = await platform.send({ action: 'check_update', force });
+      if (!mounted) return;
+      const labels = { available: `建议更新v${result.version}`, current: '当前为最新版本', unpublished: '尚无公开版本' };
+      if (!(result.state in labels)) throw new Error('版本检查响应无效');
+      updateStatus(result.state, labels[result.state], result.state === 'available'
+        ? '仅提示版本；点击查看 GitHub 发布页，安装更新请使用对应平台'
+        : '以 GitHub 正式版为准；点击重新检查', result.url);
+    } catch (error) {
+      if (mounted) updateStatus('error', '检查失败 · 重试', `${error.message}；点击重试`);
+    } finally { updatePending = false; }
+  };
+  updateLink.addEventListener('click', event => {
+    if (updateState === 'available') return;
+    event.preventDefault();
+    if (updateState === 'permission') {
+      // Preserve user activation for Chrome's origin permission prompt.
+      platform.requestServiceAccess('updates', store.values).then(granted => {
+        if (!mounted) return;
+        if (granted) void checkUpdate(true);
+        else updateStatus('permission', '授权检查更新', '未授权；点击重试');
+      }).catch(error => { if (mounted) updateStatus('permission', '授权检查更新', error.message); });
+    } else void checkUpdate(true);
+  });
+  void checkUpdate();
   let permissionRevision = 0;
   const refreshPermissions = async () => {
     const revision = ++permissionRevision;

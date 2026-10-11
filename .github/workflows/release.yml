@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check version
+        id: version
+        run: node scripts/release.mjs
+      - name: Test and build
+        if: steps.version.outputs.publish == 'true'
+        run: npm test
+      - name: Package
+        if: steps.version.outputs.publish == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p release-assets
+          folder="AnonTranslator-v${RELEASE_VERSION}-extension"
+          (cd dist/extension && zip -qr "$GITHUB_WORKSPACE/release-assets/$folder.zip" .)
+          cp dist/tampermonkey/AnonTranslator.user.js \
+            "release-assets/AnonTranslator-v${RELEASE_VERSION}.user.js"
+      - name: Publish release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag="v${RELEASE_VERSION}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create "$tag" release-assets/* \
+            --target "$GITHUB_SHA" --title "AnonTranslator $tag" --generate-notes

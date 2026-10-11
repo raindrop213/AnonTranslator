@@ -1,5 +1,5 @@
 function createReader(platform, store, doc = document) {
-  const paragraphSelector = 'p,h1,h2,h3,h4,h5,h6';
+  let paragraphSelector = store.values.targetTags;
   const editable = 'input,textarea,select,button,a,[contenteditable]:not([contenteditable="false"]),[data-at-ui]';
   let paragraph = null, selectedSentence = null, mode = 'paragraph';
   let hovered = null, hoveredSentence = null, spokenSentence = null, translation = null;
@@ -8,15 +8,20 @@ function createReader(platform, store, doc = document) {
   const cancelTranslation = () => platform.send({ action: 'cancel_translation', scope: translationScope }).catch(() => {});
   const outlines = new WeakMap(), speaker = App.createSpeaker(platform);
   const notice = doc.createElement('div');
-  notice.className = 'at-notification'; notice.setAttribute('role', 'status'); doc.body.append(notice);
+  notice.className = 'at-notification'; notice.setAttribute('role', 'status'); notice.setAttribute('data-at-ui', ''); doc.body.append(notice);
   const settings = () => store.values;
   const show = text => {
     notice.textContent = text; notice.classList.add('at-visible');
     clearTimeout(notificationTimer);
     notificationTimer = setTimeout(() => notice.classList.remove('at-visible'), 1800);
   };
-  const valid = element => element?.isConnected && !element.closest(editable) && !element.closest('.at-translation') && !element.querySelector('img') && App.cleanParagraph(element, settings()).text.trim();
-  const paragraphAt = event => event.target.closest?.(paragraphSelector);
+  const valid = element => element?.isConnected && !element.classList.contains('at-sentence') && !element.closest(editable) && !element.closest('.at-translation') && !element.querySelector('img') && App.cleanParagraph(element, settings()).text.trim();
+  const paragraphAt = event => {
+    let element = event.target.closest?.(paragraphSelector);
+    // Generated sentence spans must not become targets when users enable span.
+    while (element?.classList.contains('at-sentence')) element = element.parentElement?.closest(paragraphSelector);
+    return element;
+  };
   const restoreOutline = element => {
     if (!element) return;
     for (const [key, value, priority] of outlines.get(element) || []) {
@@ -225,6 +230,13 @@ function createReader(platform, store, doc = document) {
     }
   });
   const applySettings = (s, patch = {}) => {
+    if ('targetTags' in patch) {
+      stop(); cancelTranslation(); removeTranslation();
+      restoreOutline(hovered); restoreOutline(paragraph);
+      clearSelectedSentence(); clearHoverSentence();
+      doc.querySelectorAll('.at-split').forEach(App.unwrapSentences);
+      paragraph = hovered = null; mode = 'paragraph'; paragraphSelector = s.targetTags;
+    }
     const colors = App.colorsFor(s);
     doc.documentElement.style.setProperty('--at-sentence-color', colors.sentenceColor);
     doc.documentElement.style.setProperty('--at-selected-color', colors.selectedBorderColor);

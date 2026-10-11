@@ -68,6 +68,11 @@ function normalizeSetting(key, value) {
     return number;
   }
   const text = String(value);
+  if (key === 'targetTags') {
+    const tags = text.trim().toLowerCase().split(/[\s,，]+/).filter(Boolean);
+    if (!tags.length || tags.some(tag => !/^[a-z][a-z0-9-]*$/.test(tag))) throw new Error('请输入标签名，用逗号分隔，例如 p,h1,div；不支持 CSS 选择器');
+    return [...new Set(tags)].join(',');
+  }
   if (key === 'vitsAPI') {
     try {
       const address = new URL(text.trim());
