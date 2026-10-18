@@ -191,7 +191,7 @@ const numericRules = {
   noise: [0, 2], noisew: [0, 2], max: [1, 10000, true]
 };
 const settingOptions = {
-  settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '快捷键', '帮助'],
+  settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '键位', '帮助'],
   dictionaryPopupMode: ['page', 'independent'],
   ankiImageFormat: ['webp', 'png', 'jpeg'], ankiLayout: ['below', 'right'],
   ankiTranslationService: ['google', 'youdao', 'none'],

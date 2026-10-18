@@ -51,6 +51,12 @@ async function checkChrome(width, height) {
   doc.scrollingElement.scrollTop = 80; doc.scrollingElement.scrollLeft = 80; await settle(win);
   assert(doc.scrollingElement.scrollTop === 0 && doc.scrollingElement.scrollLeft === 0 && doc.body.scrollHeight <= win.innerHeight && doc.body.scrollWidth <= win.innerWidth,
     `${label} body 无外层滚动`);
+  doc.querySelector('#at-tab-0').click(); await settle(win);
+  const compactHeight = doc.body.offsetHeight;
+  assert(compactHeight > 200 && compactHeight < 550, `${label} 复制栏目按内容收起空白`);
+  frame.style.height = `${compactHeight}px`; await settle(win);
+  doc.querySelector('#at-tab-3').click(); await settle(win);
+  assert(doc.body.offsetHeight === 600, `${label} 切回长栏目恢复高度`);
   caption.textContent = `${label} → 380 × 600`;
 }
 

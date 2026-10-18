@@ -7,9 +7,26 @@ import { lookupWord } from '../src/services/dictionary.js';
 import { fetchRequest } from '../src/services/request.js';
 import { createMockAnki } from './mock-anki.mjs';
 import { cachedTranslation } from '../src/services/translate.js';
+import tokenizerDictionary from '../src/services/tokenizer-dictionary.json' with { type: 'json' };
 const anki = createMockAnki();
+const tokenizerFiles = new Set(tokenizerDictionary.files.map(file => file.name));
 const tokenize=createTokenizer(file=>readFile(new URL(`../node_modules/kuromoji/dict/${file}`,import.meta.url)));
 http.createServer(async(req,res)=>{
+  const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
+  if(pathname==='/tokenizer-settings.html'){
+    res.writeHead(200,{'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store'});
+    res.end('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>分词数据安装验证</title><body><script type="module" src="/tokenizer-fixture.js"></script></body></html>');return;
+  }
+  if(pathname==='/tokenizer-fixture.js'){
+    const bundle=await build({entryPoints:[fileURLToPath(new URL('tokenizer-fixture.js',import.meta.url))],bundle:true,format:'esm',target:'chrome116',write:false,loader:{'.css':'text','.jpg':'dataurl'}});
+    res.writeHead(200,{'Content-Type':'text/javascript','Cache-Control':'no-store'});res.end(bundle.outputFiles[0].contents);return;
+  }
+  if(pathname.startsWith('/tokenizer-data/')){
+    const file=pathname.slice('/tokenizer-data/'.length);
+    if(!tokenizerFiles.has(file)){res.writeHead(404);res.end();return;}
+    res.writeHead(200,{'Content-Type':'application/octet-stream','Cache-Control':'no-store'});
+    res.end(await readFile(new URL('../node_modules/kuromoji/dict/'+file,import.meta.url)));return;
+  }
   if(req.url==='/native-reader.html'||req.url==='/native-reader.js'){
     const isScript=req.url.endsWith('.js');
     res.writeHead(200,{'Content-Type':isScript?'text/javascript':'text/html;charset=utf-8','Cache-Control':'no-store'});

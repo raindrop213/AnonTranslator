@@ -159,8 +159,8 @@ test('showing the same presentation is idempotent', () => {
   view.destroy();
 });
 
-test('touch and narrow displays use a bottom sheet without opening a native window', () => {
-  for (const options of [{ coarse: true }, { narrow: true }]) {
+test('touch displays use a bottom sheet at both wide and narrow viewport sizes', () => {
+  for (const options of [{ coarse: true }, { coarse: true, narrow: true }]) {
     const { view, host, doc, env } = fixture(options);
     assert.equal(view.show('independent'), true);
     assert.equal(view.kind, 'sheet');
@@ -174,6 +174,28 @@ test('touch and narrow displays use a bottom sheet without opening a native wind
     assert.equal(host.hasAttribute('data-sheet'), false);
     view.destroy();
   }
+});
+
+test('desktop independent windows survive viewport resizing and reopen at narrow widths', () => {
+  const { view, host, main, env } = fixture();
+  assert.equal(view.show('independent'), true);
+  const other = view.window;
+  for (const width of [768, 600, 320, 1200]) {
+    main.innerWidth = width;
+    main.dispatch('resize');
+    assert.equal(view.show('independent'), true);
+    assert.equal(view.kind, 'window');
+    assert.equal(view.window, other);
+    assert.equal(host.ownerDocument, other.document);
+    assert.equal(host.hasAttribute('data-sheet'), false);
+  }
+  assert.equal(env.openCalls.length, 1);
+  view.close();
+  main.innerWidth = 600;
+  assert.equal(view.show('independent'), true);
+  assert.equal(view.kind, 'window');
+  assert.equal(env.openCalls.length, 2);
+  view.destroy();
 });
 
 test('a denied native close retains the populated window and prevents duplicate windows', () => {

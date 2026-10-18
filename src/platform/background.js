@@ -5,7 +5,9 @@ import { cachedTranslation, cancelTranslation } from '../services/translate.js';
 import { vitsSpeakers, vitsAudio, huoshanAudio, configureAudioCacheStorage } from '../services/speech.js';
 import { createPersistentAudioCache } from './audio-cache.js';
 import { checkLatestVersion } from '../services/update.js';
-import { createTokenizer } from '../services/tokenize.js';
+import { createTokenizerData } from '../services/tokenizer-data.js';
+import dictionary from '../services/tokenizer-dictionary.json' with { type: 'json' };
+import { createChromeTokenizerStorage } from './tokenizer-storage.js';
 import { lookupWord } from '../services/dictionary.js';
 import { createAnkiService, normalizeAnkiURL } from '../services/anki.js';
 import { createSessionDraftStore } from './anki-drafts.js';
@@ -19,9 +21,8 @@ const anki = createAnkiService(request, { undoStorage: {
 } });
 const ankiDrafts = createSessionDraftStore(chrome.storage.session);
 
-const tokenize = createTokenizer(async file => {
-  const response = await fetchRequest(chrome.runtime.getURL(`assets/dict/${file}`), { timeout: 20000 });
-  return response.arrayBuffer();
+const tokenizerData = createTokenizerData({
+  storage: createChromeTokenizerStorage(globalThis.caches, dictionary), request
 });
 
 async function request(url, options) {
@@ -72,7 +73,13 @@ function service(message, sender) {
     case 'check_update': return checkLatestVersion(request);
     case 'cancel_translation': return cancelTranslation(message.scope);
     case 'translate': return cachedTranslation(message, request);
-    case 'tokenize': return tokenize(message.text);
+    case 'tokenize': return tokenizerData.tokenize(message.text);
+    case 'tokenizer_data_status': return tokenizerData.status();
+    case 'tokenizer_data_install': return tokenizerData.install();
+    case 'tokenizer_data_remove': return (async () => {
+      await chrome.storage.local.set({ dictionaryEnabled: false });
+      return tokenizerData.remove();
+    })();
     case 'lookup_word': return lookupWord(message, request);
     case 'anki_info': case 'anki_setup': case 'anki_add': case 'anki_undo_info': case 'anki_undo': return anki.send(message);
     case 'anki_draft_set': return senderTab(sender).then(tab => ankiDrafts.set(tab.id, message.draft));

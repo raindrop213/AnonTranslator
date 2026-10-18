@@ -41,6 +41,8 @@ const metadata = `// ==UserScript==
 // @run-at       document-idle
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_deleteValue
+// @grant        GM_listValues
 // @grant        GM_addValueChangeListener
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
@@ -71,9 +73,6 @@ const manifest = JSON.parse(await readFile(path.join(root, 'src/platform/manifes
 manifest.version = version;
 await writeFile(path.join(extension, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 await cp(path.join(root, 'assets/img'), path.join(extension, 'assets/img'), { recursive: true });
-await cp(path.join(root, 'node_modules/kuromoji/dict'), path.join(extension, 'assets/dict'), { recursive: true });
-await cp(path.join(root, 'node_modules/kuromoji/LICENSE-2.0.txt'), path.join(extension, 'assets/dict/LICENSE-kuromoji.txt'));
-await cp(path.join(root, 'node_modules/kuromoji/NOTICE.md'), path.join(extension, 'assets/dict/NOTICE-ipadic.md'));
 await writeFile(path.join(extension, 'THIRD_PARTY_LICENSES.txt'), thirdPartyNotices);
 await cp(path.join(root, 'LICENSE'), path.join(extension, 'LICENSE'));
 for (const [folder, file] of [['reader', 'reader.css'], ['settings', 'panel.css']]) {

@@ -3,7 +3,9 @@ import { gmRequest } from '../services/request.js';
 import { cachedTranslation, cancelTranslation } from '../services/translate.js';
 import { vitsSpeakers, vitsAudio, huoshanAudio } from '../services/speech.js';
 import { checkLatestVersion } from '../services/update.js';
-import { createTokenizer, tokenizerDictionaryURL } from '../services/tokenize.js';
+import { createTokenizerData } from '../services/tokenizer-data.js';
+import dictionary from '../services/tokenizer-dictionary.json' with { type: 'json' };
+import { createUserscriptTokenizerStorage } from './tokenizer-storage.js';
 import { lookupWord } from '../services/dictionary.js';
 import { createAnkiService } from '../services/anki.js';
 import { serializeAnkiDraft } from './anki-drafts.js';
@@ -12,9 +14,12 @@ import { mountSettings } from '../settings/panel.js';
 import readerCss from '../reader/reader.css';
 import panelCss from '../settings/panel.css';
 
-const tokenize = createTokenizer(async file => {
-  const response = await gmRequest(tokenizerDictionaryURL + file, { binary: true, timeout: 20000 });
-  return response.arrayBuffer();
+const tokenizerData = createTokenizerData({
+  storage: createUserscriptTokenizerStorage({
+    getValue: (...args) => GM_getValue(...args), setValue: (...args) => GM_setValue(...args),
+    deleteValue: key => GM_deleteValue(key), listValues: () => GM_listValues()
+  }, dictionary),
+  request: gmRequest
 });
 const anki = createAnkiService(gmRequest);
 let ankiDraft = null;
@@ -38,7 +43,12 @@ const platform = {
       case 'check_update': return checkLatestVersion(gmRequest);
       case 'cancel_translation': return cancelTranslation(message.scope);
       case 'translate': return cachedTranslation(message, gmRequest);
-      case 'tokenize': return tokenize(message.text);
+      case 'tokenize': return tokenizerData.tokenize(message.text);
+      case 'tokenizer_data_status': return tokenizerData.status();
+      case 'tokenizer_data_install': return tokenizerData.install();
+      case 'tokenizer_data_remove':
+        await platform.setSettings({ dictionaryEnabled: false });
+        return tokenizerData.remove();
       case 'lookup_word': return lookupWord(message, gmRequest);
       case 'anki_info': case 'anki_setup': case 'anki_add': case 'anki_undo_info': case 'anki_undo': return anki.send(message);
       case 'anki_draft_set': ankiDraft = null; ankiDraft = serializeAnkiDraft(message.draft); return { saved: true };

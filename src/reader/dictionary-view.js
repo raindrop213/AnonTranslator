@@ -106,7 +106,9 @@ export function createDictionaryView(platform, getSettings, host, { show = () =>
     get window() { return native?.window || null; },
     get independent() { return kind === 'window' || kind === 'sheet'; },
     show(mode) {
-      const target = mode === 'independent' ? (win.matchMedia('(pointer:coarse)').matches || win.innerWidth <= 768 ? 'sheet' : 'window') : 'page';
+      // A narrow viewport can come from desktop resizing or zooming. Choose
+      // the touch presentation by the primary pointer, not the page width.
+      const target = mode === 'independent' ? (win.matchMedia('(pointer:coarse)').matches ? 'sheet' : 'window') : 'page';
       const success = transition(target);
       if (!success && kind === 'closed') display('page');
       native?.window.focus(); return success;

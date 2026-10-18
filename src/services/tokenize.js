@@ -1,13 +1,11 @@
 import Tokenizer from 'kuromoji/src/Tokenizer.js';
 import DynamicDictionaries from 'kuromoji/src/dict/DynamicDictionaries.js';
 import { gunzipSync } from 'fflate';
+import dictionary from './tokenizer-dictionary.json' with { type: 'json' };
 
 // Only the IPADIC data files are downloaded. The engine and decoder are bundled.
-export const tokenizerDictionaryURL = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/';
-export const tokenizerDictionaryFiles = [
-  'base.dat.gz', 'check.dat.gz', 'tid.dat.gz', 'tid_pos.dat.gz', 'tid_map.dat.gz', 'cc.dat.gz',
-  'unk.dat.gz', 'unk_pos.dat.gz', 'unk_map.dat.gz', 'unk_char.dat.gz', 'unk_compat.dat.gz', 'unk_invoke.dat.gz'
-];
+export const tokenizerDictionaryURL = dictionary.baseURL;
+export const tokenizerDictionaryFiles = dictionary.files.map(file => file.name);
 
 export function createTokenizer(loadBinary) {
   let initialization;
@@ -27,7 +25,7 @@ export function createTokenizer(loadBinary) {
       new Uint8Array(char), new Uint32Array(compat), new Uint8Array(invoke));
     return new Tokenizer(dictionary);
   }
-  return async text => {
+  const tokenize = async text => {
     if (typeof text !== 'string' || text.length > 20000) throw new Error('分词文本最多 20000 个字符');
     if (!text.trim()) return { tokens: [] };
     if (!initialization) initialization = initialize().catch(error => {
@@ -48,4 +46,6 @@ export function createTokenizer(loadBinary) {
     });
     return { tokens };
   };
+  tokenize.reset = () => { initialization = undefined; };
+  return tokenize;
 }

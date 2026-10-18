@@ -2,6 +2,8 @@ import { defaults, settingOptions, numericRules, normalizeSetting, shortcutActio
 import metadata from '../../package.json' with { type: 'json' };
 import { mountAnkiPanel } from './anki-panel.js';
 import { mountServiceOrdering } from './service-order.js';
+import { mountTokenizerPanel } from './tokenizer-panel.js';
+import headerArtwork from '../../assets/a1.jpg';
 const settingsGroups = [
   ['复制', ['copy', 'targetTags', 'ignoreFurigana', 'showCopyContent', 'extraImage', 'ignoreSymbolPairs', 'symbolPairs', 'sentenceDelimiters']],
   ['语音', ['readingInterval', 'splitSpeech']],
@@ -9,7 +11,7 @@ const settingsGroups = [
   ['词典', ['dictionaryEnabled', 'dictionaryFurigana', 'dictionaryBaseForm', 'dictionaryPopupMode']],
   ['Anki', ['ankiEnabled']],
   ['外观', ['scrollSwitch', 'scrollIntoView']],
-  ['快捷键', ['swapMouseButtons', ...Object.keys(shortcutActions)]],
+  ['键位', ['swapMouseButtons', ...Object.keys(shortcutActions)]],
   ['帮助', []]
 ];
 const settingLabels = {
@@ -44,11 +46,15 @@ export function mountSettings(root, store, platform) {
   const serviceOrdering = new Map();
   const form = doc.createElement('form');
   form.className = 'at-settings';
+  form.style.setProperty('--at-tabs-art', `url("${headerArtwork}")`);
   form.setAttribute('data-at-ui', '');
   form.addEventListener('submit', event => event.preventDefault());
-  let queue = Promise.resolve(), revision = 0, ankiPanel = null;
+  let queue = Promise.resolve(), revision = 0, ankiPanel = null, tokenizerPanel = null;
   const header = doc.createElement('header');
   header.className = 'at-header';
+  const artwork = doc.createElement('img'); artwork.className = 'at-header-art';
+  artwork.src = headerArtwork; artwork.alt = ''; artwork.setAttribute('aria-hidden', 'true'); artwork.draggable = false;
+  header.append(artwork);
   const heading = doc.createElement('div'); heading.className = 'at-heading';
   const title = doc.createElement('h1'), version = doc.createElement('div');
   title.textContent = 'AnonTranslator';
@@ -80,10 +86,14 @@ export function mountSettings(root, store, platform) {
   const power = doc.createElement('label'), powerInput = doc.createElement('input');
   power.className = 'at-power'; powerInput.type = 'checkbox'; powerInput.name = powerInput.id = 'pluginSwitch';
   powerInput.checked = store.values.pluginSwitch; powerInput.setAttribute('aria-label', '启用阅读工具');
-  power.append(powerInput, '启用'); controls.set('pluginSwitch', powerInput);
-  actions.append(themeButton, resetButton);
+  powerInput.setAttribute('role', 'switch');
+  const powerTrack = doc.createElement('span'); powerTrack.className = 'at-power-track'; powerTrack.setAttribute('aria-hidden', 'true');
+  power.append(powerInput, powerTrack); controls.set('pluginSwitch', powerInput);
+  actions.append(resetButton, themeButton);
   header.append(heading, actions, power); form.append(header);
   const updateTheme = values => {
+    header.dataset.enabled = String(values.pluginSwitch);
+    form.dataset.enabled = String(values.pluginSwitch);
     root.dataset.atTheme = form.dataset.atTheme = values.nightMode ? 'night' : 'day';
     themeButton.textContent = values.nightMode ? '☾' : '☀';
     themeButton.title = values.nightMode ? '切换日间模式' : '切换夜间模式';
@@ -217,6 +227,7 @@ export function mountSettings(root, store, platform) {
       panels[i].hidden = i !== index;
     });
     if (settingsGroups[index]?.[0] === 'Anki') void ankiPanel?.refreshDraft();
+    if (remember && settingsGroups[index]?.[0] === '词典') void tokenizerPanel?.refresh();
     if (remember) {
       queue = queue.then(() => store.set('settingsTab', settingsGroups[index][0]))
         .catch(error => { status.textContent = `保存栏目失败：${error.message}`; });
@@ -271,6 +282,9 @@ export function mountSettings(root, store, platform) {
       sortable(section, 'translationOrder', serviceGroups);
     }
     if (name === '词典') {
+      tokenizerPanel = mountTokenizerPanel(section, store, platform, {
+        toggle: controls.get('dictionaryEnabled'), beforeRemove: async () => { await queue; }
+      });
       addGroup('Weblio', ['dictionaryWeblio'], 'weblio');
       addGroup('MOJi', ['dictionaryMoji'], 'moji');
       sortable(section, 'dictionaryOrder', serviceGroups);
@@ -333,7 +347,7 @@ export function mountSettings(root, store, platform) {
         }
       }
     }
-    if (name === '快捷键') {
+    if (name === '键位') {
       const help = doc.createElement('p'); help.className = 'at-guide';
       help.textContent = '点击“录制”后按下新键位，支持 Ctrl / Alt / Shift。可手工填写多个备用键，用 / 分隔；清空即可禁用。'; section.append(help);
     }
@@ -364,6 +378,11 @@ export function mountSettings(root, store, platform) {
     const input = event.target;
     if (!controls.has(input.name)) return;
     const value = controlValue(input);
+    if (input.name === 'dictionaryEnabled' && value && !tokenizerPanel?.canEnable()) {
+      input.checked = store.values.dictionaryEnabled;
+      tokenizerPanel?.showInstallHint();
+      return;
+    }
     const output = input.parentElement.querySelector('output');
     if (output) output.textContent = displayValue(input.name, value);
     const current = ++revision;
@@ -497,7 +516,7 @@ export function mountSettings(root, store, platform) {
     if ('vitsAPI' in patch) void refreshVits();
   });
   return () => {
-    mounted = false; unwatchVits(); unwatchPermissions(); ankiPanel?.destroy();
+    mounted = false; unwatchVits(); unwatchPermissions(); ankiPanel?.destroy(); tokenizerPanel?.destroy();
     unsubscribe();
     window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
     form.remove();

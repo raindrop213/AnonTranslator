@@ -5,6 +5,7 @@ export const chromeServices = {
   youdao: { name: '有道', section: '翻译', origins: ['https://m.youdao.com/*'] },
   weblio: { name: 'Weblio', section: '词典', origins: ['https://www.weblio.jp/*', 'https://weblio.jp/*', 'https://cdn.weblio.jp/*', 'https://c.weblio.jp/*'] },
   moji: { name: 'MOJi', section: '词典', origins: ['https://api.mojidict.com/*'] },
+  tokenizer: { name: '分词数据下载', section: '词典', origins: ['https://cdn.jsdelivr.net/*'] },
   anki: { name: 'AnkiConnect', section: 'Anki', origins: ['http://127.0.0.1/*'] },
   vits: { name: 'VITS', section: '语音', origins: ['http://127.0.0.1/*'] },
   huosh: { name: '火山语音', section: '语音', origins: ['https://translate.volcengine.com/*'] },
@@ -50,7 +51,7 @@ export const createChromePlatform = () => ({
   async send(message) {
     const response = await chrome.runtime.sendMessage(message);
     if (!response) throw new Error('后台未响应，请重新加载扩展和页面');
-    if (response.error) throw new Error(response.error);
+    if (response.error && !response.state) throw new Error(response.error);
     return response;
   },
   playAudio(response, rate, scope) {
