@@ -1,3 +1,6 @@
+import { defaultAnkiFront, defaultAnkiBack, defaultAnkiCSS } from '../services/anki-model.js';
+import { legacyAnkiTemplates } from './legacy-anki-templates.js';
+
 export const defaults = {
   "pluginSwitch": false,
   "settingsTab": "复制",
@@ -6,14 +9,15 @@ export const defaults = {
   "ignoreFurigana": true,
   "showCopyContent": true,
   "extraImage": false,
-  "ignoreSymbolPairs": false,
+  "ignoreSymbolPairs": true,
   "symbolPairs": "「」/『』/《》/“”/【】/（）",
   "sentenceDelimiters": "。/！/？",
+  "swapMouseButtons": false,
   "shortcutPreviousParagraph": "ArrowUp/Numpad2/Digit2",
   "shortcutNextParagraph": "ArrowDown/Numpad1/Digit1",
-  "shortcutPreviousSentence": "Numpad5/Digit5",
-  "shortcutNextSentence": "Numpad4/Digit4",
-  "shortcutReadCurrent": "F1/Numpad0",
+  "shortcutPreviousSentence": "Digit5/Numpad5",
+  "shortcutNextSentence": "Digit4/Numpad4",
+  "shortcutReadCurrent": "Digit3/Numpad0",
   "shortcutAutoRead": "Space",
   "shortcutStop": "Escape",
   "useWindowsTTS": false,
@@ -35,27 +39,69 @@ export const defaults = {
   "max": 50,
   "readingInterval": 120,
   "google": false,
+  "translationOrder": ["youdao", "google"],
   "googleFrom": "auto",
   "googleTo": "zh-CN",
-  "googleColor": "#C8E37D",
+  "googleColor": "#a6d22d",
   "nightGoogleColor": "#AACFA2",
   "youdao": false,
   "youdaoFrom": "auto",
   "youdaoTo": "zh-CHS",
   "youdaoColor": "#D4B102",
   "nightYoudaoColor": "#F1CE78",
-  "borderWidth": "2px",
-  "borderStyle": "solid",
-  "borderRadius": "8px",
-  "freeBorderColor": "#225D2E",
-  "selectedBorderColor": "#94B505",
-  "sentenceColor": "#d4e725",
-  "nightMode": false,
-  "nightFreeBorderColor": "#6C9387",
-  "nightSelectedBorderColor": "#B4C982",
-  "nightSentenceColor": "#405343",
+  "dictionaryEnabled": false,
+  "dictionaryFurigana": true,
+  "dictionaryBaseForm": true,
+  "dictionaryWeblio": true,
+  "dictionaryMoji": true,
+  "dictionaryOrder": ["weblio", "moji"],
+  "dictionarySearchURL": "https://www.google.com/search?q={word}",
+  "dictionaryPopupMode": "page",
+  "dictionaryPopupWidth": 424,
+  "dictionaryPopupHeight": 470,
+  "dictionaryWindowLeft": "",
+  "dictionaryWindowTop": "",
+  "ankiEnabled": false,
+  "ankiURL": "http://127.0.0.1:8765",
+  "ankiAPIKey": "",
+  "ankiModel": "anon-model",
+  "ankiDecks": "anon::novel",
+  "ankiTags": "外来语\n俗语\n方言",
+  "ankiWordAudio": false,
+  "ankiSentenceAudio": false,
+  "ankiTranslationService": "google",
+  "ankiTranslationServices": ["google", "youdao"],
+  "ankiWordAudioService": "none",
+  "ankiSentenceAudioService": "none",
+  "ankiBoldWord": true,
+  "ankiSuccessSound": true,
+  "ankiCloseAfterAdd": false,
+  "ankiImageFormat": "webp",
+  "ankiLayout": "below",
+  "ankiSplit": 0.55,
+  "ankiFront": defaultAnkiFront,
+  "ankiBack": defaultAnkiBack,
+  "ankiCSS": defaultAnkiCSS,
   "scrollSwitch": true,
-  "scrollIntoView": "smooth"
+  "scrollIntoView": "smooth",
+  "nightMode": false,
+  "sentenceColor": "#dde49a",
+  "nightSentenceColor": "#49522e",
+  "posOpacity": 70,
+  "posNounColor": "#e0aa52",
+  "posVerbColor": "#b9799c",
+  "posAdjectiveColor": "#d5815d",
+  "posAdverbColor": "#cd6a65",
+  "posParticleColor": "#b4b67c",
+  "posAuxiliaryColor": "#b88f7a",
+  "posOtherColor": "#bba277",
+  "nightPosNounColor": "#825917",
+  "nightPosVerbColor": "#64354f",
+  "nightPosAdjectiveColor": "#7a3a1f",
+  "nightPosAdverbColor": "#742925",
+  "nightPosParticleColor": "#606237",
+  "nightPosAuxiliaryColor": "#634536",
+  "nightPosOtherColor": "#665333"
 };
 
 export const huoshanVoices = [
@@ -134,25 +180,46 @@ export function shortcutAction(event, values) {
 
 
 const speechSwitches = ['useWindowsTTS', 'useVITS', 'useHuoshTTS'];
+const ankiAudioKeys = ['ankiWordAudio', 'ankiSentenceAudio'];
 const numericRules = {
   readingInterval: [0, 60000, true],
+  posOpacity: [0, 100, true],
+  dictionaryPopupWidth: [220, 1600], dictionaryPopupHeight: [160, 1600],
+  ankiSplit: [0.2, 0.8],
   winVoice: [0, 10000, true], vitsVoice: [0, 100000, true],
   rate: [0.1, 2], huoshRate: [0.5, 2], pitch: [0, 2], length: [0.1, 2],
   noise: [0, 2], noisew: [0, 2], max: [1, 10000, true]
 };
 const settingOptions = {
-  settingsTab: ['复制', '语音', '翻译', '外观', '快捷键', '帮助'],
+  settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '快捷键', '帮助'],
+  dictionaryPopupMode: ['page', 'independent'],
+  ankiImageFormat: ['webp', 'png', 'jpeg'], ankiLayout: ['below', 'right'],
+  ankiTranslationService: ['google', 'youdao', 'none'],
+  ankiWordAudioService: ['none', 'huosh', 'vits'], ankiSentenceAudioService: ['none', 'huosh', 'vits'],
   huoshVoice: huoshanVoices.map(voice => voice.id),
   vitsLang: ['auto', 'ja', 'zh'],
   googleFrom: ['auto', 'zh-CN', 'zh-TW', 'ja', 'en'], googleTo: ['zh-CN', 'zh-TW', 'ja', 'en'],
   youdaoFrom: ['auto', 'ja', 'en', 'zh-CHS', 'zh-CHT'], youdaoTo: ['zh-CHS', 'zh-CHT', 'ja', 'en'],
-  borderStyle: ['none', 'solid', 'dotted', 'dashed', 'double', 'groove', 'ridge', 'inset', 'outset'],
   scrollIntoView: ['smooth', 'instant']
 };
 
 function normalizeSetting(key, value) {
   const fallback = defaults[key];
   if (fallback === undefined) throw new Error(`未知设置: ${key}`);
+  if (key === 'dictionaryWindowLeft' || key === 'dictionaryWindowTop') {
+    if (value === '') return '';
+    const number = Number(value);
+    if (value === null || !Number.isFinite(number) || Math.abs(number) > 100000) throw new Error('窗口坐标无效');
+    return Math.round(number);
+  }
+  if (key === 'translationOrder' || key === 'dictionaryOrder') {
+    if (!Array.isArray(value) || value.some(service => !fallback.includes(service)) || new Set(value).size !== value.length) throw new Error('服务顺序只能包含对应服务，每项不能重复');
+    return serviceOrder({ [key]: value }, key);
+  }
+  if (key === 'ankiTranslationServices') {
+    if (!Array.isArray(value) || value.some(service => !['google', 'youdao'].includes(service))) throw new Error('翻译服务只能选择 Google、有道，或全部不选');
+    return [...new Set(value)];
+  }
   if (typeof fallback === 'boolean') return value === true || value === 'true';
   if (numericRules[key]) {
     const [min, max, integer] = numericRules[key];
@@ -168,12 +235,12 @@ function normalizeSetting(key, value) {
     if (!tags.length || tags.some(tag => !/^[a-z][a-z0-9-]*$/.test(tag))) throw new Error('请输入标签名，用逗号分隔，例如 p,h1,div；不支持 CSS 选择器');
     return [...new Set(tags)].join(',');
   }
-  if (key === 'vitsAPI') {
+  if (key === 'vitsAPI' || key === 'ankiURL') {
     try {
       const address = new URL(text.trim());
       if (!/^https?:\/\//i.test(text.trim()) || !['http:', 'https:'].includes(address.protocol) || address.username || address.password || /[?#]/.test(text)) throw new Error();
       return address.href.replace(/\/+$/, '');
-    } catch { throw new Error('请输入完整的 HTTP / HTTPS 服务地址，例如 http://127.0.0.1:23456'); }
+    } catch { throw new Error(`请输入完整的 HTTP / HTTPS 服务地址，例如 ${key === 'ankiURL' ? 'http://127.0.0.1:8765' : 'http://127.0.0.1:23456'}`); }
   }
   if (key === 'vitsCustomAPI') {
     const api = text.trim();
@@ -184,17 +251,43 @@ function normalizeSetting(key, value) {
       return address.href;
     } catch { throw new Error('请输入完整的 HTTP / HTTPS 音频 API 地址，或留空使用上方设置'); }
   }
+  if (key === 'dictionarySearchURL') {
+    const template = text.trim();
+    try {
+      const address = new URL(template.replaceAll('{word}', 'word'));
+      if (!/^https?:\/\//i.test(template) || !['http:', 'https:'].includes(address.protocol) || address.username || address.password || !template.includes('{word}')) throw new Error();
+      return template;
+    } catch { throw new Error('请输入包含 {word} 的 HTTP / HTTPS 搜索地址，例如 https://www.google.com/search?q={word}'); }
+  }
+  if (key === 'ankiModel') {
+    const name = text.trim();
+    if (!name || name.length > 100 || /[\r\n\u0000]/.test(name)) throw new Error('模型名称须为 1–100 个字符，不能换行');
+    return name;
+  }
+  if (key === 'ankiDecks' || key === 'ankiTags') {
+    const isDeck = key === 'ankiDecks';
+    const items = [...new Set(text.trim().split(isDeck ? /\r?\n/ : /\s+/).map(item => item.trim()).filter(Boolean))];
+    if (!items.length || items.length > 100 || text.length > 10000 || items.some(item => item.length > 200 || /[\u0000-\u001f\u007f]/.test(item))) throw new Error(`${isDeck ? '卡组' : '标签'}不能为空，最多 100 项，每项最多 200 个字符`);
+    return items.join('\n');
+  }
+  if (key === 'ankiAPIKey') {
+    if (text.length > 2048 || /[\r\n\u0000]/.test(text)) throw new Error('API Key 最多 2048 个字符，不能换行');
+    return text.trim();
+  }
+  if (['ankiFront', 'ankiBack', 'ankiCSS'].includes(key)) {
+    if (text.length > 100000 || (key !== 'ankiCSS' && !text.trim())) throw new Error('卡片模板不能为空，且最多 100000 个字符；样式可留空');
+    return text;
+  }
   if (key.startsWith('shortcut')) return normalizeShortcut(text);
   if (settingOptions[key] && !settingOptions[key].includes(text)) throw new Error('请选择有效选项');
   if (key.endsWith('Color') && !/^#[\da-f]{6}$/i.test(text)) throw new Error('请输入六位十六进制颜色');
-  if (['borderWidth', 'borderRadius'].includes(key) && !/^\d+(\.\d+)?(px|em|rem)$/.test(text)) throw new Error('请输入带单位的非负长度，例如 2px');
   if (key === 'symbolPairs' && text.split('/').some(pair => Array.from(pair).length !== 2)) throw new Error('符号对须为两个字符，用 / 分隔');
   if (key === 'sentenceDelimiters' && (!text || text.split('/').some(part => Array.from(part).length !== 1))) throw new Error('断句符号须为单个字符，用 / 分隔');
   return text;
 }
 
 function normalizeSettings(saved = {}) {
-  const result = { ...defaults };
+  const result = { ...defaults, ankiTranslationServices: [...defaults.ankiTranslationServices], translationOrder: [...defaults.translationOrder], dictionaryOrder: [...defaults.dictionaryOrder] };
   for (const key of Object.keys(result)) {
     if (saved[key] === undefined) continue;
     try {
@@ -202,23 +295,53 @@ function normalizeSettings(saved = {}) {
     } catch { /* Invalid values use defaults. */ }
   }
   if (speechSwitches.filter(key => result[key]).length > 1) speechSwitches.forEach(key => { result[key] = false; });
+  for (const key of ankiAudioKeys) {
+    if (saved[key + 'Service'] === undefined && result[key]) result[key + 'Service'] = result.useVITS ? 'vits' : result.useHuoshTTS ? 'huosh' : 'none';
+  }
+  if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'none'].includes(saved.ankiTranslationService)) result.ankiTranslationServices = saved.ankiTranslationService === 'none' ? [] : [saved.ankiTranslationService];
+  result.ankiTranslationServices = result.translationOrder.filter(service => result.ankiTranslationServices.includes(service));
+  for (const [key, previous] of Object.entries(legacyAnkiTemplates)) {
+    if (previous.includes(saved[key])) result[key] = defaults[key];
+  }
   return result;
 }
 
 export { speechSwitches, numericRules, settingOptions, normalizeSetting, normalizeSettings };
 
+export function serviceOrder(settings, key) {
+  const fallback = key === 'translationOrder' || key === 'dictionaryOrder' ? defaults[key] : [];
+  return [...new Set([...(Array.isArray(settings?.[key]) ? settings[key].filter(service => fallback.includes(service)) : []), ...fallback])];
+}
+
 // Keep existing setting keys as the day palette for storage compatibility.
-export const colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'freeBorderColor', 'selectedBorderColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
+export const colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
+
+export const posGroups = [
+  { key: 'posNounColor', label: '名词', pos: ['名詞', '代名詞'] },
+  { key: 'posVerbColor', label: '动词', pos: ['動詞'] },
+  { key: 'posAdjectiveColor', label: '形容词', pos: ['形容詞', '形容動詞'] },
+  { key: 'posAdverbColor', label: '副词 / 连体词', pos: ['副詞', '連体詞'] },
+  { key: 'posParticleColor', label: '助词', pos: ['助詞'] },
+  { key: 'posAuxiliaryColor', label: '助动词', pos: ['助動詞'] },
+  { key: 'posOtherColor', label: '其他', pos: [] }
+];
+
+export function wordColorFor(settings, pos) {
+  const key = posGroups.find(group => group.pos.includes(pos))?.key || 'posOtherColor';
+  const paletteKey = settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key;
+  return settings[paletteKey] || defaults[paletteKey];
+}
 
 
 export function createSettingsStore(platform) {
   let values = { ...defaults };
   const listeners = new Set();
+  const sameValue = (left, right) => Array.isArray(left) && Array.isArray(right) ? left.length === right.length && left.every((value, index) => value === right[index]) : left === right;
   const publish = patch => {
     const enabled = speechSwitches.find(key => patch[key] === true);
     if (enabled) patch = { ...Object.fromEntries(speechSwitches.map(key => [key, false])), ...patch };
     const next = normalizeSettings({ ...values, ...patch });
-    const changed = Object.fromEntries(Object.keys(next).filter(key => next[key] !== values[key]).map(key => [key, next[key]]));
+    const changed = Object.fromEntries(Object.keys(next).filter(key => !sameValue(next[key], values[key])).map(key => [key, next[key]]));
     values = next;
     if (Object.keys(changed).length) for (const listener of listeners) listener(values, changed);
   };
@@ -229,18 +352,28 @@ export function createSettingsStore(platform) {
       const pending = [];
       let loaded = false;
       platform.watchSettings(patch => loaded ? publish(patch) : pending.push(patch));
-      values = normalizeSettings(await platform.getSettings());
+      const saved = await platform.getSettings();
+      values = normalizeSettings(saved);
       loaded = true;
       for (const patch of pending) publish(patch);
+      // Persist migrated choices once so later reader voice changes cannot
+      // change a user's independent Anki audio service on the next startup.
+      const migrated = Object.fromEntries(ankiAudioKeys.filter(key => saved[key + 'Service'] === undefined && values[key]).map(key => [key + 'Service', values[key + 'Service']]));
+      for (const [key, previous] of Object.entries(legacyAnkiTemplates)) {
+        if (previous.includes(saved[key]) && saved[key] !== values[key]) migrated[key] = values[key];
+      }
+      if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'none'].includes(saved.ankiTranslationService)) migrated.ankiTranslationServices = values.ankiTranslationServices;
+      if (Object.keys(migrated).length) await platform.setSettings(migrated);
       return values;
     },
     async set(key, value) {
-      const normalized = normalizeSetting(key, value);
+      let normalized = normalizeSetting(key, value);
+      if (key === 'ankiTranslationServices') normalized = values.translationOrder.filter(service => normalized.includes(service));
       const patch = speechSwitches.includes(key) && normalized
         ? { ...Object.fromEntries(speechSwitches.filter(other => other !== key).map(other => [other, false])), [key]: true }
         : { [key]: normalized };
       validateShortcuts({ ...values, ...patch });
-      if (Object.entries(patch).every(([name, next]) => values[name] === next)) return;
+      if (Object.entries(patch).every(([name, next]) => sameValue(values[name], next))) return;
       await platform.setSettings(patch);
       publish(patch);
     },

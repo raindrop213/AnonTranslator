@@ -6,7 +6,7 @@ function httpError(status) {
 
 // Both platform adapters use the same timeout and cancellation contract.
 export async function fetchRequest(url, options = {}) {
-  const { timeout = 30000, binary: _binary, vitsBase: _vitsBase, signal, ...init } = options;
+  const { timeout = 30000, binary: _binary, vitsBase: _vitsBase, ankiBase: _ankiBase, signal, ...init } = options;
   const deadline = AbortSignal.timeout(timeout);
   const response = await fetch(url, { ...init, signal: signal ? AbortSignal.any([signal, deadline]) : deadline });
   if (!response.ok) throw httpError(response.status);

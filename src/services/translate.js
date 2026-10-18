@@ -103,10 +103,13 @@ async function translateText(message, request) {
   return result.join('\n');
 }
 
-const translationCache = new Map(), readerJobs = new Map();
-let googleCooldownUntil = 0;
+const translationCache = new Map(), readerJobs = new Map(), translationRequests = new WeakMap();
+let googleCooldownUntil = 0, nextTranslationRequest = 0;
 
-const cacheKey = message => JSON.stringify([message.translator, message.from, message.to, message.text]);
+const cacheKey = (message, request) => {
+  if (!translationRequests.has(request)) translationRequests.set(request, ++nextTranslationRequest);
+  return JSON.stringify([translationRequests.get(request), message.translator, message.from, message.to, message.text]);
+};
 const isCached = entry => entry && entry.expires > Date.now();
 const cooldownError = () => new Error('Google 请求受限，请稍后再试（HTTP 429）');
 
@@ -139,13 +142,13 @@ function debounce(signal) {
 // Each reader owns replaceable work. Shared completed results cannot be cancelled
 // by a different tab, and rapid selections discard their stale requests.
 function latestTranslation(message, request) {
-  const lane = JSON.stringify([message.scope, message.translator]);
-  const key = cacheKey(message);
+  const key = cacheKey(message, request);
+  const lane = JSON.stringify([message.scope, message.translator, translationRequests.get(request)]);
   const previous = readerJobs.get(lane);
   if (previous?.key === key && !previous.controller.signal.aborted) return previous.promise;
   previous?.controller.abort();
   const cached = translationCache.get(key);
-  if (cached?.complete && isCached(cached)) return cached.promise;
+  if (isCached(cached)) return cached.promise;
   const controller = new AbortController();
   const signal = controller.signal;
   const job = { key, controller };
@@ -168,10 +171,17 @@ function latestTranslation(message, request) {
 // Reuse identical requests; the reader cancels work when its selection changes.
 export function cachedTranslation(message, request = fetchRequest) {
   if (message.scope) return latestTranslation(message, request);
-  const key = cacheKey(message);
+  const key = cacheKey(message, request);
   const cached = translationCache.get(key);
   if (isCached(cached)) return cached.promise;
-  const promise = translateResult(message, request).then(result => {
+  const active = [...readerJobs.values()].find(job => job.key === key && !job.controller.signal.aborted);
+  // Export can join an already-running reader translation. If its reading
+  // selection is replaced, retry independently instead of cancelling the card.
+  const pending = active ? active.promise.catch(error => {
+    if (active.controller.signal.aborted) return translateResult(message, request);
+    throw error;
+  }) : translateResult(message, request);
+  const promise = pending.then(result => {
     const entry = translationCache.get(key);
     if (entry?.promise === promise) entry.complete = true;
     return result;

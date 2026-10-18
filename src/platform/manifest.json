@@ -5,11 +5,17 @@
   "author": "raindrop213",
   "description": "Japanese light novel reading tool",
   "icons": { "16": "assets/img/icon16.png", "48": "assets/img/icon48.png", "128": "assets/img/icon128.png" },
-  "permissions": ["storage", "clipboardWrite", "offscreen"],
-  "host_permissions": ["http://127.0.0.1/*", "https://translate-pa.googleapis.com/*", "https://m.youdao.com/*", "https://translate.volcengine.com/*", "https://api.github.com/*"],
+  "permissions": ["storage", "clipboardWrite", "clipboardRead", "offscreen", "activeTab"],
+  "host_permissions": ["http://127.0.0.1/*", "https://translate-pa.googleapis.com/*", "https://m.youdao.com/*", "https://translate.volcengine.com/*", "https://api.github.com/*", "https://www.weblio.jp/*", "https://weblio.jp/*", "https://cdn.weblio.jp/*", "https://c.weblio.jp/*", "https://api.mojidict.com/*"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "content_scripts": [{ "matches": ["<all_urls>"], "all_frames": true, "match_about_blank": true, "match_origin_as_fallback": true, "run_at": "document_idle", "js": ["content.js"], "css": ["reader.css"] }],
   "action": { "default_popup": "popup.html" },
+  "web_accessible_resources": [{ "resources": ["anki-preview.html"], "matches": ["<all_urls>"] }],
+  "sandbox": { "pages": ["anki-preview.html"] },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http: https:; media-src 'self' blob: data:; img-src 'self' https: data:; font-src 'self' https: data:; object-src 'none'; base-uri 'none'",
+    "sandbox": "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; frame-src about:; connect-src 'none'; form-action 'none'; base-uri 'none'"
+  },
   "background": { "service_worker": "background.js" }
 }
 

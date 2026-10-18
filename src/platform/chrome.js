@@ -3,6 +3,9 @@ import { defaults, normalizeSetting } from '../settings/settings.js';
 export const chromeServices = {
   google: { name: 'Google', section: '翻译', origins: ['https://translate-pa.googleapis.com/*'] },
   youdao: { name: '有道', section: '翻译', origins: ['https://m.youdao.com/*'] },
+  weblio: { name: 'Weblio', section: '词典', origins: ['https://www.weblio.jp/*', 'https://weblio.jp/*', 'https://cdn.weblio.jp/*', 'https://c.weblio.jp/*'] },
+  moji: { name: 'MOJi', section: '词典', origins: ['https://api.mojidict.com/*'] },
+  anki: { name: 'AnkiConnect', section: 'Anki', origins: ['http://127.0.0.1/*'] },
   vits: { name: 'VITS', section: '语音', origins: ['http://127.0.0.1/*'] },
   huosh: { name: '火山语音', section: '语音', origins: ['https://translate.volcengine.com/*'] },
   update: { name: '版本更新', section: '帮助', origins: ['https://api.github.com/*'] }
@@ -13,6 +16,10 @@ export function servicePermissionError(service, origin) {
   return error;
 }
 export function serviceOrigins(id, settings = defaults) {
+  if (id === 'anki') {
+    const address = new URL(settings.ankiURL || defaults.ankiURL);
+    return [`${address.protocol}//${address.hostname}/*`];
+  }
   if (id !== 'vits') return chromeServices[id].origins;
   const custom = normalizeSetting('vitsCustomAPI', settings.vitsCustomAPI || '');
   const address = new URL(custom || normalizeSetting('vitsAPI', settings.vitsAPI ?? defaults.vitsAPI));
@@ -21,6 +28,7 @@ export function serviceOrigins(id, settings = defaults) {
 
 export const createChromePlatform = () => ({
   updateURL: 'https://chromewebstore.google.com/detail/anontranslator/echegehpmakkcfcadfjljpcallkhpldi',
+  ankiPreviewURL: chrome.runtime.getURL('anki-preview.html'),
   servicePermissions: chromeServices,
   serviceOrigins,
   hasServiceAccess(service, settings) { return chrome.permissions.contains({ origins: serviceOrigins(service, settings) }); },
@@ -50,6 +58,7 @@ export const createChromePlatform = () => ({
   },
   stopAudio(scope) { return this.send({ action: 'stop_audio', scope }); },
   setAudioRate(rate, scope) { return this.send({ action: 'audio_rate', rate, scope }); },
+  async captureVisibleTab() { return (await this.send({ action: 'capture_visible_tab' })).dataURL; },
   async copy(text) {
     if (navigator.clipboard?.writeText) {
       try { await navigator.clipboard.writeText(text); return; } catch { /* Frame policy can deny the modern API. */ }

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>设置尺寸回归验证</title>
+  <style>
+    body { margin: 20px; color: #26332e; background: #eef1ef; font: 14px/1.5 system-ui, sans-serif; }
+    h1 { margin: 0 0 8px; font-size: 20px; }
+    button { padding: 6px 12px; }
+    #results { padding: 12px; border: 1px solid #bdc6bf; background: #fff; white-space: pre-wrap; }
+    #cases { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; }
+    figure { margin: 0; }
+    figcaption { margin-bottom: 8px; font-weight: 600; }
+    iframe { display: block; border: 0; background: #fff; box-shadow: 0 2px 8px #0002; }
+  </style>
+</head>
+<body>
+  <h1>设置尺寸回归验证</h1>
+  <p>从极小的 Chrome 弹窗视口加载真实设置页，并用 body 的 scroll / offset 尺寸重复测量；同时验证油猴面板随视口适应。</p>
+  <button id="rerun" type="button">重新运行</button>
+  <pre id="results" role="status">正在运行…</pre>
+  <div id="cases"></div>
+  <script type="module" src="/settings-size.js"></script>
+</body>
+</html>

@@ -21,6 +21,44 @@ export function cleanParagraph(element, settings) {
   return { text, furigana, space, pair };
 }
 
+// Caret APIs snap to nearby text even over padding or the empty end of a line.
+// Confirm the actual character box before treating a pointer as a text click.
+export function textAtPoint(root, x, y) {
+  if (!root || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const doc = root.ownerDocument;
+  const inside = rect => rect.width > 0 && rect.height > 0 && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  const usable = node => node?.nodeType === 3 && root.contains(node) && !node.parentElement?.closest('.at-translation,[data-at-ui],script,style');
+  const hit = (node, offset) => {
+    if (!usable(node)) return null;
+    for (let index of [offset, offset - 1]) {
+      if (index < 0 || index >= node.length) continue;
+      if (/[\uDC00-\uDFFF]/.test(node.data[index]) && index > 0) index--;
+      const character = String.fromCodePoint(node.data.codePointAt(index));
+      if (/\s/u.test(character)) continue;
+      const range = doc.createRange(); range.setStart(node, index); range.setEnd(node, index + character.length);
+      if ([...range.getClientRects()].some(inside)) return node;
+    }
+    return null;
+  };
+  const position = doc.caretPositionFromPoint?.(x, y);
+  const caret = position ? null : doc.caretRangeFromPoint?.(x, y);
+  const node = position?.offsetNode || caret?.startContainer, offset = position?.offset ?? caret?.startOffset;
+  const found = hit(node, offset);
+  if (found) return found;
+  // Ruby hit testing differs between engines. Limit this fallback to the
+  // element under the pointer rather than scanning the entire paragraph.
+  const target = doc.elementFromPoint(x, y)?.closest('.at-word,ruby');
+  if (!target || !root.contains(target)) return null;
+  const walker = doc.createTreeWalker(target, 4);
+  for (let text; (text = walker.nextNode());) {
+    if (!usable(text)) continue;
+    const range = doc.createRange(); range.selectNodeContents(text);
+    if (![...range.getClientRects()].some(inside)) continue;
+    for (let index = 0; index < text.length; index++) if (hit(text, index)) return text;
+  }
+  return null;
+}
+
 export function unwrapSentences(element) {
   element.querySelectorAll('.at-sentence').forEach(span => span.replaceWith(...span.childNodes));
   element.classList.remove('at-split');
@@ -41,7 +79,7 @@ export function sentenceElement(group) {
   return element;
 }
 export function wrapSentences(element, settings) {
-  if (element.classList.contains('at-split') || element.querySelector('img,a,button,input,textarea,select,[contenteditable]')) return;
+  if (element.classList.contains('at-split') || element.querySelector('img,button,input,textarea,select,[contenteditable]')) return;
   const endings = new Set(settings.sentenceDelimiters.split('/'));
   const closers = new Set(Array.from('」』”’）)】》〉』"'));
   const doc = element.ownerDocument;

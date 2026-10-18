@@ -1,7 +1,10 @@
-import { cleanParagraph, wrapSentences, unwrapSentences, sentenceGroups, sentenceElement } from './text.js';
-import { colorsFor, speechSwitches, shortcutAction, createSettingsStore } from '../settings/settings.js';
+import { readingViewport, topDocument } from './geometry.js';
+export { readingViewport } from './geometry.js';
+import { cleanParagraph, wrapSentences, unwrapSentences, sentenceGroups, sentenceElement, textAtPoint } from './text.js';
+import { colorsFor, speechSwitches, shortcutAction, createSettingsStore, serviceOrder } from '../settings/settings.js';
 import { createSpeaker } from '../services/speech.js';
 import { providerNames } from '../services/translate.js';
+import { createWordReader } from './words.js';
 export function createReadingNotice(doc) {
   let hostDocument = doc;
   // EPUB chapters can be wider than the visible page. Keep status messages in
@@ -52,38 +55,6 @@ export function createReadingNotice(doc) {
 }
 
 
-export function readingViewport(element) {
-  const win = element.ownerDocument.defaultView;
-  let viewport = { left: 0, top: 0, right: win.innerWidth, bottom: win.innerHeight };
-  for (let node = element.parentElement; node; node = node.parentElement) {
-    const style = win.getComputedStyle(node), rect = node.getBoundingClientRect();
-    if (style.overflowX !== 'visible') {
-      viewport.left = Math.max(viewport.left, rect.left + node.clientLeft);
-      viewport.right = Math.min(viewport.right, rect.left + node.clientLeft + node.clientWidth);
-    }
-    if (style.overflowY !== 'visible') {
-      viewport.top = Math.max(viewport.top, rect.top + node.clientTop);
-      viewport.bottom = Math.min(viewport.bottom, rect.top + node.clientTop + node.clientHeight);
-    }
-  }
-  // Bibi and EPUB.js expand a chapter iframe to cover many pages, then clip it
-  // in the parent reader. Its innerWidth alone does not describe what is visible.
-  let frame;
-  try { frame = win.frameElement; } catch { /* Cross-origin parent. */ }
-  if (frame) {
-    const outer = readingViewport(frame), rect = frame.getBoundingClientRect();
-    const scaleX = rect.width / frame.offsetWidth, scaleY = rect.height / frame.offsetHeight;
-    if (scaleX > 0 && scaleY > 0) {
-      const left = rect.left + frame.clientLeft * scaleX, top = rect.top + frame.clientTop * scaleY;
-      viewport.left = Math.max(viewport.left, (outer.left - left) / scaleX);
-      viewport.right = Math.min(viewport.right, (outer.right - left) / scaleX);
-      viewport.top = Math.max(viewport.top, (outer.top - top) / scaleY);
-      viewport.bottom = Math.min(viewport.bottom, (outer.bottom - top) / scaleY);
-    }
-  }
-  return viewport;
-}
-
 // Read individual line rectangles: a multi-column paragraph's bounding box can
 // cover several pages, including space where no text is actually visible.
 export function scrollToReadingTarget(paragraph, group, behavior) {
@@ -122,40 +93,43 @@ export function createReader(platform, store, doc = document) {
   let paragraphSelector = store.values.targetTags;
   const editable = 'input,textarea,select,button,a,[contenteditable]:not([contenteditable="false"]),[data-at-ui]';
   let paragraph = null, selectedSentence = null, mode = 'paragraph';
-  let hovered = null, hoveredSentence = null, spokenSentence = null, translation = null;
+  let hoveredSentence = null, spokenSentence = null, translation = null;
   let auto = false, generation = 0, timer, destroyed = false;
   const listeners = [];
-  const listen = (target, type, handler) => {
-    target.addEventListener(type, handler);
-    listeners.push(() => target.removeEventListener(type, handler));
+  const listen = (target, type, handler, options) => {
+    target.addEventListener(type, handler, options);
+      listeners.push(() => {
+      // listeners.push(() => target.removeEventListener(type, handler, options));
+      try {target.removeEventListener(type, handler, options);} catch (error) {if (!(error instanceof DOMException) || error.name !== 'SecurityError') throw error;}
+    });
   };
   const translationScope = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
   const cancelTranslation = () => platform.send({ action: 'cancel_translation', scope: translationScope }).catch(() => {});
-  const outlines = new WeakMap(), speaker = createSpeaker(platform);
+  const speaker = createSpeaker(platform);
   const notice = createReadingNotice(doc);
   const settings = () => store.values;
   const show = text => { if (!destroyed) notice.show(text); };
-  const valid = element => element?.isConnected && !element.classList.contains('at-sentence') && !element.closest(editable) && !element.closest('.at-translation') && !element.querySelector('img') && cleanParagraph(element, settings()).text.trim();
+  const words = createWordReader(platform, settings, doc, { show, onEscape: () => resetSelection() });
+  const valid = element => element?.isConnected && !element.matches('.at-sentence,.at-word,[data-at-word]') && !element.closest(editable) && !element.closest('.at-translation') && !element.querySelector('img') && cleanParagraph(element, settings()).text.trim();
   const paragraphAt = event => {
     let element = event.target.closest?.(paragraphSelector);
     // Generated sentence spans must not become targets when users enable span.
-    while (element?.classList.contains('at-sentence')) element = element.parentElement?.closest(paragraphSelector);
+    while (element?.matches('.at-sentence,.at-word,[data-at-word],rt,rp') || element?.closest('.at-word')) element = element.parentElement?.closest(paragraphSelector);
     return element;
   };
   const restoreOutline = element => {
     if (!element) return;
-    for (const [key, value, priority] of outlines.get(element) || []) {
-      if (value) element.style.setProperty(key, value, priority);
-      else element.style.removeProperty(key);
-    }
-    outlines.delete(element); element.classList.remove('at-selected');
+    element.classList.remove('at-selected','at-paragraph-block-selected');
+    element.querySelectorAll('.at-paragraph-selected').forEach(fragment => fragment.classList.remove('at-paragraph-selected'));
   };
   const paint = element => {
     if (!element) return;
-    if (!outlines.has(element)) outlines.set(element, ['outline', 'border-radius'].map(key => [key, element.style.getPropertyValue(key), element.style.getPropertyPriority(key)]));
-    const s = settings(), colors = colorsFor(s), active = element === paragraph;
-    element.style.outline = `${s.borderWidth} ${active && mode === 'sentence' ? 'dashed' : s.borderStyle} ${active ? colors.selectedBorderColor : colors.freeBorderColor}`;
-    element.style.borderRadius = s.borderRadius;
+    const active = element === paragraph;
+    const available = groups(element);
+    element.classList.toggle('at-paragraph-block-selected', !available.length && active && mode === 'paragraph');
+    available.forEach(group => group.fragments.forEach(fragment => {
+      fragment.classList.toggle('at-paragraph-selected', active && mode === 'paragraph');
+    }));
     element.classList.toggle('at-selected', active);
   };
   const markSentence = (group, className, enabled) => group?.fragments.forEach(fragment => fragment.classList.toggle(className, enabled));
@@ -166,10 +140,11 @@ export function createReader(platform, store, doc = document) {
   const stop = () => { auto = false; generation++; clearTimeout(timer); speaker.stop(); clearSpeechMark(); };
   const resetSelection = () => {
     stop(); cancelTranslation(); removeTranslation();
-    restoreOutline(hovered); restoreOutline(paragraph);
+    words.clear();
+    restoreOutline(paragraph);
     clearSelectedSentence(); clearHoverSentence();
     doc.querySelectorAll('.at-split').forEach(unwrapSentences);
-    paragraph = hovered = null; mode = 'paragraph';
+    paragraph = null; mode = 'paragraph'; notice.hide();
   };
   const groups = element => { wrapSentences(element, settings()); return sentenceGroups(element); };
   const targetElement = () => mode === 'sentence' && selectedSentence ? sentenceElement(selectedSentence) : paragraph;
@@ -199,7 +174,7 @@ export function createReader(platform, store, doc = document) {
   const translate = () => {
     removeTranslation();
     cancelTranslation();
-    const s = settings(), providers = providerNames.filter(name => s[name]);
+    const s = settings(), providers = serviceOrder(s, 'translationOrder').filter(name => s[name]);
     if (!providers.length || !valid(paragraph)) return;
     const text = cleanParagraph(targetElement(), s);
     const container = doc.createElement('span');
@@ -222,12 +197,14 @@ export function createReader(platform, store, doc = document) {
     if (settings().scrollSwitch) scrollToReadingTarget(element, group, settings().scrollIntoView);
   };
   const select = (element, group = null) => {
-    removeTranslation(); clearSelectedSentence();
+    words.clear();
+    removeTranslation(); clearSelectedSentence(); clearHoverSentence();
     if (paragraph !== element) restoreOutline(paragraph);
     paragraph = element; mode = group ? 'sentence' : 'paragraph';
     groups(element); selectedSentence = group;
     paint(paragraph); markSentence(group, 'at-sentence-selected', true);
     scroll(element, group); translate();
+    if (settings().dictionaryEnabled) void words.render(element, group).catch(error => show(`分词失败：${error.message}`));
   };
   const adjacentParagraph = direction => {
     const paragraphs = Array.from(doc.querySelectorAll(paragraphSelector)).filter(valid);
@@ -284,16 +261,17 @@ export function createReader(platform, store, doc = document) {
     const element = paragraphAt(event);
     if (!valid(element)) return null;
     const available = groups(element);
-    let fragment = event.target.closest?.('.at-sentence');
-    if (!fragment) {
-      const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
-      const node = position?.offsetNode || doc.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer;
-      fragment = (node?.nodeType === 1 ? node : node?.parentElement)?.closest?.('.at-sentence');
-    }
+    const node = textAtPoint(element, event.clientX, event.clientY);
+    const fragment = node?.parentElement?.closest('.at-sentence');
     return fragment && available.find(group => group.index === Number(fragment.dataset.atSentence));
   };
   listen(doc, 'click', event => {
     if (!settings().pluginSwitch || event.target.closest?.(editable + ',.at-translation')) return;
+    const token = event.target.closest?.('.at-word');
+    if (token && !textAtPoint(token, event.clientX, event.clientY)) return;
+    if (words.handleClick(event)) { clearHoverSentence(); stop(); event.preventDefault(); event.stopPropagation(); return; }
+    // Active text is now a dictionary surface; only unselected text activates reading.
+    if (event.target.closest?.('.at-sentence-selected,.at-paragraph-selected,.at-paragraph-block-selected')) return;
     const image = event.target.closest?.('img,svg image');
     if (settings().extraImage && image) {
       const src = image.currentSrc || image.src || image.getAttribute('href') || image.getAttribute('xlink:href');
@@ -303,17 +281,11 @@ export function createReader(platform, store, doc = document) {
       }
       return;
     }
-    const element = paragraphAt(event);
-    if (valid(element)) act(element);
+    const group = sentenceAt(event);
+    if (group) act(group.paragraph, settings().swapMouseButtons ? null : group);
   });
-  listen(doc, 'mouseover', event => {
-    if (!settings().pluginSwitch || event.target.closest?.(editable + ',.at-translation')) return;
-    const element = paragraphAt(event);
-    if (hovered !== element) {
-      if (hovered !== paragraph) restoreOutline(hovered);
-      hovered = valid(element) ? element : null;
-      if (hovered) { groups(hovered); paint(hovered); }
-    }
+  listen(doc, 'mousemove', event => {
+    if (!settings().pluginSwitch || event.target.closest?.(editable + ',.at-translation,.at-word,.at-sentence-selected,.at-paragraph-selected,.at-paragraph-block-selected')) { clearHoverSentence(); return; }
     const next = sentenceAt(event);
     if (hoveredSentence?.paragraph !== next?.paragraph || hoveredSentence?.index !== next?.index) {
       clearHoverSentence(); hoveredSentence = next;
@@ -321,18 +293,26 @@ export function createReader(platform, store, doc = document) {
     }
   });
   listen(doc, 'mouseout', event => {
-    if (hovered && !hovered.contains(event.relatedTarget)) {
-      if (hovered !== paragraph) restoreOutline(hovered);
-      hovered = null;
-    }
     if (hoveredSentence && !hoveredSentence.fragments.some(fragment => fragment.contains(event.relatedTarget))) clearHoverSentence();
   });
   listen(doc, 'contextmenu', event => {
-    if (!settings().pluginSwitch || event.target.closest?.(editable + ',.at-translation')) return;
-    const group = sentenceAt(event);
-    if (!group) return;
-    event.preventDefault(); act(group.paragraph, group);
+    if (!settings().pluginSwitch || event.target.closest?.(editable + ',.at-translation,.at-sentence-selected,.at-paragraph-selected,.at-paragraph-block-selected')) return;
+    if (settings().swapMouseButtons) {
+      const group = sentenceAt(event);
+      if (!group) return;
+      event.preventDefault(); act(group.paragraph, group);
+      return;
+    }
+    const element = paragraphAt(event);
+    if (!valid(element) || !textAtPoint(element, event.clientX, event.clientY)) return;
+    event.preventDefault(); act(element);
   });
+  listen(doc, 'keydown', event => {
+    if (!settings().pluginSwitch || event.key !== 'Escape' || event.isComposing || doc.documentElement.hasAttribute('data-at-capturing')) return;
+    resetSelection();
+    // Settings dialogs and editable controls may also use Escape themselves.
+    if (!event.target.closest?.(editable)) { event.preventDefault(); event.stopPropagation(); }
+  }, true);
   listen(doc, 'keydown', event => {
     if (!settings().pluginSwitch || event.defaultPrevented || event.isComposing || event.target.closest?.(editable)) return;
     const action = shortcutAction(event, settings());
@@ -360,8 +340,15 @@ export function createReader(platform, store, doc = document) {
     }
     const colors = colorsFor(s);
     doc.documentElement.style.setProperty('--at-sentence-color', colors.sentenceColor);
+    doc.documentElement.style.setProperty('--at-word-opacity', `${s.posOpacity ?? 100}%`);
     notice.setColor(s.nightMode ? '#cde0cc' : '#225d2e');
     translation?.querySelectorAll('[data-provider]').forEach(row => { row.style.color = colors[`${row.dataset.provider}Color`]; });
+    if ('translationOrder' in patch && translation) {
+      for (const provider of serviceOrder(s, 'translationOrder')) {
+        const row = translation.querySelector(`[data-provider="${provider}"]`);
+        if (row) translation.append(row);
+      }
+    }
     if (['splitSpeech', ...speechSwitches, 'huoshVoice'].some(key => key in patch)) stop();
     if ('huoshRate' in patch && s.useHuoshTTS) speaker.setPlaybackRate(s.huoshRate);
     if (!s.pluginSwitch) {
@@ -370,6 +357,7 @@ export function createReader(platform, store, doc = document) {
     }
     if ('sentenceDelimiters' in patch) {
       stop(); removeTranslation();
+      words.clear();
       const index = selectedSentence?.index;
       clearSelectedSentence(); clearHoverSentence();
       doc.querySelectorAll('.at-split').forEach(unwrapSentences);
@@ -380,27 +368,90 @@ export function createReader(platform, store, doc = document) {
         markSentence(selectedSentence, 'at-sentence-selected', true); translate();
       }
     }
-    paint(hovered); paint(paragraph);
+    paint(paragraph);
+    if (['dictionaryEnabled', 'dictionaryFurigana', 'sentenceDelimiters'].some(key => key in patch)) {
+      if (s.dictionaryEnabled && paragraph) void words.render(paragraph, mode === 'sentence' ? selectedSentence : null).catch(error => show(`分词失败：${error.message}`));
+      else words.clear();
+    }
+    else if (Object.keys(patch).some(key => key.startsWith('dictionary') || key.startsWith('anki') || /^(night)?[Pp]os.*Color$/.test(key) || key === 'nightMode' || key === 'translationOrder')) words.refresh();
     if (paragraph && Object.keys(patch).some(key => providerNames.some(name => [name, `${name}From`, `${name}To`].includes(key)) || ['symbolPairs', 'ignoreSymbolPairs'].includes(key))) translate();
   };
   const unsubscribe = store.subscribe(applySettings);
   applySettings(settings());
   const addedMarker = !doc.documentElement.hasAttribute('data-at-reader');
   if (addedMarker) doc.documentElement.setAttribute('data-at-reader', '');
-  listen(doc.defaultView, 'pagehide', () => { stop(); cancelTranslation(); notice.hide(); });
+  listen(doc.defaultView, 'pagehide', () => { stop(); cancelTranslation(); words.clear(); notice.hide(); });
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
     unsubscribe();
     listeners.splice(0).forEach(remove => remove());
-    resetSelection(); notice.hide(); speaker.destroy?.();
+    resetSelection(); words.destroy(); notice.hide(); speaker.destroy?.();
     if (addedMarker) doc.documentElement.removeAttribute('data-at-reader');
   };
   return { stop, destroy };
 }
 
-export async function startReader(platform) {
+export function isReaderUIFrame(doc) {
+  if (doc.documentElement?.hasAttribute('data-at-ui')) return true;
+  try { return Boolean(doc.defaultView?.frameElement?.hasAttribute('data-at-ui')); }
+  catch { return false; } // Inaccessible parent frames can still contain real book text.
+}
+
+export async function startReader(platform, doc = document, css = '') {
+  // Dictionary about:blank frames inherit content-script matching from the page.
+  if (isReaderUIFrame(doc) || topDocument(doc) !== doc) return;
   const store = createSettingsStore(platform);
   await store.init();
-  return createReader(platform, store);
+  return mountReaders(platform, store, doc, css);
+}
+
+// Bind accessible chapters from the outer page's realm. A sandboxed EPUB frame
+// must not own the functions which open or close native browser windows.
+export function mountReaders(platform, store, rootDoc, css = '') {
+  const documents = new Map(), frames = new Map();
+  const scan = () => {
+    const liveDocuments = new Set(), liveFrames = new Set();
+    const visit = doc => {
+      if (!doc?.documentElement || isReaderUIFrame(doc) || liveDocuments.has(doc)) return;
+      liveDocuments.add(doc);
+      if (!documents.has(doc)) {
+        let reader, style;
+        if (!doc.documentElement.hasAttribute('data-at-reader')) {
+          if (css) {
+            style = doc.createElement('style'); style.textContent = css;
+            (doc.head || doc.documentElement).append(style);
+          }
+          reader = createReader(platform, store, doc);
+        }
+        const observer = new MutationObserver(records => {
+          const hasFrame = node => node.nodeType === 1 && (node.matches('iframe,frame') || node.querySelector('iframe,frame'));
+          if (records.some(record => [...record.addedNodes, ...record.removedNodes].some(hasFrame))) scan();
+        });
+        observer.observe(doc.documentElement, { childList: true, subtree: true });
+        documents.set(doc, { reader, observer, style });
+      }
+      for (const frame of doc.querySelectorAll('iframe,frame')) {
+        if (frame.hasAttribute('data-at-ui')) continue;
+        liveFrames.add(frame);
+        if (!frames.has(frame)) { frame.addEventListener('load', scan); frames.set(frame, scan); }
+        try { visit(frame.contentDocument); } catch { /* Cross-origin frames initialize independently. */ }
+      }
+    };
+    visit(rootDoc);
+    for (const [doc, entry] of documents) {
+      if (liveDocuments.has(doc)) continue;
+      entry.observer.disconnect(); entry.reader?.destroy(); entry.style?.remove(); documents.delete(doc);
+    }
+    for (const [frame, listener] of frames) {
+      if (liveFrames.has(frame)) continue;
+      frame.removeEventListener('load', listener); frames.delete(frame);
+    }
+  };
+  scan();
+  return { destroy() {
+    for (const entry of documents.values()) { entry.observer.disconnect(); entry.reader?.destroy(); entry.style?.remove(); }
+    for (const [frame, listener] of frames) frame.removeEventListener('load', listener);
+    documents.clear(); frames.clear();
+  } };
 }

@@ -129,6 +129,47 @@ function audioBase64(buffer) {
   return btoa(binary);
 }
 
+// Playback and Anki export share these provider results. Cache the actual wire
+// parameters, so changing a voice, language or custom API cannot reuse old audio.
+const audioCache = new Map(), audioRequests = new WeakMap();
+const audioTTL = 10 * 60 * 1000, audioLimit = 32 * 1024 * 1024;
+let audioBytes = 0, nextAudioRequest = 0, audioStorage = null;
+export function configureAudioCacheStorage(storage) { audioStorage = storage; }
+function removeAudio(key) {
+  const entry = audioCache.get(key);
+  if (entry) { audioBytes -= entry.bytes; audioCache.delete(key); }
+}
+function cachedAudio(provider, parameters, request, generate) {
+  if (!audioRequests.has(request)) audioRequests.set(request, ++nextAudioRequest);
+  const key = JSON.stringify([audioRequests.get(request), provider, parameters]), now = Date.now();
+  for (const [stored, entry] of audioCache) if (entry.expires <= now) removeAudio(stored);
+  const previous = audioCache.get(key);
+  if (previous) { audioCache.delete(key); audioCache.set(key, previous); return previous.promise; }
+  const entry = { bytes: key.length * 2, expires: now + audioTTL };
+  const persistentKey = JSON.stringify([provider, parameters]);
+  entry.promise = Promise.resolve().then(async () => {
+    // Chrome's worker can sleep between preview playback and saving a card.
+    const storage = audioStorage;
+    try { const stored = await storage?.get(persistentKey); if (stored) return stored; } catch { /* Optional cache. */ }
+    const result = await generate();
+    try { await storage?.set(persistentKey, result); } catch { /* Playback/export still succeeds. */ }
+    return result;
+  }).then(result => {
+    if (audioCache.get(key) === entry) {
+      entry.bytes += (result.audio.length + String(result.mime || '').length) * 2;
+      audioBytes += (result.audio.length + String(result.mime || '').length) * 2;
+      entry.expires = Date.now() + audioTTL;
+      trimAudio();
+    }
+    return Object.freeze(result);
+  }).catch(error => { if (audioCache.get(key) === entry) removeAudio(key); throw error; });
+  audioCache.set(key, entry); audioBytes += entry.bytes; trimAudio();
+  return entry.promise;
+}
+function trimAudio() {
+  while (audioBytes > audioLimit || audioCache.size > 128) removeAudio(audioCache.keys().next().value);
+}
+
 export async function vitsSpeakers(settings, request = fetchRequest) {
   const { vitsAPI: base } = normalizeSettings(settings);
   const response = await request(`${base}/voice/speakers`, { vitsBase: base });
@@ -147,32 +188,35 @@ export async function vitsAudio(text, settings, request = fetchRequest) {
     noise: config.noise, noisew: config.noisew, segment_size: config.max, format: 'mp3'
   }).toString();
   url.searchParams.set('text', text);
-  const response = await request(url.href, { binary: true, timeout: 120000, vitsBase: url.origin });
-  const mime = response.headers?.get('content-type') || 'audio/mpeg';
-  const buffer = /^(audio\/|application\/octet-stream)/i.test(mime) ? await response.arrayBuffer() : null;
-  if (!buffer?.byteLength) throw new Error(config.vitsCustomAPI
-    ? 'VITS 未返回音频，请检查完整 API 地址和参数'
-    : 'VITS 未返回音频，请检查声音和语言配置');
-  return { audio: audioBase64(buffer), mime };
+  return cachedAudio('vits', url.href, request, async () => {
+    const response = await request(url.href, { binary: true, timeout: 120000, vitsBase: url.origin });
+    const mime = response.headers?.get('content-type') || 'audio/mpeg';
+    const buffer = /^(audio\/|application\/octet-stream)/i.test(mime) ? await response.arrayBuffer() : null;
+    if (!buffer?.byteLength) throw new Error(config.vitsCustomAPI
+      ? 'VITS 未返回音频，请检查完整 API 地址和参数'
+      : 'VITS 未返回音频，请检查声音和语言配置');
+    return { audio: audioBase64(buffer), mime };
+  });
 }
 
 export async function huoshanAudio(text, settings, request = fetchRequest) {
   if (typeof text !== 'string' || !text.trim()) throw new Error('没有提供朗读文本');
   const { huoshVoice: speaker } = normalizeSettings(settings);
-  const response = await request('https://translate.volcengine.com/crx/tts/v1/', {
-    method: 'POST', timeout: 60000,
-    headers: {
-      Accept: 'application/json, text/plain, */*', 'Accept-Language': 'zh-CN,zh;q=0.9',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ text, speaker })
+  const body = JSON.stringify({ text, speaker });
+  return cachedAudio('huosh', body, request, async () => {
+    const response = await request('https://translate.volcengine.com/crx/tts/v1/', {
+      method: 'POST', timeout: 60000,
+      headers: {
+        Accept: 'application/json, text/plain, */*', 'Accept-Language': 'zh-CN,zh;q=0.9',
+        'Content-Type': 'application/json'
+      }, body
+    });
+    const data = await response.json(), audio = data?.audio?.data;
+    try {
+      if (typeof audio !== 'string' || !audio.trim() || !atob(audio).length) throw new Error();
+    } catch { throw new Error('火山语音未返回有效音频'); }
+    return { audio, mime: 'audio/mpeg' };
   });
-  const data = await response.json();
-  const audio = data?.audio?.data;
-  try {
-    if (typeof audio !== 'string' || !audio.trim() || !atob(audio).length) throw new Error();
-  } catch { throw new Error('火山语音未返回有效音频'); }
-  return { audio, mime: 'audio/mpeg' };
 }
 
 // Extension playback is independent of the reading site's media CSP.
