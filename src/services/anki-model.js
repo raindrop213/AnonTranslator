@@ -244,6 +244,11 @@ export const defaultAnkiCSS = `
   background-color: #fff0a8;
 }
 
+.nightMode .at-anki-sentence b {
+  color: inherit;
+  background-color: #4a3d18;
+}
+
 .at-anki-translation {
   white-space: pre-wrap;
   margin: 3px 0 6px;

@@ -102,7 +102,9 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   const sentenceBox = create('div', 'sentence-box', undefined, fields), sentence = create('textarea', '', undefined, sentenceBox); sentence.rows = 3; sentence.maxLength = 20000; sentence.setAttribute('aria-label', '例句'); sentence.placeholder = '例句';
   const translation = create('textarea', 'translation', undefined, fields); translation.rows = 3; translation.maxLength = 20000; translation.setAttribute('aria-label', '例句翻译'); translation.placeholder = '例句翻译';
   const sidebar = create('aside', 'sidebar', undefined, content);
-  const imageArea = create('div', 'image-area', undefined, sidebar), imageEmpty = create('span', 'muted image-empty', '截图（可选）', imageArea), thumbnail = create('button', 'thumbnail', undefined, imageArea); thumbnail.type = 'button'; thumbnail.title = '放大图片'; thumbnail.setAttribute('aria-label', '放大图片'); thumbnail.hidden = true;
+  const imageArea = create('div', 'image-area', undefined, sidebar), imageEmpty = create('span', 'muted image-empty', '截图(Ctrl+V)', imageArea), thumbnail = create('button', 'thumbnail', undefined, imageArea); thumbnail.type = 'button'; thumbnail.title = '放大图片'; thumbnail.setAttribute('aria-label', '放大图片'); thumbnail.hidden = true;
+  imageArea.tabIndex = 0;
+  imageArea.setAttribute('aria-label', '图片区域，支持 Ctrl+V 粘贴图片');
   const thumbnailCanvas = create('canvas', '', undefined, thumbnail), imageInfo = create('span', 'image-info', '', imageArea), tools = create('div', 'image-tools', undefined, imageArea);
   const upload = icon('上传图片', 'M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6', tools), clipboard = icon('从剪贴板读取图片', 'M8 4H5v17h14V4h-3M8 2h8v5H8zM8 13l3-3 5 6H8z', tools), capture = icon('框选截图', 'M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M7 7h10v10H7z', tools), clearImage = icon('清空图片', 'M6 6l12 12M18 6 6 18', tools);
   const footer = create('div', 'footer', undefined, editor);
@@ -111,9 +113,10 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   const tagSummary = create('summary', 'tag-summary', undefined, tags), tagChoices = create('div', 'choices', undefined, tags);
   const file = create('input', '', undefined, editor); file.type = 'file'; file.accept = 'image/png,image/jpeg,image/webp,image/gif'; file.hidden = true;
   const duplicate = create('div', 'duplicate', undefined, main); duplicate.hidden = true; duplicate.setAttribute('role', 'alertdialog'); duplicate.setAttribute('aria-label', '处理重复单词');
-  const status = create('div', 'status', '', main); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  const status = create('div', 'status', '', fields); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   let context = {}, revision = 0, mediaRevision = 0, readingRevision = 0, readingTimer = null, publishTimer = null, audioTimer = null, audioAttempt = '', readingTouched = false, translationTouched = false, busy = false, mediaBusy = false, opened = false, destroyed = false, image = null, imageCanvas = null, imageFormat = null, viewer = null, duplicateResolve = null, audioContext = null;
   let deck = '', selectedTags = new Set(), configuredDecks = [], configuredTags = [];
+  let clipboardPending = null;
   let translationAttempt = '', lastTranslationService = translationConfig(getSettings()), sentenceTouched = false, lastBoldWord = getSettings().ankiBoldWord;
   const translationParts = new Map();
   let undoInfo = { undoAvailable: false, reason: '暂无可撤回的新建卡片' }, undoBusy = false, undoRevision = 0;
@@ -269,11 +272,21 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     finally { bitmap?.close(); if (run === mediaRevision) { mediaBusy = false; updateControls(); } }
   }
   const imageError = error => { if (!destroyed && opened) setStatus(error.message || '图片处理失败', 'error'); };
+  root.addEventListener('paste', event => {
+    if (!event.isTrusted || destroyed || !opened || busy || mediaBusy && clipboardPending !== mediaRevision) return;
+    const data = event.clipboardData;
+    const blob = Array.from(data?.items || []).find(item => item.kind === 'file' && imageTypes.has(item.type))?.getAsFile()
+      || Array.from(data?.files || []).find(file => imageTypes.has(file.type));
+    if (!blob) return;
+    event.preventDefault(); event.stopPropagation();
+    void importImage(blob).catch(imageError);
+  });
   upload.addEventListener('click', () => { file.value = ''; file.click(); });
   file.addEventListener('change', () => { if (file.files[0]) void importImage(file.files[0]).catch(imageError); });
   clipboard.addEventListener('click', async event => {
     if (!event.isTrusted) return;
     const run = revision, mediaRun = ++mediaRevision; let importStarted = false; mediaBusy = true; updateControls(); setStatus('正在读取剪贴板图片…');
+    clipboardPending = mediaRun;
     try {
       let blob;
       if (platform.readClipboardImage) {
@@ -293,8 +306,16 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
       if (!blob) throw new Error('剪贴板中没有支持的图片，请复制图片或上传图片');
       importStarted = true;
       await importImage(blob);
-    } catch (error) { if (run === revision && (mediaRun === mediaRevision || importStarted && mediaRevision === mediaRun + 1)) imageError(new Error(error.name === 'NotAllowedError' ? '剪贴板权限被拒绝，请允许访问或使用上传图片' : error.message)); }
-    finally { if (mediaRun === mediaRevision) { mediaBusy = false; updateControls(); } }
+    } catch (error) {
+      if (!destroyed && opened && run === revision && (mediaRun === mediaRevision || importStarted && mediaRevision === mediaRun + 1)) {
+        if (importStarted) imageError(error);
+        else {
+          const message = '无法直接读取剪贴板图片，请按 Ctrl+V 粘贴图片';
+          imageArea.focus(); setStatus(message); show(message);
+        }
+      }
+    }
+    finally { if (clipboardPending === mediaRun) clipboardPending = null; if (mediaRun === mediaRevision) { mediaBusy = false; updateControls(); } }
   });
   capture.addEventListener('click', async event => {
     if (!event.isTrusted || !onCapture) return;
