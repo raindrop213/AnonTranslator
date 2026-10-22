@@ -1,0 +1,92 @@
+<svg class="icons" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5.5C9 3.6 5.8 3.6 3 4.6v14c2.8-1 6-1 9 .9m0-14c3-1.9 6.2-1.9 9-.9v14c-2.8-1-6-1-9 .9zm-6 3h3m6 0h3M6 12h3m6 0h3"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.6"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.6 14A8.5 8.5 0 0 1 10 3.4 8.5 8.5 0 1 0 20.6 14Z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 8A8 8 0 1 1 4 15M4 3v5h5"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7.5" ry="3"/><path d="M4.5 5v7c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V5M4.5 12v7c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-7"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 8 10 8 10s8-5 8-10V5z"/><path d="m8.5 11 2.4 2.4 4.6-4.8"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5m-5 5 5-5 5 5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14m-5-5 5 5 5-5"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="5" r=".7"/><circle cx="15" cy="5" r=".7"/><circle cx="9" cy="12" r=".7"/><circle cx="15" cy="12" r=".7"/><circle cx="9" cy="19" r=".7"/><circle cx="15" cy="19" r=".7"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="m10 13 4-4m-6 6-1.5 1.5a3.5 3.5 0 0 1-5-5L6 7a3.5 3.5 0 0 1 5 0m2 10a3.5 3.5 0 0 0 5 0l4.5-4.5a3.5 3.5 0 0 0-5-5L16 9" transform="translate(1 -1) scale(.9)"/></symbol>
+    <symbol id="i-width" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 7v10m6-10v10"/></symbol>
+  </svg><section class="settings-shell glass" aria-label="AnonTranslator 设置面板">
+      <header class="settings-header">
+        <div class="app-icon" aria-hidden="true"></div>
+        <div class="app-name"><h1>AnonTranslator</h1><div class="version"><span>Ver 2.0.0</span><span class="dot"></span><span class="latest">Latest</span></div></div>
+        <div class="header-actions">
+          <button class="icon-button" id="reset-button" type="button" title="重置演示设置" aria-label="重置演示设置"><svg><use href="#i-reset"/></svg></button>
+          <button class="icon-button" id="theme-button" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false"><svg><use id="theme-icon" href="#i-sun"/></svg></button>
+          <button class="icon-button" id="close-button" type="button" title="关闭阅读工具" aria-label="关闭阅读工具"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </div>
+      </header>
+      <nav class="tabs glass" aria-label="设置栏目">
+        <button class="tab" type="button" data-tab="复制">复制</button>
+        <button class="tab" type="button" data-tab="语音">语音</button>
+        <button class="tab" type="button" data-tab="翻译">翻译</button>
+        <button class="tab" type="button" data-tab="词典" aria-current="page">词典</button>
+        <button class="tab" type="button" data-tab="Anki">Anki</button>
+        <button class="tab" type="button" data-tab="外观">外观</button>
+        <button class="tab" type="button" data-tab="键位">键位</button>
+        <button class="tab" type="button" data-tab="帮助">帮助</button>
+      </nav>
+
+      <div class="panel-scroll" id="panel-scroll">
+        <div class="data-card glass" id="data-card">
+          <div class="data-icon"><svg><use href="#i-database"/></svg></div>
+          <div class="data-text"><div class="data-title">分词数据<span class="size-badge">17 MB</span></div><div class="data-description" id="data-description"><svg><use href="#i-check"/></svg><span>已安装，可离线使用</span></div></div>
+          <button class="icon-button data-action" id="data-button" type="button" title="删除分词数据" aria-label="删除分词数据"><svg><use href="#i-trash"/></svg></button>
+          <div class="data-progress" id="data-progress" aria-hidden="true"></div>
+        </div>
+
+        <div class="settings-group glass" aria-label="分词与查询设置">
+          <div class="setting-row">
+            <div class="setting-copy"><label for="dictionary-enabled">启用分词查词</label><p>选中文本，轻触词语即可查询</p></div>
+            <label class="switch"><input id="dictionary-enabled" type="checkbox" role="switch" aria-label="启用分词查词" data-setting="dictionary" checked><span class="switch-track" aria-hidden="true"></span></label>
+          </div>
+          <div class="setting-row dependent">
+            <div class="setting-copy"><label for="furigana">显示汉字振假名</label><p>在汉字上方标注日语读音</p></div>
+            <label class="switch"><input id="furigana" type="checkbox" role="switch" aria-label="显示汉字振假名" data-setting="furigana" checked><span class="switch-track" aria-hidden="true"></span></label>
+          </div>
+          <div class="setting-row dependent">
+            <div class="setting-copy"><label for="base-form">优先查询基本形</label><p>点击词语时，以原型查询释义</p></div>
+            <label class="switch"><input id="base-form" type="checkbox" role="switch" aria-label="优先查询基本形" data-setting="baseForm" checked><span class="switch-track" aria-hidden="true"></span></label>
+          </div>
+          <div class="setting-row select-row dependent">
+            <div class="setting-copy"><label for="popup-mode">查词窗模式</label></div>
+            <div class="select-wrap"><select id="popup-mode" data-setting="popup" aria-label="查词窗模式"><option value="page">页面浮窗</option><option value="window">独立窗口</option></select><svg><use href="#i-chevron"/></svg></div>
+          </div>
+        </div>
+
+        <div class="group-heading"><h3>在线词典</h3><p><svg><use href="#i-grip"/></svg>拖动调整查询顺序</p></div>
+        <div class="services" id="services">
+          <article class="service-card glass" data-provider="weblio">
+            <div class="service-main">
+              <button type="button" class="drag-handle" draggable="true" aria-label="拖动调整 Weblio 顺序，也可按上下方向键" title="拖动排序 / ↑ ↓"><svg><use href="#i-grip"/></svg></button>
+              <div class="service-logo" aria-hidden="true">W</div><div class="service-name"><h4>Weblio</h4><p>日语释义 · 用例检索</p></div>
+              <label class="switch"><input type="checkbox" role="switch" aria-label="启用 Weblio" data-setting="weblio" checked><span class="switch-track" aria-hidden="true"></span></label>
+            </div>
+            <div class="service-footer"><button type="button" class="permission-button" data-permission="weblio" data-allowed="true" title="查看 Weblio 接口权限"><svg><use href="#i-shield"/></svg><span>接口已授权</span></button><div class="order-actions"><span class="order-index">01</span><button type="button" class="icon-button" data-move="up" aria-label="上移 Weblio" title="上移 Weblio"><svg><use href="#i-up"/></svg></button><button type="button" class="icon-button" data-move="down" aria-label="下移 Weblio" title="下移 Weblio"><svg><use href="#i-down"/></svg></button></div></div>
+          </article>
+          <article class="service-card glass" data-provider="moji">
+            <div class="service-main">
+              <button type="button" class="drag-handle" draggable="true" aria-label="拖动调整 MOJi 顺序，也可按上下方向键" title="拖动排序 / ↑ ↓"><svg><use href="#i-grip"/></svg></button>
+              <div class="service-logo moji" aria-hidden="true">辞</div><div class="service-name"><h4>MOJi</h4><p>中日词典 · 词义辨析</p></div>
+              <label class="switch"><input type="checkbox" role="switch" aria-label="启用 MOJi" data-setting="moji" checked><span class="switch-track" aria-hidden="true"></span></label>
+            </div>
+            <div class="service-footer"><button type="button" class="permission-button" data-permission="moji" data-allowed="true" title="查看 MOJi 接口权限"><svg><use href="#i-shield"/></svg><span>接口已授权</span></button><div class="order-actions"><span class="order-index">02</span><button type="button" class="icon-button" data-move="up" aria-label="上移 MOJi" title="上移 MOJi"><svg><use href="#i-up"/></svg></button><button type="button" class="icon-button" data-move="down" aria-label="下移 MOJi" title="下移 MOJi"><svg><use href="#i-down"/></svg></button></div></div>
+          </article>
+        </div>
+        <p class="service-notice" id="service-notice" hidden>未开启在线词典，仍可分词。开启至少一项服务即可在线查词。</p>
+
+        <details class="search-details glass dependent">
+          <summary><svg><use href="#i-link"/></svg><span>外部搜索</span><small class="search-host" id="search-host">Google</small><svg class="chevron"><use href="#i-chevron"/></svg></summary>
+          <div class="search-form"><input id="search-url" type="url" aria-label="外部搜索地址" value="https://www.google.com/search?q={word}" spellcheck="false"><p id="search-help">填写完整网址，用 <code>{word}</code> 代替查询词。</p></div>
+        </details>
+      </div>
+
+      <footer class="settings-footer" aria-label="面板外观"></footer>
+    </section><div class="toast glass" id="toast" role="status" aria-live="polite"></div><dialog class="glass" id="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description"><h2 id="dialog-title"></h2><p id="dialog-description"></p><div class="dialog-actions"><button type="button" class="pill-button" id="dialog-cancel">取消</button><button type="button" class="pill-button primary" id="dialog-confirm">确定</button></div></dialog>

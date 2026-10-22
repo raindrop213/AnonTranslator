@@ -1,9 +1,15 @@
 import { defaultAnkiFront, defaultAnkiBack, defaultAnkiCSS } from '../services/anki-model.js';
 import { legacyAnkiTemplates } from './legacy-anki-templates.js';
+import { siteIdentity } from './site-access.js';
 
 export const defaults = {
   "pluginSwitch": false,
-  "settingsTab": "复制",
+  "settingsTab": "词典",
+  "panelTransparency": 86,
+  "panelBlur": 2,
+  "dockedIconOpacity": 20,
+  "panelBackground": "",
+  "panelBackgroundFit": "cover",
   "copy": true,
   "targetTags": "p,h1,h2,h3,h4,h5,h6",
   "ignoreFurigana": true,
@@ -182,6 +188,7 @@ export function shortcutAction(event, values) {
 const speechSwitches = ['useWindowsTTS', 'useVITS', 'useHuoshTTS'];
 const ankiAudioKeys = ['ankiWordAudio', 'ankiSentenceAudio'];
 const numericRules = {
+  panelTransparency: [0, 100, true], panelBlur: [0, 20, true], dockedIconOpacity: [0, 100, true],
   readingInterval: [0, 60000, true],
   posOpacity: [0, 100, true],
   dictionaryPopupWidth: [220, 1600], dictionaryPopupHeight: [160, 1600],
@@ -191,6 +198,7 @@ const numericRules = {
   noise: [0, 2], noisew: [0, 2], max: [1, 10000, true]
 };
 const settingOptions = {
+  panelBackgroundFit: ['cover', 'contain'],
   settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '键位', '帮助'],
   dictionaryPopupMode: ['page', 'independent'],
   ankiImageFormat: ['webp', 'png', 'jpeg'], ankiLayout: ['below', 'right'],
@@ -230,6 +238,11 @@ function normalizeSetting(key, value) {
     return number;
   }
   const text = String(value);
+  if (key === 'panelBackground') {
+    if (!text) return '';
+    if (text.length > 3 * 1024 * 1024 || !/^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(text)) throw new Error('请选择不超过 2 MB 的 PNG、JPEG、WebP 或 GIF 图片');
+    return text;
+  }
   if (key === 'targetTags') {
     const tags = text.trim().toLowerCase().split(/[\s,，]+/).filter(Boolean);
     if (!tags.length || tags.some(tag => !/^[a-z][a-z0-9-]*$/.test(tag))) throw new Error('请输入标签名，用逗号分隔，例如 p,h1,div；不支持 CSS 选择器');
@@ -276,7 +289,7 @@ function normalizeSetting(key, value) {
   }
   if (['ankiFront', 'ankiBack', 'ankiCSS'].includes(key)) {
     if (text.length > 100000 || (key !== 'ankiCSS' && !text.trim())) throw new Error('卡片模板不能为空，且最多 100000 个字符；样式可留空');
-    return text;
+    return key === 'ankiCSS' ? text.replace(/^(?:[\t ]*\r?\n)+/, '') : text;
   }
   if (key.startsWith('shortcut')) return normalizeShortcut(text);
   if (settingOptions[key] && !settingOptions[key].includes(text)) throw new Error('请选择有效选项');
@@ -333,11 +346,17 @@ export function wordColorFor(settings, pos) {
 }
 
 
-export function createSettingsStore(platform) {
+export function createSettingsStore(platform, { siteURL = platform.siteURL ?? globalThis.location?.href } = {}) {
+  const site = siteIdentity(siteURL);
   let values = { ...defaults };
+  let siteEnabled = false, siteRevision = 0, unsubscribeSettings;
+  let writeQueue = Promise.resolve();
   const listeners = new Set();
   const sameValue = (left, right) => Array.isArray(left) && Array.isArray(right) ? left.length === right.length && left.every((value, index) => value === right[index]) : left === right;
   const publish = patch => {
+    if (site.key && Object.hasOwn(patch, site.key)) siteEnabled = patch[site.key] === true;
+    // The legacy global switch never authorizes a website.
+    patch = { ...patch, pluginSwitch: siteEnabled };
     const enabled = speechSwitches.find(key => patch[key] === true);
     if (enabled) patch = { ...Object.fromEntries(speechSwitches.map(key => [key, false])), ...patch };
     const next = normalizeSettings({ ...values, ...patch });
@@ -345,15 +364,27 @@ export function createSettingsStore(platform) {
     values = next;
     if (Object.keys(changed).length) for (const listener of listeners) listener(values, changed);
   };
+  const enqueue = operation => {
+    const result = writeQueue.then(operation);
+    writeQueue = result.catch(() => {});
+    return result;
+  };
   return {
     get values() { return values; },
+    get siteKey() { return site.key; },
+    get siteLabel() { return site.label; },
     async init() {
       // Subscribe first so changes made while storage is loading are not lost.
       const pending = [];
       let loaded = false;
-      platform.watchSettings(patch => loaded ? publish(patch) : pending.push(patch));
+      unsubscribeSettings = platform.watchSettings(patch => {
+        if (site.key && Object.hasOwn(patch, site.key)) siteRevision++;
+        if (loaded) publish(patch);
+        else pending.push(patch);
+      });
       const saved = await platform.getSettings();
-      values = normalizeSettings(saved);
+      siteEnabled = Boolean(site.key && saved[site.key] === true);
+      values = normalizeSettings({ ...saved, pluginSwitch: siteEnabled });
       loaded = true;
       for (const patch of pending) publish(patch);
       // Persist migrated choices once so later reader voice changes cannot
@@ -366,8 +397,19 @@ export function createSettingsStore(platform) {
       if (Object.keys(migrated).length) await platform.setSettings(migrated);
       return values;
     },
-    async set(key, value) {
+    set(key, value) { return enqueue(async () => {
       let normalized = normalizeSetting(key, value);
+      if (key === 'pluginSwitch') {
+        if (!site.key) throw new Error('请在 HTTP、HTTPS 网页或本地文件中开启阅读工具');
+        if (normalized === values.pluginSwitch) return;
+        const revision = siteRevision;
+        if (normalized) await platform.setSettings({ [site.key]: true });
+        else await platform.removeSettings([site.key]);
+        // A newer cross-tab event can arrive before this write's promise
+        // settles. Never overwrite that event with a late local echo.
+        if (revision === siteRevision) publish({ [site.key]: normalized ? true : undefined });
+        return;
+      }
       if (key === 'ankiTranslationServices') normalized = values.translationOrder.filter(service => normalized.includes(service));
       const patch = speechSwitches.includes(key) && normalized
         ? { ...Object.fromEntries(speechSwitches.filter(other => other !== key).map(other => [other, false])), [key]: true }
@@ -376,14 +418,19 @@ export function createSettingsStore(platform) {
       if (Object.entries(patch).every(([name, next]) => sameValue(values[name], next))) return;
       await platform.setSettings(patch);
       publish(patch);
-    },
-    async reset() {
+    }); },
+    reset() { return enqueue(async () => {
       // Write all defaults together, bypassing transient shortcut conflicts.
       const patch = { ...defaults };
+      delete patch.pluginSwitch;
       await platform.setSettings(patch);
+      const revision = siteRevision;
+      if (site.key) await platform.removeSettings([site.key]);
+      if (site.key && revision === siteRevision) patch[site.key] = undefined;
       publish(patch);
-    },
-    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }
+    }); },
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    destroy() { unsubscribeSettings?.(); listeners.clear(); }
   };
 }
 

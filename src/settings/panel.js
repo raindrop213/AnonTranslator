@@ -1,526 +1,270 @@
-import { defaults, settingOptions, numericRules, normalizeSetting, shortcutActions, shortcutFromEvent, validateShortcuts, huoshanVoices, posGroups } from './settings.js';
+import { defaults, settingOptions, huoshanVoices, shortcutActions, normalizeSetting, validateShortcuts } from './settings.js';
+import { mountDictionaryTab } from './dictionary-tab.js';
+import { createCoreTabs } from './core-tabs.js';
+import { createAnkiTabs } from './anki-tab.js';
+import { createAppearanceTabs } from './appearance-tab.js';
 import metadata from '../../package.json' with { type: 'json' };
-import { mountAnkiPanel } from './anki-panel.js';
-import { mountServiceOrdering } from './service-order.js';
-import { mountTokenizerPanel } from './tokenizer-panel.js';
-import headerArtwork from '../../assets/a1.jpg';
-const settingsGroups = [
-  ['复制', ['copy', 'targetTags', 'ignoreFurigana', 'showCopyContent', 'extraImage', 'ignoreSymbolPairs', 'symbolPairs', 'sentenceDelimiters']],
-  ['语音', ['readingInterval', 'splitSpeech']],
-  ['翻译', []],
-  ['词典', ['dictionaryEnabled', 'dictionaryFurigana', 'dictionaryBaseForm', 'dictionaryPopupMode']],
-  ['Anki', ['ankiEnabled']],
-  ['外观', ['scrollSwitch', 'scrollIntoView']],
-  ['键位', ['swapMouseButtons', ...Object.keys(shortcutActions)]],
-  ['帮助', []]
-];
-const settingLabels = {
-  pluginSwitch: '启用阅读工具', copy: '复制文本', ignoreFurigana: '忽略振假名', showCopyContent: '显示复制内容', extraImage: '点击打开图片',
-  targetTags: '目标文本标签',
-  ignoreSymbolPairs: '忽略首尾符号对', symbolPairs: '首尾符号对', splitSpeech: '朗读段落时先切成句子', sentenceDelimiters: '断句符号', readingInterval: '自动朗读间隔（毫秒）',
-  shortcutPreviousParagraph: '上一段', shortcutNextParagraph: '下一段', shortcutPreviousSentence: '上一句', shortcutNextSentence: '下一句',
-  shortcutReadCurrent: '重读当前选择', shortcutAutoRead: '自动阅读 / 暂停', shortcutStop: '清除所有效果',
-  swapMouseButtons: '左右键对调',
-  useWindowsTTS: '启用系统语音', winVoice: '系统声音', rate: '语速', pitch: '音调', useVITS: '启用 VITS',
-  useHuoshTTS: '启用火山语音', huoshVoice: '火山声音', huoshRate: '播放速度',
-  vitsAPI: '服务地址', vitsVoice: '声线（id）', vitsLang: '语言（lang）', length: '发音长度（length 越大越慢）',
-  noise: '声音随机性（noise）', noisew: '发音时长随机性（noisew）', max: '合成分段阈值（segment_size）', vitsCustomAPI: '完整 API 地址（可选）',
-  google: '启用 Google', youdao: '启用有道', googleColor: 'Google 译文', youdaoColor: '有道译文',
-  dictionaryEnabled: '启用分词查词', dictionaryFurigana: '显示汉字振假名', dictionaryWeblio: '启用 Weblio', dictionaryMoji: '启用 MOJi',
-  dictionaryBaseForm: '点击词语时查询基本形（原型）',
-  dictionaryPopupMode: '查词窗模式',
-  dictionarySearchURL: '外部搜索地址', posOpacity: '不透明度',
-  ankiEnabled: '启用 Anki 制卡', ankiURL: 'AnkiConnect 地址', ankiAPIKey: 'API Key（可选）',
-  ankiModel: '笔记模板名称（deck）', ankiDecks: '卡组（每行一个，首行为默认）', ankiTags: '标签（每行一个，可多选）',
-  ankiTranslationServices: '例句翻译（Translation）', ankiWordAudioService: '单词音频（WordAudio）', ankiSentenceAudioService: '例句音频（SentenceAudio）', ankiBoldWord: '标注例句中的单词（加<b>标签）',
-  ankiSuccessSound: '保存成功时提示音', ankiCloseAfterAdd: '添加成功后关闭查词窗', ankiImageFormat: '图片格式', ankiLayout: '制卡区位置',
-  sentenceColor: '例句底色', scrollSwitch: '自动滚动到段落/句子', scrollIntoView: '滚动方式',
-  ...Object.fromEntries(posGroups.map(group => [group.key, group.label]))
-};
-const selectOptions = settingOptions;
 
-export function mountSettings(root, store, platform) {
-  const doc = root.ownerDocument;
-  const controls = new Map();
-  const permissionRows = [];
-  const serviceOrdering = new Map();
-  const form = doc.createElement('form');
-  form.className = 'at-settings';
-  form.style.setProperty('--at-tabs-art', `url("${headerArtwork}")`);
-  form.setAttribute('data-at-ui', '');
-  form.addEventListener('submit', event => event.preventDefault());
-  let queue = Promise.resolve(), revision = 0, ankiPanel = null, tokenizerPanel = null;
-  const header = doc.createElement('header');
-  header.className = 'at-header';
-  const artwork = doc.createElement('img'); artwork.className = 'at-header-art';
-  artwork.src = headerArtwork; artwork.alt = ''; artwork.setAttribute('aria-hidden', 'true'); artwork.draggable = false;
-  header.append(artwork);
-  const heading = doc.createElement('div'); heading.className = 'at-heading';
-  const title = doc.createElement('h1'), version = doc.createElement('div');
-  title.textContent = 'AnonTranslator';
-  version.className = 'at-version'; version.textContent = `Ver ${metadata.version}`;
-  const update = doc.createElement('a');
-  update.className = 'at-update'; update.id = 'newVersion'; update.textContent = 'Update:…';
-  update.href = platform.updateURL; update.target = '_blank'; update.rel = 'noopener noreferrer'; update.setAttribute('aria-live', 'polite');
-  version.append(' · ', update);
-  heading.append(title, version);
-  const actions = doc.createElement('div'); actions.className = 'at-header-actions';
-  const themeButton = doc.createElement('button');
-  themeButton.type = 'button'; themeButton.className = 'at-theme-toggle';
-  themeButton.addEventListener('click', () => {
-    queue = queue.then(() => store.set('nightMode', !store.values.nightMode)).catch(error => { status.textContent = `保存失败：${error.message}`; });
-  });
-  const resetButton = doc.createElement('button');
-  resetButton.type = 'button'; resetButton.className = 'at-reset';
-  resetButton.textContent = '↺'; resetButton.title = '重置设置'; resetButton.setAttribute('aria-label', '重置设置');
-  resetButton.addEventListener('click', () => {
-    if (!doc.defaultView.confirm('确定重置所有设置吗？')) return;
-    revision++;
-    queue = queue.then(() => store.reset()).then(() => {
-      for (const input of controls.values()) input.setCustomValidity('');
-      ankiPanel?.reload();
-      loadVoices();
-      void refreshVits(); status.textContent = '';
-    }).catch(error => { status.textContent = `重置失败：${error.message}`; });
-  });
-  const power = doc.createElement('label'), powerInput = doc.createElement('input');
-  power.className = 'at-power'; powerInput.type = 'checkbox'; powerInput.name = powerInput.id = 'pluginSwitch';
-  powerInput.checked = store.values.pluginSwitch; powerInput.setAttribute('aria-label', '启用阅读工具');
-  powerInput.setAttribute('role', 'switch');
-  const powerTrack = doc.createElement('span'); powerTrack.className = 'at-power-track'; powerTrack.setAttribute('aria-hidden', 'true');
-  power.append(powerInput, powerTrack); controls.set('pluginSwitch', powerInput);
-  actions.append(resetButton, themeButton);
-  header.append(heading, actions, power); form.append(header);
-  const updateTheme = values => {
-    header.dataset.enabled = String(values.pluginSwitch);
-    form.dataset.enabled = String(values.pluginSwitch);
-    root.dataset.atTheme = form.dataset.atTheme = values.nightMode ? 'night' : 'day';
-    themeButton.textContent = values.nightMode ? '☾' : '☀';
-    themeButton.title = values.nightMode ? '切换日间模式' : '切换夜间模式';
-    themeButton.setAttribute('aria-label', themeButton.title);
-    themeButton.setAttribute('aria-pressed', String(values.nightMode));
-    power.title = values.pluginSwitch ? '关闭阅读工具' : '启用阅读工具';
-    controls.get('symbolPairs')?.toggleAttribute('disabled', !values.ignoreSymbolPairs);
-    for (const key of ['dictionaryFurigana', 'dictionaryBaseForm', 'dictionaryWeblio', 'dictionaryMoji', 'dictionarySearchURL']) {
-      const input = controls.get(key);
-      input?.toggleAttribute('disabled', !values.dictionaryEnabled);
-      input?.closest('.at-setting')?.classList.toggle('at-setting-disabled', !values.dictionaryEnabled);
-    }
-    dictionaryNotice.hidden = !values.dictionaryEnabled || values.dictionaryWeblio || values.dictionaryMoji;
-  };
-  const dictionaryNotice = doc.createElement('p');
-  dictionaryNotice.className = 'at-guide at-dictionary-notice';
-  dictionaryNotice.textContent = '当前未开启词典服务，仍可分词。选择至少一个服务后即可在线查词。';
-  const status = doc.createElement('p');
-  status.className = 'at-save-status';
-  status.setAttribute('role', 'status');
-  form.append(status);
-  const labelFor = key => {
-    const base = key.startsWith('night') ? key[5].toLowerCase() + key.slice(6) : key;
-    return settingLabels[base] || `${base.replace(/(From|To|Color)$/, '')} ${{ From: '源语言', To: '目标语言', Color: '颜色' }[base.match(/(From|To|Color)$/)?.[0]] || base}`;
-  };
-  const displayValue = (key, value) => key === 'posOpacity' ? `${value}%` : value;
-  const controlValue = input => input.name === 'ankiTranslationServices'
-    ? [...input.closest('.at-setting').querySelectorAll('input[type=checkbox]')].filter(choice => choice.checked).map(choice => choice.value)
-    : input.type === 'checkbox' ? input.checked : input.value;
-  const addControl = (parent, key, colorRow = null) => {
-    const row = doc.createElement(key.endsWith('Color') || key === 'ankiTranslationServices' ? 'div' : 'label');
-    row.className = 'at-setting';
-    const label = doc.createElement('span');
-    label.textContent = labelFor(key);
-    if (['symbolPairs', 'scrollIntoView'].includes(key)) label.className = 'at-sr-only';
-    row.append(label);
-    const value = store.values[key];
-    if (key === 'ankiTranslationServices') {
-      const choices = doc.createElement('div'); choices.className = 'at-service-choices';
-      for (const service of store.values.translationOrder) {
-        const title = { google: 'Google', youdao: '有道' }[service];
-        const option = doc.createElement('label'), input = doc.createElement('input'); input.type = 'checkbox'; input.name = key; input.value = service; input.checked = value.includes(service); input.id = key + '-' + service;
-        option.append(input, title); choices.append(option);
-        if (!controls.has(key)) controls.set(key, input);
-      }
-      row.append(choices); parent.append(row); return row;
-    }
-    const input = doc.createElement(['ankiDecks', 'ankiTags'].includes(key) ? 'textarea' : selectOptions[key] || ['winVoice', 'vitsVoice'].includes(key) ? 'select' : 'input');
-    input.id = key;
-    input.name = key;
-    if (input.tagName === 'SELECT') {
-      for (const optionValue of selectOptions[key] || [value]) {
-        const option = doc.createElement('option');
-        option.value = optionValue;
-        option.textContent = key === 'ankiLayout' ? { below: '词典下方', right: '词典右侧' }[optionValue]
-          : key === 'dictionaryPopupMode' ? { page: '页面浮窗', independent: '独立窗口 / 底部面板' }[optionValue]
-          : ['ankiWordAudioService', 'ankiSentenceAudioService'].includes(key) ? { none: '无', huosh: '火山语音', vits: 'VITS'}[optionValue] : optionValue;
-        input.append(option);
-      }
-    } else if (input.tagName === 'TEXTAREA') { input.rows = 3; input.spellcheck = false; }
-    else if (key === 'ankiAPIKey') { input.type = 'password'; input.autocomplete = 'off'; }
-    else if (typeof value === 'boolean') input.type = 'checkbox';
-    else if (key.endsWith('Color')) input.type = 'color';
-    else if (['rate', 'huoshRate', 'pitch', 'length', 'posOpacity'].includes(key)) {
-      input.type = 'range';
-      input.min = numericRules[key][0]; input.max = numericRules[key][1]; input.step = key === 'posOpacity' ? '1' : '0.1';
-    } else if (numericRules[key]) {
-      input.type = 'number';
-      input.min = numericRules[key][0]; input.max = numericRules[key][1];
-      input.step = numericRules[key][2] ? '1' : '0.01';
-    } else input.type = 'text';
-    if (key === 'vitsAPI') { input.placeholder = 'http://127.0.0.1:23456'; input.spellcheck = false; }
-    if (key === 'vitsCustomAPI') { input.placeholder = 'http://127.0.0.1:23456/voice/vits?id=0&lang=ja'; input.spellcheck = false; }
-    if (key === 'targetTags') { input.placeholder = 'p,h1,h2,h3,h4,h5,h6'; input.spellcheck = false; }
-    if (key === 'dictionarySearchURL') { input.placeholder = defaults.dictionarySearchURL; input.spellcheck = false; input.autocapitalize = 'off'; }
-    if (key === 'ankiURL') { input.placeholder = defaults.ankiURL; input.spellcheck = false; }
-    if (key === 'posOpacity') row.classList.add('at-opacity');
-    if (input.type === 'checkbox') input.checked = value;
-    else input.value = value;
-    row.append(input);
-    if (key.startsWith('shortcut')) {
-      const record = doc.createElement('button'), reset = doc.createElement('button');
-      record.type = reset.type = 'button';
-      record.textContent = '录制'; reset.textContent = '默认';
-      record.addEventListener('click', () => { input.dataset.recording = 'true'; record.textContent = '请按键…'; input.focus(); });
-      input.addEventListener('keydown', event => {
-        if (input.dataset.recording !== 'true') return;
-        event.preventDefault(); event.stopPropagation();
-        if (/^(Control|Alt|Shift|Meta)/.test(event.code)) return;
-        input.value = shortcutFromEvent(event);
-        delete input.dataset.recording; record.textContent = '录制';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      input.addEventListener('blur', () => { delete input.dataset.recording; record.textContent = '录制'; });
-      reset.addEventListener('click', () => { input.value = defaults[key]; input.dispatchEvent(new Event('input', { bubbles: true })); });
-      row.append(record, reset);
-    }
-    if (input.type === 'range') {
-      const output = doc.createElement('output');
-      output.textContent = displayValue(key, value);
-      row.append(output);
-    }
-    if (colorRow) {
-      input.title = input.getAttribute('aria-label') || `${labelFor(key)} · 夜间`;
-      input.setAttribute('aria-label', input.title); colorRow.append(input);
-    } else parent.append(row);
-    if (key === 'swapMouseButtons') {
-      const help = doc.createElement('p'); help.className = 'at-guide';
-      help.textContent = '默认左键激活句子，右键激活段落。';
-      parent.append(help);
-    }
-    controls.set(key, input);
-    return row;
-  };
-  const tabs = doc.createElement('nav'); tabs.className = 'at-tabs';
-  tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', '设置栏目');
-  const sections = doc.createElement('div'); sections.className = 'at-settings-sections';
-  sections.append(tabs); form.append(sections);
-  const panels = [], tabButtons = [];
-  const sortable = (section, key, groups) => {
-    serviceOrdering.set(key, mountServiceOrdering(section, key, groups, order => {
-      queue = queue.then(() => store.set(key, order)).catch(error => {
-        status.textContent = '保存服务顺序失败：' + error.message; serviceOrdering.get(key).refresh(store.values[key]);
-      });
-    }, store.values[key]));
-  };
-  const selectTab = (index, remember = true) => {
-    tabButtons.forEach((button, i) => {
-      button.setAttribute('aria-selected', String(i === index));
-      button.tabIndex = i === index ? 0 : -1;
-      panels[i].hidden = i !== index;
-    });
-    if (settingsGroups[index]?.[0] === 'Anki') void ankiPanel?.refreshDraft();
-    if (remember && settingsGroups[index]?.[0] === '词典') void tokenizerPanel?.refresh();
-    if (remember) {
-      queue = queue.then(() => store.set('settingsTab', settingsGroups[index][0]))
-        .catch(error => { status.textContent = `保存栏目失败：${error.message}`; });
-    }
-  };
-  for (const [name, keys] of settingsGroups) {
-    const index = panels.length;
-    const section = doc.createElement('section'); section.className = 'at-tab-panel';
-    section.id = `at-panel-${index}`; section.setAttribute('role', 'tabpanel');
-    const tab = doc.createElement('button'); tab.type = 'button'; tab.textContent = name;
-    tab.id = `at-tab-${index}`; tab.setAttribute('role', 'tab');
-    tab.setAttribute('aria-controls', section.id); section.setAttribute('aria-labelledby', tab.id);
-    tab.addEventListener('click', () => selectTab(index));
-    tab.addEventListener('keydown', event => {
-      const offsets = { ArrowLeft: -1, ArrowRight: 1, Home: -index, End: settingsGroups.length - 1 - index };
-      if (!(event.key in offsets)) return;
-      event.preventDefault();
-      const next = (index + offsets[event.key] + settingsGroups.length) % settingsGroups.length;
-      selectTab(next); tabButtons[next].focus();
-    });
-    panels.push(section); tabButtons.push(tab); tabs.append(tab);
-    for (const key of keys) addControl(section, key);
-    const serviceGroups = new Map();
-    const addGroup = (name, keys, serviceId) => {
-      const fieldset = doc.createElement('fieldset'), legend = doc.createElement('legend');
-      legend.textContent = name; fieldset.append(legend);
-      for (const key of keys) addControl(fieldset, key);
-      section.append(fieldset);
-      if (serviceId) serviceGroups.set(serviceId, fieldset);
-      return fieldset;
-    };
-    if (name === '语音') {
-      addGroup('系统语音', ['useWindowsTTS', 'winVoice', 'rate', 'pitch']);
-      addGroup('火山语音', ['useHuoshTTS', 'huoshVoice', 'huoshRate'], 'huosh');
-      const vits = addGroup('VITS', ['useVITS', 'vitsAPI', 'vitsVoice', 'vitsLang', 'length', 'noise', 'noisew', 'max'], 'vits');
-      const refresh = doc.createElement('button'); refresh.type = 'button'; refresh.className = 'at-refresh-voices'; refresh.textContent = '刷新声音列表';
-      refresh.addEventListener('click', () => { void refreshVits(); });
-      controls.get('vitsVoice').parentElement.append(refresh);
-      const download = doc.createElement('p'); download.className = 'at-guide';
-      const link = doc.createElement('a'); link.textContent = 'VITS 整合包下载';
-      link.href = 'https://github.com/raindrop213/LunaTranslator-re/releases/tag/v0.0.3'; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      download.append(link, '：选择需要的版本，解压后运行 start.bat，待服务地址出现即可使用。');
-      vits.append(download);
-      addControl(vits, 'vitsCustomAPI');
-      const customHelp = doc.createElement('p'); customHelp.className = 'at-guide';
-      customHelp.textContent = '如果你熟悉此项目，可填入完整的 API 调用”链接。非空时优先使用此地址，声音、语言等参数以该链接为准。text 可填可不填，会自动替换或补上当前选中的文本。';
-      vits.append(customHelp);
-    }
-    if (name === '翻译') {
-      addGroup('Google', ['google', 'googleFrom', 'googleTo'], 'google');
-      addGroup('有道', ['youdao', 'youdaoFrom', 'youdaoTo'], 'youdao');
-      sortable(section, 'translationOrder', serviceGroups);
-    }
-    if (name === '词典') {
-      tokenizerPanel = mountTokenizerPanel(section, store, platform, {
-        toggle: controls.get('dictionaryEnabled'), beforeRemove: async () => { await queue; }
-      });
-      addGroup('Weblio', ['dictionaryWeblio'], 'weblio');
-      addGroup('MOJi', ['dictionaryMoji'], 'moji');
-      sortable(section, 'dictionaryOrder', serviceGroups);
-      section.append(dictionaryNotice);
-      const search = addGroup('外部搜索', ['dictionarySearchURL']);
-      const searchHelp = doc.createElement('p'); searchHelp.className = 'at-guide';
-      searchHelp.textContent = '使用完整网址，并用 {word} 代替查询词。如：谷歌：https://www.google.com/search?q={word}；维基百科(日)：https://ja.wikipedia.org/wiki/{word}。';
-      search.append(searchHelp);
-    }
-    if (name === 'Anki') {
-      const guide = doc.createElement('p'); guide.className = 'at-guide';
-      const ankiLink = document.createElement('a'); ankiLink.textContent = 'Anki'; ankiLink.href = 'https://apps.ankiweb.net/'; ankiLink.target = '_blank'; ankiLink.rel = 'noopener noreferrer';
-      const ankiConnectLink = document.createElement('a'); ankiConnectLink.textContent = 'AnkiConnect'; ankiConnectLink.href = 'https://ankiweb.net/shared/info/2055492159'; ankiConnectLink.target = '_blank'; ankiConnectLink.rel = 'noopener noreferrer';
-      guide.append('需安装 ', ankiLink, ' 及其插件 ', ankiConnectLink, ' 并保持开启状态。');
-      section.append(guide);
-      const connection = addGroup('连接', ['ankiURL', 'ankiAPIKey'], 'anki');
-      addGroup('卡组与标签', ['ankiDecks', 'ankiTags']);
-      const services = addGroup('制卡服务', ['ankiTranslationServices', 'ankiWordAudioService', 'ankiSentenceAudioService']);
-      const serviceGuide = doc.createElement('p'); serviceGuide.className = 'at-guide';
-      serviceGuide.textContent = '不需要启用语音栏中对应的服务，但需要读取对应的设置'; services.append(serviceGuide);
-      addGroup('制卡选项', ['ankiBoldWord', 'ankiSuccessSound', 'ankiCloseAfterAdd', 'ankiImageFormat', 'ankiLayout']);
-      ankiPanel = mountAnkiPanel(section, store, platform, { connectionGroup: connection, addControl, async beforeAction() {
-        await queue;
-        for (const [key, input] of controls) if (key.startsWith('anki') && !input.checkValidity()) {
-          input.reportValidity(); throw new Error(`${labelFor(key)}：${input.validationMessage}`);
-        }
-      } });
-    }
-    for (const [id, service] of Object.entries(platform?.servicePermissions || {})) {
-      if (service.section !== name) continue;
-      const row = doc.createElement('div'), text = doc.createElement('span'), button = doc.createElement('button');
-      row.className = 'at-service-permission'; row.dataset.atService = id;
-      text.textContent = `${service.name} 接口：检查权限…`;
-      button.type = 'button'; button.textContent = `授权 ${service.name} 接口`;
-      button.title = service.origins.map(origin => new URL(origin).hostname).join('、');
-      row.append(text, button); (serviceGroups.get(id) || section).append(row);
-      permissionRows.push({ id, service, text, button });
-      button.addEventListener('click', () => {
-        // Request immediately inside the click; queued/awaited calls lose activation.
-        const request = platform.requestServiceAccess(id, store.values);
-        button.disabled = true;
-        request.then(granted => {
-          if (!granted) status.textContent = `${service.name} 接口未授权，仍可继续使用复制与系统语音。`;
-          else { status.textContent = ''; if (id === 'vits') void refreshVits(); }
-          return refreshPermissions();
-        }).catch(error => { status.textContent = `接口授权失败：${error.message}`; button.disabled = false; });
-      });
-    }
-    if (name === '外观') {
-      const guide = doc.createElement('p'); guide.className = 'at-guide at-color-guide';
-      guide.textContent = '☀ 日间 | ☾ 夜间'; section.append(guide);
-      for (const [title, colors] of [['阅读与译文', ['sentenceColor', 'googleColor', 'youdaoColor']], ['分词底色', posGroups.map(group => group.key)]]) {
-        const group = addGroup(title, []);
-        if (title === '分词底色') addControl(group, 'posOpacity');
-        for (const key of colors) {
-          const row = addControl(group, key); row.classList.add('at-color-pair');
-          const input = controls.get(key);
-          input.title = `${labelFor(key)} · 日间`; input.setAttribute('aria-label', input.title);
-          addControl(group, 'night' + key[0].toUpperCase() + key.slice(1), row);
-        }
-      }
-    }
-    if (name === '键位') {
-      const help = doc.createElement('p'); help.className = 'at-guide';
-      help.textContent = '点击“录制”后按下新键位，支持 Ctrl / Alt / Shift。可手工填写多个备用键，用 / 分隔；清空即可禁用。'; section.append(help);
-    }
-    if (name === '帮助') {
-      for (const text of [
-        '网页小说阅读工具，支持按句子或段落复制、朗读和翻译。',
-        '支持分词着色、振假名、在线查词，以及带例句、图片和音频的 Anki 制卡。',
-        '均采用在线服务，目标是构建最灵活通用的学习环境。',
-      ]) {
-        const guide = doc.createElement('p'); guide.className = 'at-guide'; guide.textContent = text; section.append(guide);
-      }
-      if (Object.keys(platform?.servicePermissions || {}).length) {
-        const help = doc.createElement('p'); help.className = 'at-guide';
-        help.textContent = 'Chrome扩展修改成“在特定网站上”运行的时候，每个服务都需要授权添加地址，只需点击授权按钮即可。'; section.append(help);
-      }
-      const project = doc.createElement('p'); project.className = 'at-guide';
-      const link = doc.createElement('a'); link.textContent = 'raindrop213/AnonTranslator';
-      link.href = 'https://github.com/raindrop213/AnonTranslator'; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      project.append('项目地址：', link); section.append(project);
-    }
-    sections.append(section);
+// Settings tabs, persistence and service actions for the in-page panel.
+export function mountSettingsPanel(env, store, platform) {
+  const { window, document } = env;
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => [...document.querySelectorAll(selector)];
+  const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  let values = { ...store.values }, definitions = [], dictionary, toastTimer, dialogAction, disposed = false;
+  let writes = Promise.resolve();
+  let backgroundRevision = 0;
+  const pending = new Map();
+  const pendingValues = () => Object.fromEntries([...pending].map(([key, draft]) => [key, draft.value]));
+  const controls = () => $$('[data-pref]');
+  function notify(message) {
+    clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').classList.add('show');
+    toastTimer = setTimeout(() => $('#toast')?.classList.remove('show'), 2600);
   }
-  selectTab(settingsGroups.findIndex(([name]) => name === store.values.settingsTab), false);
-  root.append(form);
-  updateTheme(store.values);
-
-  const save = event => {
-    const input = event.target;
-    if (!controls.has(input.name)) return;
-    const value = controlValue(input);
-    if (input.name === 'dictionaryEnabled' && value && !tokenizerPanel?.canEnable()) {
-      input.checked = store.values.dictionaryEnabled;
-      tokenizerPanel?.showInstallHint();
-      return;
-    }
-    const output = input.parentElement.querySelector('output');
-    if (output) output.textContent = displayValue(input.name, value);
-    const current = ++revision;
-    try {
-      const normalized = normalizeSetting(input.name, value);
-      validateShortcuts({ ...store.values, [input.name]: normalized });
-      input.setCustomValidity('');
-    } catch (error) {
-      input.setCustomValidity(error.message);
-      status.textContent = `${labelFor(input.name)}：${error.message}（保留上次有效值）`;
-      return;
-    }
-    status.textContent = '';
-    // Serialize writes, including rapid slider changes, so older writes cannot win.
-    queue = queue.then(() => store.set(input.name, value)).then(() => {
-      if (current === revision) status.textContent = '';
-    }).catch(error => {
-      if (current === revision) status.textContent = `保存失败：${error.message}`;
+  function dialog(title, description, confirmText, action) {
+    $('#dialog-title').textContent = title; $('#dialog-description').textContent = description;
+    $('#dialog-confirm').textContent = confirmText; dialogAction = action; $('#dialog').showModal();
+  }
+  function refresh() {
+    if (disposed) return;
+    document.documentElement.dataset.theme = values.nightMode ? 'dark' : 'light';
+    document.documentElement.style.setProperty('--at-docked-icon-opacity', String(values.dockedIconOpacity / 100));
+    $('#theme-button').setAttribute('aria-pressed', String(values.nightMode));
+    $('#theme-icon').setAttribute('href', values.nightMode ? '#i-moon' : '#i-sun');
+    controls().forEach(control => {
+      const value = values[control.dataset.pref];
+      if (control.hasAttribute('data-pref-array')) control.checked = Array.isArray(value) && value.includes(control.value);
+      else if (control.type === 'checkbox') control.checked = Boolean(value);
+      else if (document.activeElement !== control && value !== undefined) control.value = String(value);
     });
-  };
-  form.addEventListener('input', save);
-  // Native select controls may only dispatch change on some browsers.
-  form.addEventListener('change', event => {
-    const input = event.target;
-    const value = controlValue(input);
-    if (String(store.values[input.name]) !== String(value)) save(event);
-  });
-  const unsubscribe = store.subscribe((values, patch) => {
-    if ('settingsTab' in patch) selectTab(settingsGroups.findIndex(([name]) => name === values.settingsTab), false);
-    updateTheme(values);
-    for (const [key, ordering] of serviceOrdering) if (key in patch) ordering.refresh(values[key]);
-    for (const [key, input] of controls) {
-      // Preserve active text editing, but synchronize switches and reset values.
-      if ((['text', 'password'].includes(input.type) || input.tagName === 'TEXTAREA') && (root.activeElement === input || doc.activeElement === input)) continue;
-      if (key === 'ankiTranslationServices') {
-        const choices = input.closest('.at-setting').querySelector('.at-service-choices');
-        values.translationOrder.forEach((service, index) => {
-          const choice = choices.querySelector(`input[value="${service}"]`); choice.checked = values[key].includes(service);
-          if (choices.children[index] !== choice.parentElement) choices.insertBefore(choice.parentElement, choices.children[index] || null);
-        });
-      }
-      else if (input.type === 'checkbox') input.checked = values[key];
-      else input.value = values[key];
-      const output = input.parentElement.querySelector('output');
-      if (output) output.textContent = displayValue(key, values[key]);
+    $$('[data-output]').forEach(output => { output.textContent = String(values[output.dataset.output] ?? '') + (output.dataset.suffix || ''); });
+    definitions.forEach(definition => definition.refresh?.(definition.root));
+    dictionary?.render?.(); env.selects?.refresh?.();
+  }
+  function set(key, value, message) {
+    const normalized = normalizeSetting(key, value);
+    validateShortcuts({ ...values, [key]: normalized });
+    const draft = { value: normalized };
+    values = { ...values, [key]: normalized }; pending.set(key, draft);
+    if (['useWindowsTTS', 'useVITS', 'useHuoshTTS'].includes(key) && normalized) {
+      for (const other of ['useWindowsTTS', 'useVITS', 'useHuoshTTS']) if (other !== key) values[other] = false;
     }
-  });
-  const populate = (input, options, current) => {
-    if (!options.some(option => String(option.value) === String(current))) options.unshift({ value: current, name: `${current}（当前配置，声音暂不可用）` });
-    input.replaceChildren(...options.map(item => {
-      const option = doc.createElement('option');
-      option.value = item.value; option.textContent = item.name;
-      return option;
-    }));
-    input.value = current;
+    refresh();
+    const operation = writes.catch(() => {}).then(() => store.set(key, normalized));
+    writes = operation;
+    operation.then(() => {
+      if (pending.get(key) === draft) pending.delete(key);
+      if (message && !disposed) notify(message);
+    }, error => {
+      if (pending.get(key) === draft) pending.delete(key);
+      values = { ...store.values, ...pendingValues() }; refresh();
+      if (!disposed) notify('保存失败：' + error.message);
+    });
+    return normalized;
+  }
+  const ctx = { defaults, options: settingOptions, voices: huoshanVoices, shortcuts: shortcutActions,
+    icon: env.icon, get: key => values[key], set, notify, dialog, escape, flush: () => writes };
+
+  const scroller = $('#panel-scroll');
+  const dictionaryRoot = document.createElement('section');
+  dictionaryRoot.className = 'panel-view'; dictionaryRoot.id = 'pane-dictionary';
+  while (scroller.firstChild) dictionaryRoot.append(scroller.firstChild);
+  scroller.append(dictionaryRoot);
+  definitions = [
+    ...createCoreTabs(ctx, env),
+    { id: 'dictionary', name: '词典', root: dictionaryRoot },
+    ...createAnkiTabs(ctx, env, platform),
+    ...createAppearanceTabs(ctx)
+  ];
+  const tabOrder = ['复制', '语音', '翻译', '词典', 'Anki', '外观', '键位', '帮助'];
+  const introductions = {
+    copy: '选中的文本，轻松捕获。', speech: '选一种声音，跟着文字慢慢读。',
+    translation: '按顺序显示译文，不止于一种语言。', dictionary: '查读音、看释义，读懂每一个词。',
+    anki: '记录遇见的生词，学而时习之。', appearance: '调整面板与配色，让阅读更舒适。',
+    shortcuts: '让每一个阅读动作，都顺手一些。', help: '遇到问题？这可能有答案。'
   };
-  const loadVoices = () => {
-    populate(controls.get('winVoice'), (window.speechSynthesis?.getVoices() || []).map((voice, index) => ({ value: index, name: `${voice.name} (${voice.lang})` })), store.values.winVoice);
+  const introIcons = {
+    copy: '<rect x="8" y="7" width="12" height="14" rx="2"/><path d="M16 7V3H4v14h4"/>',
+    speech: '<path d="m11 5-5 4H3v6h3l5 4zM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
+    translation: '<path d="M3 5h11M8 3v2m-3 0c1 6 5 9 8 10M12 5c-1 6-5 9-9 11m10 5 4-11 4 11m-6.5-4h5"/>',
+    dictionary: '<path d="M5 3h14v18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm-2 14h16M9 3v8l3-2 3 2V3"/>',
+    anki: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"/>',
+    appearance: '<path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.4-3.4 1.5 1.5 0 0 1 1.1-2.6H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="10" cy="6.5" r=".8"/><circle cx="14.5" cy="6.5" r=".8"/><circle cx="17.5" cy="10" r=".8"/>',
+    shortcuts: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.1m4 0h.1m4 0h.1m4 0h.1M6 13h.1m4 0h.1m4 0h.1m4 0h.1M8 16h8"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4m0 3h.01"/>'
   };
-  loadVoices();
-  window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
-  populate(controls.get('huoshVoice'), huoshanVoices.map(voice => ({ value: voice.id, name: `${voice.lang} · ${voice.name}` })), store.values.huoshVoice);
-  let mounted = true, voiceRequest = 0;
-  let updateRevision = 0, updateAccess;
-  const refreshUpdate = async (granted = true) => {
-    const current = ++updateRevision;
-    update.textContent = 'Update:…';
-    try {
-      if (!granted) throw new Error('请在“帮助”栏授权版本更新接口');
-      const latest = await platform.send({ action: 'check_update' });
-      if (!mounted || current !== updateRevision) return;
-      update.textContent = latest.available ? `Update:${latest.version}↻` : 'Latest:√';
-      update.title = latest.available ? `发现新版本 ${latest.version}，点击前往更新页` : '当前已是最新版本，点击查看更新页';
-    } catch (error) {
-      if (!mounted || current !== updateRevision) return;
-      update.textContent = 'Update:×'; update.title = `${error.message}；点击查看更新页`;
+  definitions.sort((a, b) => tabOrder.indexOf(a.name) - tabOrder.indexOf(b.name));
+  definitions.forEach(definition => {
+    if (!definition.root) {
+      const root = document.createElement('section');
+      root.id = 'pane-' + definition.id; root.className = 'panel-view'; root.hidden = true;
+      root.innerHTML = definition.html;
+      definition.root = root; scroller.append(root);
     }
-  };
-  let permissionRevision = 0;
-  const refreshPermissions = async () => {
-    const revision = ++permissionRevision;
-    await Promise.all(permissionRows.map(async ({ id, service, text, button }) => {
-      try {
-        button.title = platform.serviceOrigins(id, store.values).map(origin => new URL(origin).hostname).join('、');
-        const granted = await platform.hasServiceAccess(id, store.values);
-        if (!mounted || revision !== permissionRevision) return;
-        text.textContent = `${service.name} 接口：${granted ? '已授权' : '未授权'}`;
-        button.disabled = granted;
-        if (id === 'update') text.parentElement.hidden = granted;
-        if (id === 'update' && granted !== updateAccess) { updateAccess = granted; void refreshUpdate(granted); }
-      } catch (error) {
-        if (mounted && revision === permissionRevision) {
-          text.textContent = `权限检查失败：${error.message}`; button.disabled = false;
-          if (id === 'update') {
-            text.parentElement.hidden = false;
-            updateRevision++; updateAccess = undefined;
-            update.textContent = 'Update:×'; update.title = `${error.message}；点击查看更新页`;
-          }
-        }
-      }
-    }));
-  };
-  void refreshPermissions();
-  if (!platform.servicePermissions?.update) void refreshUpdate();
-  const unwatchPermissions = permissionRows.length ? platform.watchServiceAccess(() => { void refreshPermissions(); }) : () => {};
-  const refreshVits = async () => {
-    if (!platform) return;
-    const requestId = ++voiceRequest;
-    const input = controls.get('vitsVoice');
-    const placeholder = text => {
-      const option = doc.createElement('option'); option.value = store.values.vitsVoice; option.textContent = text;
-      input.replaceChildren(option); input.disabled = true;
+    const intro = document.createElement('div');
+    intro.className = 'section-intro';
+    intro.innerHTML = `<div><h2>${escape(definition.name)}</h2><p>${escape(introductions[definition.id])}</p></div><div class="section-emblem glass" aria-hidden="true"><svg viewBox="0 0 24 24">${introIcons[definition.id]}</svg></div>`;
+    definition.root.prepend(intro);
+    if (definition.css) { const style = document.createElement('style'); style.textContent = definition.css; document.head.append(style); }
+  });
+  const iconSettings = document.createElement('section');
+  iconSettings.className = 'panel-icon-settings';
+  iconSettings.setAttribute('aria-label', '悬浮图标');
+  iconSettings.innerHTML = `<div class="group-heading"><h3>悬浮图标</h3></div><div class="settings-group glass"><div class="range-setting"><div class="range-setting-label"><label for="pref-dockedIconOpacity">停靠图标不透明度</label><output for="pref-dockedIconOpacity" data-output="dockedIconOpacity" data-suffix="%"></output></div><input id="pref-dockedIconOpacity" type="range" min="0" max="100" step="1" data-pref="dockedIconOpacity" aria-label="停靠图标不透明度"></div></div>`;
+  $('#pane-appearance .section-intro').after(iconSettings);
+  const tabs = $$('.tab');
+  $('.tabs').setAttribute('role', 'tablist');
+  let activeName = '词典';
+  function selectTab(name, remember = true) {
+    env.selects?.close?.();
+    if (!tabOrder.includes(name)) name = '词典';
+    definitions.find(definition => definition.name === activeName).scrollTop = scroller.scrollTop;
+    definitions.forEach(definition => { definition.root.hidden = definition.name !== name; });
+    tabs.forEach((button, index) => {
+      const selected = button.dataset.tab === name, definition = definitions[index];
+      button.setAttribute('role', 'tab'); button.id = 'tab-' + definition.id;
+      button.setAttribute('aria-controls', definition.root.id); button.setAttribute('aria-selected', String(selected));
+      button.removeAttribute('aria-current'); button.tabIndex = selected ? 0 : -1;
+      definition.root.setAttribute('role', 'tabpanel'); definition.root.setAttribute('aria-labelledby', button.id); definition.root.tabIndex = 0;
+    });
+    activeName = name;
+    scroller.scrollTop = definitions.find(definition => definition.name === name).scrollTop || 0;
+    if (remember) { set("settingsTab", name); if (name === "词典") void dictionary?.refresh(); }
+  }
+  tabs.forEach((button, index) => {
+    button.addEventListener('click', () => selectTab(button.dataset.tab));
+    button.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      selectTab(tabs[next].dataset.tab); tabs[next].focus();
+    });
+  });
+
+
+  controls().forEach((control, index) => {
+    if (!control.id) control.id = 'glass-pref-' + index;
+    if (!control.closest('label') && !control.getAttribute('aria-label') && !document.querySelector(`label[for="${control.id}"]`)) {
+      const label = control.closest('.setting-row, .field-row, .form-row')?.querySelector('label');
+      if (label && !label.closest('.switch')) label.htmlFor = control.id;
+    }
+    const commit = () => {
+      let value = control.value;
+      if (control.hasAttribute('data-pref-array')) value = controls().filter(item => item.dataset.pref === control.dataset.pref && item.checked).map(item => item.value);
+      else if (control.type === 'checkbox') value = control.checked;
+      try { set(control.dataset.pref, value); control.setCustomValidity(''); control.removeAttribute('aria-invalid'); }
+      catch (error) { control.setCustomValidity(error.message); control.setAttribute('aria-invalid', 'true'); notify(error.message); }
     };
-    placeholder('正在获取声音列表…');
+    control.addEventListener(control.type === 'checkbox' || control.tagName === 'SELECT' ? 'change' : 'input', commit);
+    control.addEventListener('blur', () => { if (!control.checkValidity()) control.reportValidity(); });
+  });
+  definitions.forEach(definition => definition.init?.(definition.root));
+  $('#dialog-cancel').addEventListener('click', () => { dialogAction = null; $('#dialog').close(); });
+  $('#dialog').addEventListener('cancel', () => { dialogAction = null; });
+  $('#dialog-confirm').addEventListener('click', () => {
+    const action = dialogAction; dialogAction = null; $('#dialog').close();
+    Promise.resolve().then(() => action?.()).catch(error => notify(error.message));
+  });
+  $('#theme-button').addEventListener('click', () => set('nightMode', !values.nightMode));
+  $('#reset-button').title = '重置设置'; $('#reset-button').setAttribute('aria-label', '重置设置');
+  $('#reset-button').addEventListener('click', () => dialog('恢复默认设置？', '设置会恢复为默认值，并关闭当前网站的阅读工具。', '恢复默认', async () => {
+    await writes.catch(() => {}); await store.reset();
+    document.dispatchEvent(new CustomEvent('glass:reset')); refresh(); notify('已恢复默认设置');
+  }));
+  $('#close-button').addEventListener('click', async () => {
     try {
-      const response = await platform.send({ action: 'vits_speakers', settings: store.values });
-      if (!mounted || requestId !== voiceRequest) return;
-      const voices = response.voices.filter(voice => Number.isInteger(Number(voice.id)) && Number(voice.id) >= 0);
-      if (!voices.length) { placeholder('服务未返回 VITS 声音'); return; }
-      const selected = voices.some(voice => Number(voice.id) === store.values.vitsVoice) ? store.values.vitsVoice : Number(voices[0].id);
-      populate(input, voices.map(voice => ({ value: Number(voice.id), name: `${voice.id} · ${voice.name || '未命名'} · ${(voice.lang || []).join('/')}` })), selected);
-      input.disabled = false;
-      await store.set('vitsVoice', selected);
-    } catch (error) {
-      if (mounted && requestId === voiceRequest) placeholder(`获取失败：${error.message}`);
+      set('pluginSwitch', false); await writes;
+    }
+    catch { /* Saving errors remain visible in the original toast. */ }
+  });
+  const version = $('.version > span'); if (version) version.textContent = 'Ver ' + metadata.version;
+  const latest = $('.version .latest'); if (latest) latest.textContent = 'Ready';
+  const helpVersion = $('.core-help-version'); if (helpVersion) helpVersion.textContent = 'v' + metadata.version;
+  dictionary = mountDictionaryTab(env, store, platform, ctx);
+
+  // Service requests stay inside the panel lifecycle.
+  env.body.addEventListener('click', event => {
+    const control = event.target.closest('[data-service-auth],[data-refresh-vits],[data-anki-connect]');
+    if (!control) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (control.hasAttribute('data-service-auth')) {
+      const id = control.dataset.serviceAuth;
+      if (!platform.requestServiceAccess) { notify('跨域接口由脚本管理器处理授权。'); return; }
+      let request;
+      try { request = platform.requestServiceAccess(id, values); } catch (error) { notify(error.message); return; }
+      control.disabled = true;
+      Promise.resolve(request).then(granted => {
+        notify(granted ? '接口已授权' : '未授予接口权限'); return refreshPermissions();
+      }, error => notify(error.message)).finally(() => { control.disabled = false; });
+    } else if (control.hasAttribute('data-refresh-vits')) {
+      control.disabled = true;
+      void ctx.flush().then(() => platform.send({ action: 'vits_speakers', settings: store.values })).then(response => {
+        const select = $('[data-pref="vitsVoice"]'), voices = response.voices || [];
+        select.replaceChildren(...voices.map(voice => { const option = document.createElement('option'); option.value = voice.id; option.textContent = `${voice.id} · ${voice.name || '未命名'} · ${(voice.lang || []).join('/')}`; return option; }));
+        if (voices.length) { const current = voices.some(voice => Number(voice.id) === values.vitsVoice) ? values.vitsVoice : Number(voices[0].id); set('vitsVoice', current); }
+        env.selects?.refresh?.(); notify(voices.length ? '声音列表已刷新' : '服务没有返回声音');
+      }).catch(error => notify(error.message)).finally(() => { control.disabled = false; });
+    } else {
+      const status = $('[data-anki-connection-status]'); status.textContent = '正在连接 Anki…'; control.disabled = true;
+      void ctx.flush().then(() => platform.send({ action: 'anki_info', settings: store.values })).then(response => {
+        if (response.error) throw new Error(response.error);
+        status.textContent = `已连接 AnkiConnect ${response.version || ''}；${(response.decks || []).length} 个卡组。`;
+      }).catch(error => { status.textContent = '连接失败：' + error.message; }).finally(() => { control.disabled = false; });
+    }
+  }, true);
+  async function refreshPermissions() {
+    await Promise.all($$('[data-service-auth]').map(async button => {
+      const id = button.dataset.serviceAuth, status = $(`[data-permission-status="${id}"]`);
+      if (!platform.hasServiceAccess) { status.textContent = '由脚本管理器授权'; button.hidden = true; return; }
+      try {
+        const allowed = await platform.hasServiceAccess(id, values);
+        if (disposed) return;
+        status.textContent = allowed ? '接口已授权' : '接口未授权'; status.classList.toggle('is-authorized', allowed);
+        button.textContent = allowed ? '已授权' : '授权接口'; button.disabled = allowed;
+      } catch (error) { status.textContent = error.message; }
+    }));
+  }
+  env.background = {
+    async read() {
+      const data = store.values.panelBackground;
+      if (!data) return null;
+      const comma = data.indexOf(','), mime = data.slice(5, data.indexOf(';'));
+      const bytes = Uint8Array.from(atob(data.slice(comma + 1)), char => char.charCodeAt(0));
+      let meta;
+      try { meta = JSON.parse(env.localStorage.getItem('anon-glass-background-meta') || 'null'); } catch {}
+      return { blob: new Blob([bytes], { type: mime }), name: meta?.name || '本地背景', width: 0, height: 0 };
+    },
+    async write(record) {
+      const revision = ++backgroundRevision;
+      if (!record) { await store.set('panelBackground', ''); env.localStorage.removeItem('anon-glass-background-meta'); return; }
+      env.localStorage.setItem('anon-glass-background-meta', JSON.stringify({ name: record.name }));
+      if (['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(record.blob.type) && record.blob.size < 2 * 1024 * 1024) {
+        const data = await new Promise((resolve, reject) => {
+          const reader = new window.FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error); reader.readAsDataURL(record.blob);
+        });
+        if (revision === backgroundRevision && !disposed) await store.set('panelBackground', data);
+        return;
+      }
+      const url = URL.createObjectURL(record.blob);
+      try {
+        const image = new Image(); image.src = url; await image.decode();
+        if (revision !== backgroundRevision || disposed) return;
+        const ratio = Math.min(1, 1920 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio)); canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        await store.set('panelBackground', canvas.toDataURL('image/webp', .85));
+      } finally { URL.revokeObjectURL(url); }
     }
   };
-  void refreshVits();
-  const unwatchVits = store.subscribe((_values, patch) => {
-    if ('vitsAPI' in patch || 'vitsCustomAPI' in patch || 'ankiURL' in patch) void refreshPermissions();
-    if ('vitsAPI' in patch) void refreshVits();
-  });
-  return () => {
-    mounted = false; unwatchVits(); unwatchPermissions(); ankiPanel?.destroy(); tokenizerPanel?.destroy();
-    unsubscribe();
-    window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
-    form.remove();
-  };
+  const unsubscribe = store.subscribe(next => { values = { ...next, ...pendingValues() }; refresh(); });
+  env.initialize();
+  refresh(); selectTab(values.settingsTab, false);
+  if (values.settingsTab === '词典') void dictionary.refresh();
+  const permissionWatch = platform.watchServiceAccess?.(() => { void refreshPermissions(); });
+  void refreshPermissions();
+  // Empty VITS placeholders are honest until the user refreshes real voices.
+  const vits = $('[data-pref="vitsVoice"]');
+  vits.replaceChildren(); const vitsOption = document.createElement('option'); vitsOption.value = values.vitsVoice; vitsOption.textContent = `${values.vitsVoice} · 点击刷新声音列表`; vits.append(vitsOption);
+  env.selects?.refresh?.();
+  return { destroy() { disposed = true; clearTimeout(toastTimer); unsubscribe(); permissionWatch?.(); dictionary?.destroy(); definitions.forEach(definition => definition.destroy?.()); } };
 }
-
-

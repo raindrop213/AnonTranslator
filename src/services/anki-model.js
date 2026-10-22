@@ -54,14 +54,14 @@ ${playbackCode}
 export const defaultAnkiBack = `<main class="at-anki-card at-anki-answer">
   ${hiddenAudio}
   <header class="at-anki-header">
-    <span class="at-anki-search-space" aria-hidden="true">Google ↗</span>
+    <span class="at-anki-search-space" aria-hidden="true">网络搜索</span>
     <div class="at-anki-word" data-at-play="word" role="button" tabindex="0" title="播放单词">
       <ruby>
         <span class="at-anki-spelling">{{Word}}</span>
         {{#Reading}}<rt class="at-anki-reading">{{Reading}}</rt>{{/Reading}}
       </ruby>
     </div>
-    <a class="at-anki-search" href="https://www.google.com/search" target="_blank" rel="noreferrer" title="Google 搜索当前单词">Google ↗</a>
+    <a class="at-anki-search" href="https://www.google.com/search" target="_blank" rel="noreferrer" title="搜索当前单词">网络搜索</a>
   </header>
   {{#Sentence}}
   <div class="at-anki-sentence" data-at-play="sentence" role="button" tabindex="0" title="播放例句">{{Sentence}}</div>
@@ -154,8 +154,7 @@ ${playbackCode}
 })();
 </script>`;
 
-export const defaultAnkiCSS = `
-/* Card layout */
+export const defaultAnkiCSS = `/* Card layout */
 .card {
   --at-anki-accent: #a33b35;
   font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;

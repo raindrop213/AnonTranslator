@@ -1,11 +1,11 @@
 import { readingViewport, topDocument } from './geometry.js';
-export { readingViewport } from './geometry.js';
 import { cleanParagraph, wrapSentences, unwrapSentences, sentenceGroups, sentenceElement, textAtPoint } from './text.js';
-import { colorsFor, speechSwitches, shortcutAction, createSettingsStore, serviceOrder } from '../settings/settings.js';
+import { colorsFor, speechSwitches, shortcutAction, serviceOrder } from '../settings/settings.js';
 import { createSpeaker } from '../services/speech.js';
 import { providerNames } from '../services/translate.js';
 import { createWordReader } from './words.js';
-export function createReadingNotice(doc) {
+const noticeReferences = new WeakMap();
+function createReadingNotice(doc) {
   let hostDocument = doc;
   // EPUB chapters can be wider than the visible page. Keep status messages in
   // the outer reader viewport whenever its document is accessible.
@@ -37,7 +37,8 @@ export function createReadingNotice(doc) {
     const content = hostDocument.createElement('div');
     root.append(style, content); hostDocument.documentElement.append(host);
   }
-  let timer, shownId;
+  noticeReferences.set(host, (noticeReferences.get(host) || 0) + 1);
+  let timer, shownId, destroyed = false;
   return {
     show(text) {
       shownId = `${Date.now()}-${Math.random()}`;
@@ -50,14 +51,22 @@ export function createReadingNotice(doc) {
       clearTimeout(timer);
       if (host.dataset.atNoticeId === shownId) host.classList.remove('at-visible');
     },
-    setColor(color) { host.style.setProperty('--at-notice-color', color); }
+    setColor(color) { host.style.setProperty('--at-notice-color', color); },
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      this.hide();
+      const remaining = (noticeReferences.get(host) || 1) - 1;
+      if (remaining) noticeReferences.set(host, remaining);
+      else { noticeReferences.delete(host); host.remove(); }
+    }
   };
 }
 
 
 // Read individual line rectangles: a multi-column paragraph's bounding box can
 // cover several pages, including space where no text is actually visible.
-export function scrollToReadingTarget(paragraph, group, behavior) {
+function scrollToReadingTarget(paragraph, group, behavior) {
   const doc = paragraph.ownerDocument, win = doc.defaultView, viewport = readingViewport(paragraph);
   const fragments = group?.fragments || [paragraph.querySelector('.at-sentence') || paragraph];
   const rects = fragments.flatMap(fragment => [...fragment.getClientRects()]).filter(rect => rect.width && rect.height);
@@ -89,18 +98,20 @@ export function scrollToReadingTarget(paragraph, group, behavior) {
 }
 
 
-export function createReader(platform, store, doc = document) {
+function createReader(platform, store, doc = document) {
   let paragraphSelector = store.values.targetTags;
   const editable = 'input,textarea,select,button,a,[contenteditable]:not([contenteditable="false"]),[data-at-ui]';
   let paragraph = null, selectedSentence = null, mode = 'paragraph';
   let hoveredSentence = null, spokenSentence = null, translation = null;
   let auto = false, generation = 0, timer, destroyed = false;
+  const styleProperties = ['--at-sentence-color', '--at-word-opacity'];
+  const previousStyle = styleProperties.map(name => [name, doc.documentElement.style.getPropertyValue(name), doc.documentElement.style.getPropertyPriority(name)]);
   const listeners = [];
   const listen = (target, type, handler, options) => {
     target.addEventListener(type, handler, options);
-      listeners.push(() => {
-      // listeners.push(() => target.removeEventListener(type, handler, options));
-      try {target.removeEventListener(type, handler, options);} catch (error) {if (!(error instanceof DOMException) || error.name !== 'SecurityError') throw error;}
+    listeners.push(() => {
+      try { target.removeEventListener(type, handler, options); }
+      catch (error) { if (error.name !== 'SecurityError') throw error; }
     });
   };
   const translationScope = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
@@ -386,8 +397,12 @@ export function createReader(platform, store, doc = document) {
     destroyed = true;
     unsubscribe();
     listeners.splice(0).forEach(remove => remove());
-    resetSelection(); words.destroy(); notice.hide(); speaker.destroy?.();
+    resetSelection(); words.destroy(); notice.destroy(); speaker.destroy?.();
     if (addedMarker) doc.documentElement.removeAttribute('data-at-reader');
+    for (const [name, value, priority] of previousStyle) {
+      if (value) doc.documentElement.style.setProperty(name, value, priority);
+      else doc.documentElement.style.removeProperty(name);
+    }
   };
   return { stop, destroy };
 }
@@ -398,19 +413,31 @@ export function isReaderUIFrame(doc) {
   catch { return false; } // Inaccessible parent frames can still contain real book text.
 }
 
-export async function startReader(platform, doc = document, css = '') {
-  // Dictionary about:blank frames inherit content-script matching from the page.
-  if (isReaderUIFrame(doc) || topDocument(doc) !== doc) return;
-  const store = createSettingsStore(platform);
-  await store.init();
-  return mountReaders(platform, store, doc, css);
+// A disabled site only keeps its storage subscription. No reading event
+// handlers, frame observers, styles or notifications exist until it is enabled.
+export function mountReaderSession(platform, store, doc, css = '') {
+  let readers, destroyed = false;
+  const sync = () => {
+    if (destroyed) return;
+    if (store.values.pluginSwitch) readers ||= mountReaders(platform, store, doc, css);
+    else { readers?.destroy(); readers = undefined; }
+  };
+  const unsubscribe = store.subscribe(sync);
+  sync();
+  return { destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    unsubscribe(); readers?.destroy(); readers = undefined;
+  } };
 }
 
 // Bind accessible chapters from the outer page's realm. A sandboxed EPUB frame
 // must not own the functions which open or close native browser windows.
-export function mountReaders(platform, store, rootDoc, css = '') {
+function mountReaders(platform, store, rootDoc, css = '') {
   const documents = new Map(), frames = new Map();
+  let destroyed = false;
   const scan = () => {
+    if (destroyed) return;
     const liveDocuments = new Set(), liveFrames = new Set();
     const visit = doc => {
       if (!doc?.documentElement || isReaderUIFrame(doc) || liveDocuments.has(doc)) return;
@@ -450,6 +477,8 @@ export function mountReaders(platform, store, rootDoc, css = '') {
   };
   scan();
   return { destroy() {
+    if (destroyed) return;
+    destroyed = true;
     for (const entry of documents.values()) { entry.observer.disconnect(); entry.reader?.destroy(); entry.style?.remove(); }
     for (const [frame, listener] of frames) frame.removeEventListener('load', listener);
     documents.clear(); frames.clear();

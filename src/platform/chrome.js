@@ -28,25 +28,42 @@ export function serviceOrigins(id, settings = defaults) {
 }
 
 export const createChromePlatform = () => ({
-  updateURL: 'https://chromewebstore.google.com/detail/anontranslator/echegehpmakkcfcadfjljpcallkhpldi',
+  siteURL: globalThis.location?.href,
   ankiPreviewURL: chrome.runtime.getURL('anki-preview.html'),
+  updateURL: 'https://chromewebstore.google.com/detail/anontranslator/echegehpmakkcfcadfjljpcallkhpldi',
   servicePermissions: chromeServices,
   serviceOrigins,
-  hasServiceAccess(service, settings) { return chrome.permissions.contains({ origins: serviceOrigins(service, settings) }); },
+  hasServiceAccess(service, settings) {
+    return chrome.permissions ? chrome.permissions.contains({ origins: serviceOrigins(service, settings) })
+      : this.send({ action: 'service_access', service, settings }).then(result => result.granted);
+  },
   // Called directly by a popup button, before any await, preserving user activation.
-  requestServiceAccess(service, settings) { return chrome.permissions.request({ origins: serviceOrigins(service, settings) }); },
+  requestServiceAccess(service, settings) {
+    return chrome.permissions ? chrome.permissions.request({ origins: serviceOrigins(service, settings) })
+      : this.send({ action: 'service_access_request', service, settings }).then(result => result.granted);
+  },
   watchServiceAccess(listener) {
+    if (!chrome.permissions) {
+      const changed = message => { if (message.action === 'service_access_changed') listener(); };
+      chrome.runtime.onMessage.addListener(changed);
+      return () => chrome.runtime.onMessage.removeListener(changed);
+    }
     chrome.permissions.onAdded.addListener(listener);
     chrome.permissions.onRemoved.addListener(listener);
     return () => { chrome.permissions.onAdded.removeListener(listener); chrome.permissions.onRemoved.removeListener(listener); };
   },
   getSettings() { return chrome.storage.local.get(null); },
   async setSettings(patch) { await chrome.storage.local.set(patch); },
+  async removeSettings(keys) { await chrome.storage.local.remove(keys); },
+  async getWidgetState() { return (await chrome.storage.local.get('at-widget-position'))['at-widget-position']; },
+  async setWidgetState(state) { await chrome.storage.local.set({ 'at-widget-position': state }); },
   watchSettings(listener) {
-    chrome.storage.onChanged.addListener((changes, area) => {
+    const onChanged = (changes, area) => {
       if (area !== 'local') return;
       listener(Object.fromEntries(Object.entries(changes).map(([key, change]) => [key, change.newValue])));
-    });
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => chrome.storage.onChanged.removeListener(onChanged);
   },
   async send(message) {
     const response = await chrome.runtime.sendMessage(message);

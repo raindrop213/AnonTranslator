@@ -54,7 +54,8 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   drawIcon(sentenceVoice, 'M3 5h11M3 10h8M3 15h8M3 20h11M16 9l6 6-6 6z');
   const queryBox = doc.createElement('div'); queryBox.className = 'query-box'; queryBox.append(query);
   const workspace = createAnkiWorkspace(platform, getSettings, doc, {
-    show, onPlayWord: text => playText(text, 'word'), onPlaySentence: text => playText(text, 'sentence'),
+    show, showVoiceControls: false,
+    onPlayWord: text => playText(text, 'word'), onPlaySentence: text => playText(text, 'sentence'),
     onAdded() { if (getSettings().ankiCloseAfterAdd) close(); },
     async onCapture() {
       const requestWindow = host.ownerDocument.defaultView;
@@ -100,8 +101,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   });
   function refreshAnki(restore = true) {
     const enabled = !!getSettings().ankiEnabled;
-    voice.hidden = sentenceVoice.hidden = enabled;
-    sentenceVoice.disabled = !ankiContext?.sentence?.trim(); workspace.refresh();
+    sentenceVoice.disabled = !enabled && !ankiContext?.sentence?.trim(); workspace.refresh();
     if (restore && enabled && !ankiVisible && !host.hidden && ankiContext) {
       workspace.open({ ...ankiContext, word: query.value });
       for (const [provider, data] of Object.entries(results)) if (data) workspace.dictionaryResult(provider, data);
@@ -278,8 +278,8 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
     utterance.onerror = event => { if (utterance !== spoken) return; utterance = null; if (!['canceled', 'interrupted'].includes(event.error)) show('朗读失败：' + event.error); };
     win.speechSynthesis.speak(utterance);
   }
-  voice.addEventListener('click', () => playText(query.value));
-  sentenceVoice.addEventListener('click', () => playText(ankiContext?.sentence, 'sentence'));
+  voice.addEventListener('click', () => getSettings().ankiEnabled ? workspace.playWord() : playText(query.value));
+  sentenceVoice.addEventListener('click', () => getSettings().ankiEnabled ? workspace.playSentence() : playText(ankiContext?.sentence, 'sentence'));
   function endSession() {
     finishResize(false); generation++; clearTimeout(timer); stopVoice(); workspace.close();
     selected = null; popupAnchor = null; placement = null; onRange(null);

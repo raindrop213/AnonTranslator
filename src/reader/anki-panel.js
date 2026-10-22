@@ -79,7 +79,7 @@ function bytesBase64(bytes) {
   return btoa(parts.join(''));
 }
 
-export function createAnkiPanel(platform, getSettings, doc = document, { show = () => {}, onLayoutChange = () => {}, onPlayWord = () => {}, onPlaySentence = () => {}, onCapture = null, onAdded = () => {} } = {}) {
+export function createAnkiPanel(platform, getSettings, doc = document, { show = () => {}, onLayoutChange = () => {}, onPlayWord = () => {}, onPlaySentence = () => {}, onCapture = null, onAdded = () => {}, showVoiceControls = true } = {}) {
   const win = doc.defaultView, element = doc.createElement('div'); element.setAttribute('data-at-ui', ''); element.setAttribute('data-at-anki-panel', '');
   const root = element.attachShadow({ mode: 'open' });
   try { const sheet = new win.CSSStyleSheet(); sheet.replaceSync(panelCSS); root.adoptedStyleSheets = [sheet]; }
@@ -96,6 +96,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   toolbar.append(reading);
   const wordVoice = icon('朗读单词', 'M11 5 6 9H3v6h3l5 4zM15 8c2 2 2 6 0 8M18 5c4 4 4 10 0 14', toolbar);
   const sentenceVoice = icon('朗读例句', 'M3 5h11M3 10h8M3 15h8M3 20h11M16 9l6 6-6 6z', toolbar);
+  wordVoice.hidden = sentenceVoice.hidden = !showVoiceControls;
   const undoButton = icon('撤回上一张新建卡片', 'M9 5 4 10l5 5M4 10h10a6 6 0 0 1 0 12', toolbar);
   const addButton = icon('添加到 Anki', 'M12 3.2l2.7 5.5 6.1.9-4.4 4.3 1.1 6.1L12 17.1l-5.5 2.9 1.1-6.1-4.4-4.3 6.1-.9z', toolbar); addButton.classList.add('add'); addButton.addEventListener('click', event => { if (event.isTrusted) void add(); });
   const main = create('div', 'main', undefined, editor), content = create('div', 'main-content', undefined, main), fields = create('div', 'fields', undefined, content);
@@ -114,7 +115,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   const file = create('input', '', undefined, editor); file.type = 'file'; file.accept = 'image/png,image/jpeg,image/webp,image/gif'; file.hidden = true;
   const duplicate = create('div', 'duplicate', undefined, main); duplicate.hidden = true; duplicate.setAttribute('role', 'alertdialog'); duplicate.setAttribute('aria-label', '处理重复单词');
   const status = create('div', 'status', '', fields); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
-  let context = {}, revision = 0, mediaRevision = 0, readingRevision = 0, readingTimer = null, publishTimer = null, audioTimer = null, audioAttempt = '', readingTouched = false, translationTouched = false, busy = false, mediaBusy = false, opened = false, destroyed = false, image = null, imageCanvas = null, imageFormat = null, viewer = null, duplicateResolve = null, audioContext = null;
+  let context = {}, revision = 0, mediaRevision = 0, readingRevision = 0, readingTimer = null, audioTimer = null, audioAttempt = '', readingTouched = false, translationTouched = false, busy = false, mediaBusy = false, opened = false, destroyed = false, image = null, imageCanvas = null, imageFormat = null, viewer = null, duplicateResolve = null, audioContext = null;
   let deck = '', selectedTags = new Set(), configuredDecks = [], configuredTags = [];
   let clipboardPending = null;
   let translationAttempt = '', lastTranslationService = translationConfig(getSettings()), sentenceTouched = false, lastBoldWord = getSettings().ankiBoldWord;
@@ -122,11 +123,6 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   let undoInfo = { undoAvailable: false, reason: '暂无可撤回的新建卡片' }, undoBusy = false, undoRevision = 0;
   let undoEndpoint = `${getSettings().ankiURL}:${getSettings().ankiModel}`;
   const dictionaries = new Map();
-  function publishDraft() {
-    clearTimeout(publishTimer); const run = revision;
-    if (!opened || destroyed) return;
-    publishTimer = setTimeout(() => { if (!opened || destroyed || run !== revision || !word.textContent.trim()) return; void platform.send({ action: 'anki_draft_set', draft: getDraft() }).catch(() => {}); }, 250);
-  }
   const notifyLayout = () => { if (!destroyed) onLayoutChange(); };
   const setStatus = (text, kind = '') => { status.textContent = text; status.className = 'status' + (kind ? ' ' + kind : ''); };
   const updateControls = () => {
@@ -171,13 +167,13 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     for (const value of configuredDecks) { const option = create('option', '', value, decks); option.value = value; option.selected = value === deck; }
     if (!configuredDecks.length) { const option = create('option', '', '选择牌组', decks); option.value = ''; }
     tagChoices.replaceChildren();
-    for (const value of new Set([...configuredTags, ...selectedTags])) choice(tagChoices, 'checkbox', value, selectedTags.has(value), checked => { if (checked) selectedTags.add(value); else selectedTags.delete(value); renderTagSummary(); publishDraft(); sizeTagMenu(); });
+    for (const value of new Set([...configuredTags, ...selectedTags])) choice(tagChoices, 'checkbox', value, selectedTags.has(value), checked => { if (checked) selectedTags.add(value); else selectedTags.delete(value); renderTagSummary(); sizeTagMenu(); });
     if (!configuredTags.length && !selectedTags.size) create('span', 'muted', '可在设置中添加预设标签', tagChoices);
     renderTagSummary(); updateControls(); sizeTagMenu();
   }
-  decks.addEventListener('change', () => { deck = decks.value; publishDraft(); });
+  decks.addEventListener('change', () => { deck = decks.value; });
   function cancelDuplicate() { duplicateResolve?.(null); duplicateResolve = null; duplicate.hidden = true; duplicate.replaceChildren(); }
-  function nextDraft() { revision++; mediaRevision++; readingRevision++; clearTimeout(readingTimer); clearTimeout(publishTimer); clearTimeout(audioTimer); audioAttempt = ''; busy = false; mediaBusy = false; cancelDuplicate(); setStatus(''); updateControls(); }
+  function nextDraft() { revision++; mediaRevision++; readingRevision++; clearTimeout(readingTimer); clearTimeout(audioTimer); audioAttempt = ''; busy = false; mediaBusy = false; cancelDuplicate(); setStatus(''); updateControls(); }
   function prepareAudio() {
     if (!opened || destroyed) return;
     const settings = getSettings(), jobs = [[settings.ankiWordAudioService, word.textContent.trim()], [settings.ankiSentenceAudioService, plainText(sentence.value)]]
@@ -201,14 +197,14 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
         if (!Array.isArray(data?.tokens)) return;
         if (data.tokens.some(token => /[\p{Script=Han}]/u.test(token.surface) && (!token.reading || token.reading === '*'))) return;
         const result = data.tokens.map(token => token.reading && token.reading !== '*' ? token.reading : token.surface).join('');
-        if (result) { reading.value = toHiragana(result); publishDraft(); }
+        if (result) { reading.value = toHiragana(result); }
       } catch { /* Dictionary-only lookup is still useful if pronunciation is unknown. */ }
     }, 250);
   }
-  reading.addEventListener('input', () => { readingTouched = true; readingRevision++; clearTimeout(readingTimer); publishDraft(); });
-  reading.addEventListener('blur', () => { reading.value = toHiragana(reading.value); publishDraft(); });
-  sentence.addEventListener('input', () => { sentenceTouched = true; publishDraft(); prepareAudio(); });
-  translation.addEventListener('input', () => { translationTouched = true; publishDraft(); });
+  reading.addEventListener('input', () => { readingTouched = true; readingRevision++; clearTimeout(readingTimer); });
+  reading.addEventListener('blur', () => { reading.value = toHiragana(reading.value); });
+  sentence.addEventListener('input', () => { sentenceTouched = true; prepareAudio(); });
+  translation.addEventListener('input', () => { translationTouched = true; });
   async function fetchTranslation() {
     const run = revision, settings = getSettings(), providers = translationServices(settings), config = translationConfig(settings), text = plainText(sentence.value);
     if (!text || translationTouched) return;
@@ -216,7 +212,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     const attempt = JSON.stringify([run, config, text]);
     if (translationAttempt === attempt) return;
     translationAttempt = attempt;
-    const merge = () => { translation.value = providers.map(saved).filter(Boolean).join('\n'); publishDraft(); };
+    const merge = () => { translation.value = providers.map(saved).filter(Boolean).join('\n'); };
     merge();
     const pending = providers.filter(provider => !saved(provider));
     const results = await Promise.allSettled(pending.map(async translator => {
@@ -231,8 +227,10 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     merge();
     if (results.some(result => result.status === 'rejected') && !busy && !mediaBusy) setStatus(translation.value.trim() ? '部分例句翻译未取得，可手动补充' : '例句翻译未取得，可直接手动填写');
   }
-  wordVoice.addEventListener('click', () => onPlayWord(word.textContent));
-  sentenceVoice.addEventListener('click', () => onPlaySentence(plainText(sentence.value)));
+  const playWord = () => onPlayWord(word.textContent);
+  const playSentence = () => onPlaySentence(plainText(sentence.value));
+  wordVoice.addEventListener('click', playWord);
+  sentenceVoice.addEventListener('click', playSentence);
   function closeViewer() { viewer?.remove(); viewer = null; }
   thumbnail.addEventListener('click', () => {
     if (!imageCanvas) return; closeViewer(); viewer = create('div', 'image-viewer', undefined, root); viewer.setAttribute('role', 'dialog'); viewer.setAttribute('aria-label', '图片预览');
@@ -243,7 +241,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     thumbnail.hidden = !image; imageEmpty.hidden = !!image; imageInfo.textContent = image ? `${Math.round(image.data.length * .75 / 1024)} KB` : '';
     if (imageCanvas) { const scale = Math.min(1, 160 / imageCanvas.width, 104 / imageCanvas.height); thumbnailCanvas.width = Math.max(1, Math.round(imageCanvas.width * scale)); thumbnailCanvas.height = Math.max(1, Math.round(imageCanvas.height * scale)); thumbnailCanvas.getContext('2d').drawImage(imageCanvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height); }
     else { thumbnailCanvas.width = thumbnailCanvas.height = 1; }
-    updateControls(); notifyLayout(); publishDraft();
+    updateControls(); notifyLayout();
   }
   const outputFormat = () => ['webp', 'jpeg', 'png'].includes(getSettings().ankiImageFormat) ? getSettings().ankiImageFormat : 'webp';
   async function encodeCanvas(canvas, run) {
@@ -335,6 +333,14 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
       deck, tags: [...selectedTags], image: image ? { ...image } : null, dictionaries: orderedDictionaries,
       sourceURL: context.sourceURL, sourceTitle: context.sourceTitle };
   }
+  // Every reader in this app shares its platform object. Keep only a live
+  // getter so the settings preview reads current edits without copying media.
+  function getPreviewDraft() {
+    return opened && !destroyed && word.textContent.trim() ? getDraft() : null;
+  }
+  function releasePreviewDraft() {
+    if (platform.getAnkiPreviewDraft === getPreviewDraft) delete platform.getAnkiPreviewDraft;
+  }
   async function refreshUndo() {
     const run = ++undoRevision, settings = getSettings(), endpoint = `${settings.ankiURL}:${settings.ankiModel}`;
     try {
@@ -421,34 +427,35 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     if (opened && translationService !== lastTranslationService) void fetchTranslation();
     lastTranslationService = translationService;
     prepareAudio();
-    publishDraft();
+
     if (opened && imageCanvas && imageFormat !== outputFormat() && !mediaBusy) { const run = ++mediaRevision; mediaBusy = true; updateControls(); void encodeCanvas(imageCanvas, run).catch(error => { if (run === mediaRevision) imageError(error); }).finally(() => { if (run === mediaRevision) { mediaBusy = false; updateControls(); } }); }
   }
-  function close() { nextDraft(); opened = false; tags.open = false; closeViewer(); }
+  function close() { nextDraft(); opened = false; releasePreviewDraft(); tags.open = false; closeViewer(); }
   return {
-    element, readingInput: reading, addButton, add, getDraft, get busy() { return busy || undoBusy; },
+    element, playWord, playSentence, get busy() { return busy || undoBusy; },
     open(value = {}) {
       nextDraft(); opened = true; tags.open = false; context = { ...value }; word.textContent = String(value.word || ''); reading.value = toHiragana(value.reading || ''); readingTouched = sentenceTouched = false; sentence.value = sentenceMarkup(context, getSettings().ankiBoldWord !== false); translation.value = String(value.translation || '');
       translationParts.clear();
       for (const [provider, text] of Object.entries(value.translationSources || {})) if (['google', 'youdao'].includes(provider) && typeof text === 'string' && text.trim()) translationParts.set(provider, { text: escapeHTML(text), key: translationKey(getSettings(), provider, plainText(sentence.value)) });
       translationTouched = !!translation.value.trim() && !translationParts.size;
       deck = value.deck || lines(getSettings().ankiDecks)[0] || ''; selectedTags = new Set(Array.isArray(value.tags) ? value.tags : []); dictionaries.clear(); image = imageCanvas = imageFormat = null; closeViewer(); updateThumbnail(); refresh();
+      platform.getAnkiPreviewDraft = getPreviewDraft;
       if ((value.selectedText && value.selectedText !== value.word) || (!reading.value && word.textContent)) { reading.value = ''; fetchReading(word.textContent); }
-      void fetchTranslation(); publishDraft(); void refreshUndo();
+      void fetchTranslation(); void refreshUndo();
     },
     queryChanged(value) {
       value = String(value || ''); if (value === word.textContent) return;
-      nextDraft(); word.textContent = value; reading.value = ''; readingTouched = false; dictionaries.clear(); if (value.trim()) fetchReading(value); void fetchTranslation(); prepareAudio(); publishDraft();
+      nextDraft(); word.textContent = value; reading.value = ''; readingTouched = false; dictionaries.clear(); if (value.trim()) fetchReading(value); void fetchTranslation(); prepareAudio();
     },
     updateSelection(value = {}) {
       if (typeof value.selectedText === 'string') context.selectedText = value.selectedText;
       if (Array.isArray(value.sentenceRange)) context.sentenceRange = [...value.sentenceRange];
       if (!sentenceTouched) sentence.value = sentenceMarkup(context, getSettings().ankiBoldWord !== false);
-      publishDraft();
+
     },
     dictionaryResult(provider, data) {
       if (!opened || destroyed || !['weblio', 'moji'].includes(provider)) return;
-      try { dictionaries.set(provider, serializeDictionaryContent(provider, data, doc)); publishDraft(); } catch { /* A dictionary failure does not block a useful card. */ }
+      try { dictionaries.set(provider, serializeDictionaryContent(provider, data, doc)); } catch { /* A dictionary failure does not block a useful card. */ }
     },
     refresh, rebindDocument,
     close,

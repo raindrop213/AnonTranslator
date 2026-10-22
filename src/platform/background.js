@@ -10,7 +10,6 @@ import dictionary from '../services/tokenizer-dictionary.json' with { type: 'jso
 import { createChromeTokenizerStorage } from './tokenizer-storage.js';
 import { lookupWord } from '../services/dictionary.js';
 import { createAnkiService, normalizeAnkiURL } from '../services/anki.js';
-import { createSessionDraftStore } from './anki-drafts.js';
 
 if (globalThis.caches) configureAudioCacheStorage(createPersistentAudioCache(caches));
 
@@ -19,7 +18,6 @@ const anki = createAnkiService(request, { undoStorage: {
   async get() { return (await chrome.storage.session.get(undoKey))[undoKey] || null; },
   async set(record) { if (record) await chrome.storage.session.set({ [undoKey]: record }); else await chrome.storage.session.remove(undoKey); }
 } });
-const ankiDrafts = createSessionDraftStore(chrome.storage.session);
 
 const tokenizerData = createTokenizerData({
   storage: createChromeTokenizerStorage(globalThis.caches, dictionary), request
@@ -70,6 +68,12 @@ async function captureVisible(sender) {
 
 function service(message, sender) {
   switch (message.action) {
+    case 'service_access': case 'service_access_request': {
+      if (!Object.hasOwn(chromeServices, message.service)) throw new Error('未知接口');
+      const permission = { origins: serviceOrigins(message.service, message.settings) };
+      return (message.action === 'service_access_request' ? chrome.permissions.request(permission) : chrome.permissions.contains(permission))
+        .then(granted => ({ granted }));
+    }
     case 'check_update': return checkLatestVersion(request);
     case 'cancel_translation': return cancelTranslation(message.scope);
     case 'translate': return cachedTranslation(message, request);
@@ -82,8 +86,6 @@ function service(message, sender) {
     })();
     case 'lookup_word': return lookupWord(message, request);
     case 'anki_info': case 'anki_setup': case 'anki_add': case 'anki_undo_info': case 'anki_undo': return anki.send(message);
-    case 'anki_draft_set': return senderTab(sender).then(tab => ankiDrafts.set(tab.id, message.draft));
-    case 'anki_draft_get': return senderTab(sender).then(tab => ankiDrafts.get(tab.id));
     case 'capture_visible_tab': return captureVisible(sender);
     case 'vits_speakers': return vitsSpeakers(message.settings, request);
     case 'vits_audio': return vitsAudio(message.text, message.settings, request);
@@ -128,10 +130,25 @@ async function forwardAudio(message) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.target === 'offscreen') return false;
+  // runtime messaging carries the click's user gesture. Request immediately
+  // so an optional custom service can still open Chrome's permission dialog.
+  if (message.action === 'service_access_request') {
+    try { Promise.resolve(service(message, sender)).then(sendResponse, error => sendResponse({ error: error.message })); }
+    catch (error) { sendResponse({ error: error.message }); }
+    return true;
+  }
   if (message.scope) message = { ...message, scope: JSON.stringify([sender.tab?.id, sender.frameId, message.scope]) };
   const response = Promise.resolve().then(() => ['play_audio', 'stop_audio', 'audio_rate'].includes(message.action)
     ? forwardAudio(message) : service(message, sender));
   response.then(result => sendResponse(result || {}), error => sendResponse({ error: error.message }));
   return true;
 });
-chrome.tabs.onRemoved.addListener(tabId => { void ankiDrafts.remove(tabId).catch(() => {}); });
+const notifyServiceAccess = () => {
+  void chrome.tabs.query({}).then(tabs => Promise.allSettled(tabs.filter(tab => tab.id != null)
+    .map(tab => chrome.tabs.sendMessage(tab.id, { action: 'service_access_changed' }, { frameId: 0 })))).catch(() => {});
+};
+chrome.permissions.onAdded.addListener(notifyServiceAccess);
+chrome.permissions.onRemoved.addListener(notifyServiceAccess);
+chrome.action?.onClicked.addListener(tab => {
+  if (tab.id != null) void chrome.tabs.sendMessage(tab.id, { action: 'open_settings' }, { frameId: 0 }).catch(() => {});
+});

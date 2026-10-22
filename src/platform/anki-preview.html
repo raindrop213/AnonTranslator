@@ -1,22 +1,17 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Anki 模板预览</title>
-  <style>html,body{margin:0;width:100%;height:100%;background:#fff}iframe{display:block;width:100%;height:100%;border:0}</style>
-</head>
-<body>
-<script>
-// This page is an extension sandbox, with an opaque origin and no extension APIs.
-// The editable template runs in another opaque frame with the same restrictive CSP.
-window.addEventListener('message', function (event) {
+<html lang="zh-CN" data-at-ui><head><meta charset="utf-8"><title>Anki 卡片预览</title>
+<style>html,body{margin:0;width:100%;height:100%;background:transparent}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head><body><script>
+// Chrome's sandbox page lets editable card scripts run without extension APIs.
+let currentFrame;
+addEventListener('message', event => {
   const message = event.data;
-  if (event.source !== window.parent || message?.type !== 'at-anki-preview' || typeof message.html !== 'string' || message.html.length > 24 * 1024 * 1024) return;
+  if (event.source === currentFrame?.contentWindow && message?.type === 'at-anki-play' && ['word', 'sentence'].includes(message.kind) && typeof message.token === 'string') {
+    parent.postMessage({ type: 'at-anki-play', kind: message.kind, token: message.token }, '*'); return;
+  }
+  if (event.source !== parent || message?.type !== 'at-anki-preview' || typeof message.html !== 'string' || message.html.length > 64 * 1024 * 1024) return;
   const frame = document.createElement('iframe');
-  frame.title = 'Anki 卡片示例'; frame.setAttribute('sandbox', 'allow-scripts'); frame.referrerPolicy = 'no-referrer';
-  frame.srcdoc = message.html; document.body.replaceChildren(frame);
+  frame.title = 'Anki 卡片内容'; frame.setAttribute('sandbox', 'allow-scripts'); frame.referrerPolicy = 'no-referrer';
+  currentFrame = frame; frame.srcdoc = message.html; document.body.replaceChildren(frame);
 });
-</script>
-</body>
-</html>
+</script></body></html>
