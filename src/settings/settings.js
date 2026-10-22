@@ -6,7 +6,7 @@ export const defaults = {
   "pluginSwitch": false,
   "settingsTab": "词典",
   "panelTransparency": 86,
-  "panelBlur": 2,
+  "panelBlur": 7,
   "dockedIconOpacity": 20,
   "panelBackground": "",
   "panelBackgroundFit": "cover",
