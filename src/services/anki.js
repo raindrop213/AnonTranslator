@@ -152,17 +152,11 @@ export function createAnkiService(request = fetchRequest, { audio, undoStorage }
   }
   async function generateAudio(settings, draft) {
     const selected = key => {
-      const value = settings[`${key}Service`];
-      if (value !== undefined) {
-        if (!['none', 'vits', 'huosh'].includes(value)) throw new Error('无效的 Anki 音频服务');
-        return value;
-      }
-      if (!settings[key]) return 'none';
-      if (settings.useHuoshTTS) return 'huosh';
-      if (settings.useVITS) return 'vits';
-      throw new Error('系统语音不能导出音频文件。请在“Anki”设置为单词/例句选择 VITS 或火山语音，或关闭相应音频');
+      const value = settings[key] ?? 'none';
+      if (!['none', 'vits', 'huosh'].includes(value)) throw new Error('无效的 Anki 音频服务');
+      return value;
     };
-    const jobs = [[selected('ankiWordAudio'), 'WordAudio', draft.word], [selected('ankiSentenceAudio'), 'SentenceAudio', plainText(draft.sentence)]];
+    const jobs = [[selected('ankiWordAudioService'), 'WordAudio', draft.word], [selected('ankiSentenceAudioService'), 'SentenceAudio', plainText(draft.sentence)]];
     for (const [provider, , text] of jobs) {
       if (provider === 'none') continue;
       if (!String(text || '').trim()) throw new Error('例句为空，无法生成例句音频；请填写例句或关闭例句音频');

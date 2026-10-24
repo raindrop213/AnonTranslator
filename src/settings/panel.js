@@ -13,7 +13,7 @@ export function mountSettingsPanel(env, store, platform) {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   let values = { ...store.values }, definitions = [], dictionary, toastTimer, dialogAction, disposed = false;
   let writes = Promise.resolve();
-  let backgroundRevision = 0, serviceRevision = 0;
+  let serviceRevision = 0;
   const pending = new Map();
   const pendingValues = () => Object.fromEntries([...pending].map(([key, draft]) => [key, draft.value]));
   const controls = () => $$('[data-pref]');
@@ -44,7 +44,9 @@ export function mountSettingsPanel(env, store, platform) {
     });
     $$('[data-output]').forEach(output => { output.textContent = String(values[output.dataset.output] ?? '') + (output.dataset.suffix || ''); });
     definitions.forEach(definition => definition.refresh?.(definition.root));
-    dictionary?.render?.(force); env.selects?.refresh?.();
+    dictionary?.render?.(force); env.material?.refresh();
+    env.panelBackgroundControls?.refresh(); env.popupBackgroundControls?.refresh();
+    env.selects?.refresh?.();
   }
   function set(key, value, message) {
     const normalized = normalizeSetting(key, value);
@@ -69,6 +71,7 @@ export function mountSettingsPanel(env, store, platform) {
   }
   const ctx = { defaults, options: settingOptions, voices: huoshanVoices, shortcuts: shortcutActions,
     icon: env.icon, get: key => values[key], set, notify, dialog, escape, flush: () => writes };
+  env.preferences = { get: ctx.get, set(key, value) { set(key, value); return writes; } };
 
   const scroller = $('#panel-scroll');
   const dictionaryRoot = document.createElement('section');
@@ -249,38 +252,46 @@ export function mountSettingsPanel(env, store, platform) {
       }
     }));
   }
-  env.background = {
-    async read() {
-      const data = store.values.panelBackground;
-      if (!data) return null;
-      const comma = data.indexOf(','), mime = data.slice(5, data.indexOf(';'));
-      const bytes = Uint8Array.from(atob(data.slice(comma + 1)), char => char.charCodeAt(0));
-      let meta;
-      try { meta = JSON.parse(env.localStorage.getItem('anon-glass-background-meta') || 'null'); } catch {}
-      return { blob: new Blob([bytes], { type: mime }), name: meta?.name || '本地背景', width: 0, height: 0 };
-    },
-    async write(record) {
-      const revision = ++backgroundRevision;
-      if (!record) { await store.set('panelBackground', ''); env.localStorage.removeItem('anon-glass-background-meta'); return; }
-      env.localStorage.setItem('anon-glass-background-meta', JSON.stringify({ name: record.name }));
-      if (['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(record.blob.type) && record.blob.size < 2 * 1024 * 1024) {
-        const data = await new Promise((resolve, reject) => {
-          const reader = new window.FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error); reader.readAsDataURL(record.blob);
-        });
-        if (revision === backgroundRevision && !disposed) await store.set('panelBackground', data);
-        return;
+  function backgroundStorage(key, fitKey) {
+    let backgroundRevision = 0;
+    const metaKey = key === 'panelBackground' ? 'anon-glass-background-meta' : 'anon-glass-popup-background-meta';
+    return {
+      getFit: () => values[fitKey],
+      setFit: value => env.preferences.set(fitKey, value),
+      async read() {
+        const data = store.values[key];
+        if (!data) return null;
+        const comma = data.indexOf(','), mime = data.slice(5, data.indexOf(';'));
+        const bytes = Uint8Array.from(atob(data.slice(comma + 1)), char => char.charCodeAt(0));
+        let meta;
+        try { meta = JSON.parse(env.localStorage.getItem(metaKey) || 'null'); } catch {}
+        return { blob: new Blob([bytes], { type: mime }), name: meta?.name || '本地背景', width: 0, height: 0 };
+      },
+      async write(record) {
+        const revision = ++backgroundRevision;
+        if (!record) { await store.set(key, ''); env.localStorage.removeItem(metaKey); return; }
+        env.localStorage.setItem(metaKey, JSON.stringify({ name: record.name }));
+        if (['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(record.blob.type) && record.blob.size < 2 * 1024 * 1024) {
+          const data = await new Promise((resolve, reject) => {
+            const reader = new window.FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error); reader.readAsDataURL(record.blob);
+          });
+          if (revision === backgroundRevision && !disposed) await store.set(key, data);
+          return;
+        }
+        const url = URL.createObjectURL(record.blob);
+        try {
+          const image = new Image(); image.src = url; await image.decode();
+          if (revision !== backgroundRevision || disposed) return;
+          const ratio = Math.min(1, 1920 / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio)); canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          await store.set(key, canvas.toDataURL('image/webp', .85));
+        } finally { URL.revokeObjectURL(url); }
       }
-      const url = URL.createObjectURL(record.blob);
-      try {
-        const image = new Image(); image.src = url; await image.decode();
-        if (revision !== backgroundRevision || disposed) return;
-        const ratio = Math.min(1, 1920 / Math.max(image.naturalWidth, image.naturalHeight));
-        const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio)); canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
-        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-        await store.set('panelBackground', canvas.toDataURL('image/webp', .85));
-      } finally { URL.revokeObjectURL(url); }
-    }
-  };
+    };
+  }
+  env.background = backgroundStorage('panelBackground', 'panelBackgroundFit');
+  env.popupBackground = backgroundStorage('dictionaryPopupBackground', 'dictionaryPopupBackgroundFit');
   const unsubscribe = store.subscribe((next, patch) => {
     values = { ...next, ...pendingValues() }; refresh();
     if (['aiURL', 'aiProtocol', 'aiModel', 'ankiURL', 'vitsAPI', 'vitsCustomAPI'].some(key => Object.hasOwn(patch, key))) void refreshPermissions();

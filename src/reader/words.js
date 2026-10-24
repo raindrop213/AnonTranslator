@@ -6,7 +6,10 @@ import { providerNames } from '../services/translate.js';
 import { hiragana, readingParts } from './word-reading.js';
 export { hiragana, readingParts } from './word-reading.js';
 const wordCSS = `
-  .at-word[data-at-word]{display:inline!important;background-color:color-mix(in srgb,var(--at-word-color,transparent) var(--at-word-opacity,100%),transparent)!important;cursor:pointer!important;filter:none!important;box-shadow:none!important;-webkit-box-decoration-break:clone;box-decoration-break:clone;border-radius:2px;padding:0!important;margin:0!important;line-height:inherit!important;font-size:inherit!important;color:inherit!important}
+  .at-word[data-at-word]{display:inline!important;background-color:color-mix(in srgb,var(--at-word-color,transparent) var(--at-word-opacity,100%),transparent)!important;background-image:none!important;cursor:pointer!important;filter:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-box-decoration-break:clone;box-decoration-break:clone;border-radius:3px;padding:0!important;margin:0!important;line-height:inherit!important;font-size:inherit!important;color:inherit!important}
+  .at-word.at-word-glass[data-at-word]{border:0 solid #30343b!important;border-radius:0!important;background-image:linear-gradient(140deg,rgba(255,255,255,.75),rgba(181,181,181,.25) 50%,rgba(181,181,181,.25) 50%,rgba(255,255,255,.25))!important;box-shadow:inset 1px 1px 1px rgba(255,255,255,.25),inset -1px -1px 1px rgba(55,55,55,.22),0 1px 2px rgba(35,35,35,.1)!important}
+  .at-word.at-word-night[data-at-word]{border:0 solid #e2e7ed!important;border-radius:0!important}
+  .at-word.at-word-glass.at-word-night[data-at-word]{background-image:linear-gradient(140deg,rgba(255,255,255,.25),rgba(255,255,255,0) 50%,rgba(255,255,255,0) 50%,rgba(255,255,255,.07))!important;box-shadow:inset 1px 1px 1px rgba(255,255,255,.26),inset -1px -1px 1px rgba(0,0,0,.22),1px 1px 2px rgba(0,0,0,.10)!important}
   .at-word[data-at-word]:hover, .at-word:focus-visible {outline: 1px solid currentColor;outline-offset: 1px;}
   .at-word-active{text-decoration-line:underline!important;text-decoration-thickness:2px!important;text-underline-position:under left!important;text-underline-offset:.08em!important}
   .at-word ruby{display:ruby!important;ruby-position:over;font:inherit!important;line-height:inherit!important;background:none!important;color:inherit!important}
@@ -99,6 +102,8 @@ export function createWordReader(platform, getSettings, doc = document, { show =
         const left = Math.max(token.start, entry.start), right = Math.min(token.end, entry.end);
         if (left > offset) replacement.append(doc.createTextNode(source.text.slice(offset, left)));
         const span = doc.createElement('span'); span.className = 'at-word'; span.dataset.atWord = String(index); span.dataset.atPos = token.pos || '';
+        span.classList.toggle('at-word-glass', settings.posGlass !== false && token.pos !== '記号');
+        span.classList.toggle('at-word-night', Boolean(settings.nightMode));
         span.style.setProperty('--at-word-color', token.pos === '記号' ? 'transparent' : wordColorFor(settings, token.pos));
         span.title = [token.pos, token.reading, token.base && token.base !== '*' && token.base !== token.surface ? `基本形：${token.base}` : ''].filter(Boolean).join(' · ');
         if (token.pos !== '記号') { span.setAttribute('role', 'button'); span.setAttribute('aria-label', token.surface); span.tabIndex = 0; }
@@ -153,7 +158,11 @@ export function createWordReader(platform, getSettings, doc = document, { show =
     render, clear, handleClick,
     refresh() {
       const settings = getSettings();
-      spans.forEach(span => span.style.setProperty('--at-word-color', span.dataset.atPos === '記号' ? 'transparent' : wordColorFor(settings, span.dataset.atPos)));
+      spans.forEach(span => {
+        span.style.setProperty('--at-word-color', span.dataset.atPos === '記号' ? 'transparent' : wordColorFor(settings, span.dataset.atPos));
+        span.classList.toggle('at-word-glass', settings.posGlass !== false && span.dataset.atPos !== '記号');
+        span.classList.toggle('at-word-night', Boolean(settings.nightMode));
+      });
       popup.refresh();
     },
     destroy() {

@@ -131,10 +131,15 @@ export function createCoreTabs(ctx, { window, document }) {
         <div class="setting-row core-field core-symbol-pairs"><input class="core-input" id="core-symbolPairs" data-pref="symbolPairs" type="text" aria-label="首尾符号对，各组符号之间使用 / 分隔" placeholder="「」/『』/《》/“”/【】/（）" spellcheck="false"></div>
         ${input('sentenceDelimiters', '断句符号', '决定按句阅读时的句子边界，使用 / 分隔', 'type="text" placeholder="。/！/？"')}
       `)}
-      ${group('网页识别', '阅读范围', input('targetTags', '目标文本标签', '使用逗号分隔 HTML 标签名', 'type="text" placeholder="p,h1,h2,h3,h4,h5,h6"'))}`,
+      ${group('网页识别', '阅读范围', input('targetTags', '目标文本标签', '使用逗号分隔 HTML 标签名', 'type="text" placeholder="p,h1,h2,h3,h4,h5,h6"'))}
+      ${group('阅读与滚动', '', `
+        ${toggle('scrollSwitch', '自动滚动到段落 / 句子', '阅读焦点始终留在视野里')}
+        ${select('scrollIntoView', '滚动方式', [['smooth', '平滑滚动'], ['instant', '立即滚动']])}
+      `)}`,
     refresh(root) {
       root.querySelector('[data-pref="symbolPairs"]').disabled = !ctx.get('ignoreSymbolPairs');
       root.querySelector('[data-pref="symbolPairs"]').closest('.setting-row').style.opacity = ctx.get('ignoreSymbolPairs') ? '' : '.45';
+      root.querySelector('[data-pref="scrollIntoView"]').disabled = !ctx.get('scrollSwitch');
     }
   };
 

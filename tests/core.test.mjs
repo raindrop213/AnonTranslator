@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaults, normalizeSetting, normalizeSettings } from '../src/settings/settings.js';
+import { defaults, normalizeSetting, normalizeSettings, wordColorFor } from '../src/settings/settings.js';
 import { ankiDraftFields, plainText } from '../src/services/anki-fields.js';
 import { ankiFields } from '../src/services/anki-model.js';
 import { ankiPreviewFields, ankiPreviewDocument, ankiPreviewSpeech } from '../src/settings/anki-preview.js';
@@ -370,7 +370,7 @@ test('AI cache follows configuration changes, failed calls retry and explicit re
 });
 
 test('numeric preferences accept their boundaries and preserve a fully hidden docked icon', () => {
-  for (const key of ['dockedIconOpacity', 'panelTransparency', 'posOpacity']) {
+  for (const key of ['dockedIconOpacity', 'panelTransparency', 'posOpacity', 'nightPosOpacity', 'dictionaryPopupTransparency']) {
     assert.equal(normalizeSetting(key, '0'), 0);
     assert.equal(normalizeSetting(key, 100), 100);
     for (const value of [-1, 101, 0.5, '', NaN, Infinity]) {
@@ -378,8 +378,30 @@ test('numeric preferences accept their boundaries and preserve a fully hidden do
     }
   }
   assert.equal(normalizeSettings({ dockedIconOpacity: '0' }).dockedIconOpacity, 0);
-  assert.equal(normalizeSetting('panelBlur', 20), 20);
-  assert.throws(() => normalizeSetting('panelBlur', 21));
+  assert.equal(normalizeSettings({ posOpacity: 0 }).posGlass, true);
+  assert.equal(normalizeSettings().posOpacity, 100);
+  assert.equal(normalizeSettings().nightPosOpacity, 75);
+  assert.equal(normalizeSettings({ posOpacity: 0 }).nightPosOpacity, 0);
+  assert.equal(normalizeSettings({ posOpacity: 42 }).nightPosOpacity, 42);
+  assert.equal(normalizeSettings({ posOpacity: 42, nightPosOpacity: 73 }).nightPosOpacity, 73);
+  assert.equal(normalizeSettings({ posOpacity: 'invalid' }).nightPosOpacity, 75);
+  const palette = { posNounColor: '#123456', posVerbColor: '#abcdef', nightPosNounColor: '#654321',
+    posUniformColorValue: '#112233', nightPosUniformColorValue: '#334455' };
+  assert.equal(wordColorFor(palette, '名詞'), '#123456');
+  assert.equal(wordColorFor({ ...palette, posUniformColor: true }, '名詞'), '#112233');
+  assert.equal(wordColorFor({ ...palette, posUniformColor: true }, '動詞'), '#112233');
+  assert.equal(wordColorFor({ ...palette, posUniformColor: true, nightMode: true }, '名詞'), '#334455');
+  assert.equal(wordColorFor({ ...palette, posUniformColor: false, nightMode: true }, '名詞'), '#654321');
+  assert.equal(wordColorFor({ ...palette, posUniformColor: true }, '記号'), 'transparent');
+  assert.equal(normalizeSettings({ posGlass: false, posOpacity: 0 }).posGlass, false);
+  assert.equal(normalizeSetting('posGlass', 'false'), false);
+  assert.equal(normalizeSettings().dictionaryPopupGlass, true);
+  assert.equal(normalizeSettings({ dictionaryPopupGlass: false, dictionaryPopupTransparency: 100, dictionaryPopupBlur: 0 }).dictionaryPopupGlass, false);
+  for (const key of ['panelBlur', 'dictionaryPopupBlur']) {
+    assert.equal(normalizeSetting(key, '0'), 0);
+    assert.equal(normalizeSetting(key, 20), 20);
+    for (const value of [-1, 21, 0.5, '', NaN, Infinity]) assert.throws(() => normalizeSetting(key, value));
+  }
   assert.equal(normalizeSetting('rate', 0.1), 0.1);
   assert.throws(() => normalizeSetting('rate', 0));
 });

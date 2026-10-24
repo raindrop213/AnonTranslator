@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSettingsStore, defaults, normalizeSettings } from '../src/settings/settings.js';
+import { createSettingsStore, defaults, normalizeSettings, retiredSettingKeys } from '../src/settings/settings.js';
+import { migratePanelPreferences } from '../src/settings/material.js';
 import { createSiteUI } from '../src/platform/site-ui.js';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -65,6 +66,56 @@ test('fresh installs and legacy global switches leave websites off without creat
   }
 });
 
+test('upgrading removes retired preferences after preserving current choices and panel appearance', async t => {
+  assert.deepEqual(normalizeSettings({ ankiTranslationService: 'youdao' }).ankiTranslationServices, ['youdao']);
+  assert.deepEqual(normalizeSettings({ ankiTranslationService: 'none' }).ankiTranslationServices, []);
+  const storage = memory({
+    pluginSwitch: true, 'at-site:novel.example': true,
+    ankiWordAudio: true, ankiSentenceAudio: true, useVITS: true,
+    ankiSentenceAudioService: 'none', ankiTranslationService: 'google', ankiTranslationServices: [],
+    posOpacity: 0, ankiFront: '<main>{{Word}} · custom</main>', aiAPIKey: 'test-only-key',
+    'at-widget-position': { glass: {} }, 'at-tokenizer-meta': { installed: true }
+  });
+  const page = await visit(t, storage);
+  assert.equal(page.store.values.ankiWordAudioService, 'vits');
+  assert.equal(page.store.values.ankiSentenceAudioService, 'none');
+  assert.deepEqual(page.store.values.ankiTranslationServices, []);
+  assert.equal(storage.saved.nightPosOpacity, 0);
+  for (const key of retiredSettingKeys) {
+    assert.equal(Object.hasOwn(defaults, key), false);
+    assert.equal(Object.hasOwn(page.store.values, key), false);
+    assert.equal(Object.hasOwn(storage.saved, key), false);
+  }
+  assert.equal(Object.hasOwn(storage.saved, 'pluginSwitch'), false);
+  assert.equal(storage.saved['at-site:novel.example'], true);
+  assert.equal(storage.saved.ankiFront, '<main>{{Word}} · custom</main>');
+  assert.equal(storage.saved.aiAPIKey, 'test-only-key');
+  assert.deepEqual(storage.saved['at-tokenizer-meta'], { installed: true });
+  const raw = new Map([
+    ['anon-glass-material-v3', JSON.stringify({ transparency: 41, blur: 7 })],
+    ['anon-glass-background-options-v1', JSON.stringify({ fit: 'contain' })],
+    ['anon-glass-floating-widget-v1', 'keep-position']
+  ]);
+  const widgetStorage = { getItem: key => raw.get(key) ?? null, removeItem: key => raw.delete(key) };
+  await migratePanelPreferences(page.store, widgetStorage);
+  assert.deepEqual([storage.saved.panelTransparency, storage.saved.panelBlur, storage.saved.panelBackgroundFit], [41, 7, 'contain']);
+  assert.deepEqual([...raw], [['anon-glass-floating-widget-v1', 'keep-position']]);
+  await page.store.set('panelTransparency', 23);
+  await migratePanelPreferences(page.store, widgetStorage);
+  assert.equal(storage.saved.panelTransparency, 23, 'Removed records must not reapply stale values');
+  raw.set('anon-glass-material-v3', JSON.stringify({ transparency: 52 }));
+  storage.error = new Error('save failed');
+  await assert.rejects(migratePanelPreferences(page.store, widgetStorage), /save failed/);
+  assert(raw.has('anon-glass-material-v3'), 'Failed upgrades must retain the original record for retry');
+  storage.error = null;
+  const failed = memory({ ankiWordAudio: true, useVITS: true });
+  failed.error = new Error('upgrade failed');
+  const failedStore = createSettingsStore(failed.platform, { siteURL: 'https://novel.example' });
+  t.after(() => failedStore.destroy());
+  await assert.rejects(failedStore.init(), /upgrade failed/);
+  assert.equal(failed.saved.ankiWordAudio, true, 'Retired keys must survive an unsuccessful migration');
+});
+
 test('explicit opening remembers this hostname, restores it on later visits and leaves other sites off', async t => {
   const storage = memory(), page = await visit(t, storage);
   await page.ui.open();
@@ -105,12 +156,15 @@ test('reset restores preferences without closing the current settings panel or e
   for (const [key, value] of Object.entries({ panelBlur: 13, panelTransparency: 25, google: true, useVITS: true,
     ai: true, aiAPIKey: 'test-only-key', aiPrompt: 'Translate {{text}}', aiStream: true,
     ankiEnabled: true, ankiFront: '<b>{{Word}}</b>', ankiTranslationServices: [],
-    sentenceColor: '#123456', shortcutStop: 'Ctrl+KeyK', translationOrder: ['ai', 'google', 'youdao'] })) {
+    sentenceColor: '#123456', posGlass: false, posOpacity: 0, nightPosOpacity: 0,
+    posUniformColor: true, posUniformColorValue: '#123456', nightPosUniformColorValue: '#456789',
+    dictionaryPopupBackground: 'data:image/png;base64,YQ==', dictionaryPopupBackgroundFit: 'contain', dictionaryPopupGlass: false,
+    dictionaryPopupTransparency: 100, dictionaryPopupBlur: 0, shortcutStop: 'Ctrl+KeyK', translationOrder: ['ai', 'google', 'youdao'] })) {
     await page.store.set(key, value);
   }
   await page.store.reset();
   await settle();
-  assert.equal(page.store.values.panelBlur, 7);
+  assert.equal(page.store.values.panelBlur, defaults.panelBlur);
   assert.equal(page.store.values.google, false);
   const expected = normalizeSettings(defaults);
   for (const key of Object.keys(defaults)) if (key !== 'pluginSwitch') {

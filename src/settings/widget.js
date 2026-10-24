@@ -2,17 +2,20 @@ import panelHTML from './panel.html';
 import panelCSS from './panel.css';
 import icon from '../../assets/img/icon128.png';
 import { mountSettingsPanel } from './panel.js';
-import { mountMaterial } from './material.js';
-import { mountBackground } from './background.js';
+import { mountMaterial, migratePanelPreferences } from './material.js';
+import { mountBackground, mountPopupBackground } from './background.js';
 import { mountSelects } from './selects.js';
 import { mountFloatingWidget } from './floating-widget.js';
 import { mountScrollFeather } from './scroll-feather.js';
+import { raiseSettingsLayer } from '../platform/ui-layers.js';
 
 // Keep the panel's styles and controls isolated from the reading website.
 const isolationCSS = `
 :host { all:initial!important; position:fixed!important; inset:0!important; width:100%!important;
   height:100%!important; z-index:2147483647!important; pointer-events:none!important;
+  margin:0!important; padding:0!important; border:0!important; background:transparent!important;
   direction:ltr!important; writing-mode:horizontal-tb!important; }
+:host-context([data-at-capturing]) { visibility:hidden!important; }
 [data-glass-root] { direction:ltr; writing-mode:horizontal-tb; pointer-events:none; }
 [data-glass-root] body { margin:0; background:transparent; pointer-events:none; }
 .settings-shell, #settings-orb, .glass-select-popover, dialog, #toast { pointer-events:auto; }
@@ -128,7 +131,8 @@ export async function mountSettingsWidget(store, platform, doc = document) {
     if (initialized) return controller;
     initialized = true;
     env.material = mountMaterial(env);
-    mountBackground(env);
+    env.panelBackgroundControls = mountBackground(env);
+    env.popupBackgroundControls = mountPopupBackground(env);
     env.selects = mountSelects(env);
     controller = mountFloatingWidget(env);
     mountScrollFeather(env);
@@ -138,9 +142,11 @@ export async function mountSettingsWidget(store, platform, doc = document) {
   const unsubscribe = store.subscribe(values => { root.dataset.theme = values.nightMode ? 'dark' : 'light'; });
   cleanups.push(unsubscribe);
   try {
+    await migratePanelPreferences(store, localStorage);
     unmount = await mountSettingsPanel(env, store, platform);
     if (!initialized) initialize();
     if (store.values.pluginSwitch) root.style.removeProperty('visibility');
+    raiseSettingsLayer(doc);
   } catch (error) {
     disposed = true; cleanups.forEach(remove => remove()); observers.forEach(observer => observer.disconnect()); host.remove(); throw error;
   }
@@ -157,8 +163,10 @@ export async function mountSettingsWidget(store, platform, doc = document) {
     await settled();
     if (disposed || !store.values.pluginSwitch) return;
     host.inert = false; root.style.removeProperty('visibility');
+    raiseSettingsLayer(doc);
     return controller?.open({ reveal: true, focus: false });
   };
+  listen(doc, 'fullscreenchange', () => raiseSettingsLayer(doc));
   return {
     open,
     async dismiss() {

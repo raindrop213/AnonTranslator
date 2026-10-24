@@ -371,7 +371,7 @@ function createReader(platform, store, doc = document) {
     }
     const colors = colorsFor(s);
     doc.documentElement.style.setProperty('--at-sentence-color', colors.sentenceColor);
-    doc.documentElement.style.setProperty('--at-word-opacity', `${s.posOpacity ?? 100}%`);
+    doc.documentElement.style.setProperty('--at-word-opacity', `${s.nightMode ? s.nightPosOpacity ?? s.posOpacity ?? 75 : s.posOpacity ?? 100}%`);
     notice.setColor(s.nightMode ? '#cde0cc' : '#225d2e');
     translation?.querySelectorAll('[data-provider]').forEach(row => { row.style.color = colors[`${row.dataset.provider}Color`]; });
     if ('translationOrder' in patch && translation) {
@@ -404,7 +404,7 @@ function createReader(platform, store, doc = document) {
       if (s.dictionaryEnabled && paragraph) void words.render(paragraph, mode === 'sentence' ? selectedSentence : null).catch(error => show(`分词失败：${error.message}`));
       else words.clear();
     }
-    else if (aiConfigChanged || Object.keys(patch).some(key => key.startsWith('dictionary') || key.startsWith('anki') || /^(night)?[Pp]os.*Color$/.test(key) || key === 'nightMode' || key === 'translationOrder')) words.refresh();
+    else if (aiConfigChanged || Object.keys(patch).some(key => key.startsWith('dictionary') || key.startsWith('anki') || /^(night)?[Pp]os.*Color(?:Value)?$/.test(key) || key === 'posGlass' || key === 'nightMode' || key === 'translationOrder')) words.refresh();
     if (paragraph && Object.keys(patch).some(key => providerNames.some(name => (name === 'ai' ? [name] : [name, `${name}From`, `${name}To`]).includes(key)) || ['symbolPairs', 'ignoreSymbolPairs'].includes(key))) translate(!aiConfigChanged);
   };
   const unsubscribe = store.subscribe(applySettings);

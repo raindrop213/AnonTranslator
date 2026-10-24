@@ -1,4 +1,4 @@
-import { defaults } from '../settings/settings.js';
+import { defaults, retiredSettingKeys } from '../settings/settings.js';
 import { siteStorageKey, siteStoragePrefix } from '../settings/site-access.js';
 import { gmRequest } from '../services/request.js';
 import { cachedTranslation, cancelTranslation } from '../services/translate.js';
@@ -25,10 +25,10 @@ const platform = {
   updateURL: 'https://greasyfork.org/zh-CN/scripts/599752-anontranslator',
   useWebAudio: true,
   async getSettings() {
-    // Preserve missing selector keys so old boolean audio settings can migrate.
-    const keys = [...new Set([...Object.keys(defaults), ...GM_listValues().filter(key => key.startsWith(siteStoragePrefix))])];
-    return Object.fromEntries(keys.map(key => [key, GM_getValue(key,
-      ['ankiWordAudioService', 'ankiSentenceAudioService', 'ankiTranslationServices', 'ankiTranslationService'].includes(key) ? undefined : defaults[key])]));
+    // Missing values must remain missing until the shared upgrade has run.
+    const current = new Set([...Object.keys(defaults), ...retiredSettingKeys]);
+    const keys = GM_listValues().filter(key => current.has(key) || key.startsWith(siteStoragePrefix));
+    return Object.fromEntries(keys.map(key => [key, GM_getValue(key)]));
   },
   async setSettings(patch) {
     for (const [key, value] of Object.entries(patch)) GM_setValue(key, value);

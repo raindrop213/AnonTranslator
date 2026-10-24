@@ -3,11 +3,11 @@ import { buildDictionarySearchURL, placeDictionaryPopup } from './dictionary-lay
 import { createDictionaryView } from './dictionary-view.js';
 export { buildDictionarySearchURL, placeDictionaryPopup } from './dictionary-layout.js';
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
-import { renderDictionaryDocument } from './dictionary-content.js';
+import { renderDictionaryDocument, setDictionaryAppearance } from './dictionary-content.js';
 import { createSpeaker } from '../services/speech.js';
 import { createAnkiWorkspace, ankiWorkspaceCSS } from './anki-workspace.js';
 import { captureRegion } from './screenshot-region.js';
-import { serviceOrder } from '../settings/settings.js';
+import { defaults, serviceOrder } from '../settings/settings.js';
 import { aiSettings } from '../services/ai.js';
 
 const names = { weblio: 'Weblio', moji: 'MOJi' };
@@ -18,7 +18,8 @@ const popupCSS = `
   :host([data-sheet]){left:0!important;top:0!important;width:100%!important;height:100%!important;background:#0004}
   :host([data-sheet]) .popup{position:absolute;left:0;right:0;bottom:0;height:min(75dvh,700px);max-height:calc(100% - 24px);border-radius:12px 12px 0 0;padding-bottom:env(safe-area-inset-bottom)}
   :host([data-sheet]) .popup:before{content:"";display:block;flex:none;width:36px;height:3px;margin:6px auto;background:#a6a6a6;border-radius:2px}
-  *{box-sizing:border-box} .popup{position:relative;font:14px/1.4 system-ui,"Microsoft YaHei",sans-serif;color:#242a32;background:#fff;border:0;border-radius:0;box-shadow:0 3px 18px #0003;overflow:hidden;display:flex;flex-direction:column;height:100%}
+  *{box-sizing:border-box} .popup{position:relative;isolation:isolate;font:14px/1.4 system-ui,"Microsoft YaHei",sans-serif;color:#242a32;background:#fff;border:0;border-radius:0;box-shadow:0 3px 18px #0003;overflow:hidden;display:flex;flex-direction:column;height:100%}
+  .popup-background{position:absolute;inset:0;z-index:-2;pointer-events:none;border-radius:inherit;background-position:center;background-repeat:no-repeat;background-size:var(--at-popup-background-fit,cover);opacity:var(--at-popup-image-alpha,1)}
   .query-row{border-bottom:1px solid #e7d6d3;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-flow:column;grid-auto-columns:26px;align-items:center;gap:0;padding:0;flex:none}.query-box{display:flex;min-width:0}input{min-width:0;width:100%;height:26px;flex:1;border:0;border-radius:0;padding:2px 4px;font:inherit;font-size:16px;line-height:1.3;color:inherit;background:transparent}.query-row [hidden]{display:none!important}
   button{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 4px;border-radius:0}button:hover{background:#f3e6e3}button:disabled{opacity:.3;cursor:default}button:focus-visible,a:focus-visible{outline:1px solid #a33b35;outline-offset:-1px}input:focus{outline:0;background:#faf3f2;box-shadow:inset 0 0 0 1px color-mix(in srgb,#a33b35 30%,transparent)}
   .icon{width:26px;min-width:26px;height:26px;display:grid;place-items:center;padding:4px}.icon svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -26,6 +27,17 @@ const popupCSS = `
   .resize{position:absolute;right:0;bottom:0;width:17px;height:17px;padding:0;border-radius:0;cursor:nwse-resize;touch-action:none;background:transparent}.resize:after{content:"";position:absolute;right:3px;bottom:3px;width:9px;height:9px;background:linear-gradient(135deg,transparent 37%,#98a1ad 37%,#98a1ad 47%,transparent 47%,transparent 65%,#98a1ad 65%,#98a1ad 75%,transparent 75%)}:host([data-resizing]) .popup{user-select:none}:host([data-resizing]) iframe{pointer-events:none}
   :host([data-night]) .popup{color:#e2e7ed;background:#252a31}:host([data-night]) button:hover{background:#51312e}:host([data-night]) .tabs button[aria-selected=true]{color:#e99c91;border-bottom-color:#e99c91}:host([data-night]) button:focus-visible{outline-color:#e99c91}:host([data-night]) .query-row{border-bottom-color:#654743}:host([data-night]) input:focus{background:#352b2b;box-shadow:inset 0 0 0 1px color-mix(in srgb,#e99c91 30%,transparent)}
   ${ankiWorkspaceCSS}
+  :host([data-glass]) .popup{--at-popup-base-rgb:240,240,240;--at-popup-highlight:linear-gradient(140deg,rgba(255,255,255,.6),rgba(255,255,255,0) 30%,rgba(255,255,255,0) 70%,rgba(255,255,255,.3));background:var(--at-popup-highlight),rgba(var(--at-popup-base-rgb),var(--at-popup-alpha,.18));border:0 solid rgb(54,51,56);border-radius:0;box-shadow:inset 1px 1px 1px rgba(255,255,255,.85),inset -1px -1px 1px rgba(60,60,60,.25),0 5px 22px rgba(0,0,0,.13);-webkit-backdrop-filter:blur(var(--at-popup-blur,8px)) saturate(1.1);backdrop-filter:blur(var(--at-popup-blur,8px)) saturate(1.1);--at-anki-editor-bg:transparent;--at-anki-image-surface:transparent}
+  :host([data-glass]) iframe{background:transparent;color-scheme:light}
+  :host([data-glass][data-night]) .popup{--at-popup-base-rgb:35,27,40;--at-popup-highlight:linear-gradient(140deg,rgba(146,140,151,.6),rgba(255,255,255,0) 30%,rgba(255,255,255,0) 70%,rgba(146,140,151,.3));background:var(--at-popup-highlight),rgba(var(--at-popup-base-rgb),var(--at-popup-alpha,.18));border:0 solid rgb(237,234,240);border-radius:0;box-shadow:inset 1px 1px 1px rgba(255,255,255,.25),inset -1px -1px 1px rgba(0,0,0,.25),2px 5px 22px rgba(0,0,0,.3);--at-anki-image-surface:transparent}
+  :host([data-glass][data-night]) iframe{color-scheme:dark}
+  :host([data-background]) .popup,:host([data-background][data-night]) .popup{background:transparent;--at-anki-editor-bg:transparent;--at-anki-image-surface:transparent}
+  :host([data-background][data-glass]) .popup:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;background:var(--at-popup-highlight)}
+  :host([data-background]) iframe{background:transparent}
+  *{scrollbar-color:rgba(118,118,118,.6) transparent;scrollbar-width:thin}
+  ::-webkit-scrollbar{width:9px;height:9px;background:transparent}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-thumb{background:rgba(118,118,118,.6);border:2px solid transparent;background-clip:padding-box;border-radius:8px}
+  :host([data-glass][data-sheet]) .popup{border-radius:12px 12px 0 0}
+  :host([data-window]) .popup{border-radius:0}
   @media(pointer:coarse){.icon{width:36px;min-width:36px;height:36px}.query-row{grid-auto-columns:36px}input{height:36px}.tabs{height:32px}.tabs button{height:32px}}
 `;
 
@@ -39,6 +51,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   try { const style = new win.CSSStyleSheet(); style.replaceSync(popupCSS); root.adoptedStyleSheets = [style]; }
   catch { const style = doc.createElement('style'); style.textContent = popupCSS; root.append(style); }
   const popup = doc.createElement('section'); popup.className = 'popup'; popup.setAttribute('role', 'dialog'); popup.setAttribute('aria-label', '查词');
+  const background = doc.createElement('div'); background.className = 'popup-background'; background.setAttribute('aria-hidden', 'true');
   const row = doc.createElement('div'); row.className = 'query-row';
   const query = doc.createElement('input'); query.type = 'text'; query.maxLength = 100; query.placeholder = '查询词'; query.setAttribute('aria-label', '查询词'); query.autocomplete = 'off'; query.spellcheck = false;
   const button = (label, className, content) => { const element = doc.createElement('button'); element.type = 'button'; element.className = className; element.title = label; element.setAttribute('aria-label', label); if (content) element.textContent = content; return element; };
@@ -80,6 +93,20 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   const source = doc.createElement('a'); source.className = 'source'; source.textContent = '网络搜索 ↗'; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.hidden = true;
   const resize = button('拖动调整窗口大小；方向键微调', 'resize');
   const tabs = {}, panels = {}, results = {}, frames = new Map();
+  function refreshAppearance() {
+    const settings = getSettings(), night = !!settings.nightMode, glass = settings.dictionaryPopupGlass !== false;
+    const image = /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z\d+/=]+$/i.test(settings.dictionaryPopupBackground || '') ? settings.dictionaryPopupBackground : '';
+    host.toggleAttribute('data-night', night); host.toggleAttribute('data-glass', glass);
+    host.toggleAttribute('data-background', !!image);
+    const alpha = String(1 - clamp(settings.dictionaryPopupTransparency ?? defaults.dictionaryPopupTransparency, 0, 100) / 100);
+    host.style.setProperty('--at-popup-alpha', image ? '0' : alpha);
+    host.style.setProperty('--at-popup-image-alpha', alpha);
+    host.style.setProperty('--at-popup-background-fit', settings.dictionaryPopupBackgroundFit === 'contain' ? 'contain' : 'cover');
+    const imageStyle = image ? `url("${image}")` : 'none';
+    if (background.style.backgroundImage !== imageStyle) background.style.backgroundImage = imageStyle;
+    host.style.setProperty('--at-popup-blur', `${clamp(settings.dictionaryPopupBlur ?? defaults.dictionaryPopupBlur, 0, 20)}px`);
+    for (const { frame } of frames.values()) if (frame.contentDocument?.body) setDictionaryAppearance(frame.contentDocument, night, glass || !!image);
+  }
   const instanceId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
   for (const provider of Object.keys(names)) {
     const tab = button(names[provider], '', names[provider]), panel = doc.createElement('div');
@@ -89,7 +116,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
     tabs[provider] = tab; panels[provider] = panel; tabRow.append(tab);
   }
   tabRow.append(source); workspace.dictionaryPane.append(row, tabRow, ...Object.values(panels));
-  popup.append(workspace.element, resize); root.append(popup); doc.documentElement.append(host);
+  popup.append(background, workspace.element, resize); root.append(popup); doc.documentElement.append(host);
   let active = serviceOrder(getSettings(), 'dictionaryOrder')[0], tabOrder = '', generation = 0, timer = null, composing = false, selected = null, destroyed = false, utterance = null;
   let drag = null, placement = null, popupAnchor = null, writingMode = 'horizontal-tb', sizeOverride = null, currentWord = '', ankiContext = null, ankiVisible = false, ankiContextAIConfiguration = '';
   const aiConfiguration = () => {
@@ -171,7 +198,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
       if (destroyed || !frame.isConnected || panels[provider].firstChild !== frame) return;
       try {
         if (!frame.contentDocument?.body) return;
-        renderDictionaryDocument(frame.contentDocument, provider, data, changeQuery, getSettings().nightMode, dismiss);
+        renderDictionaryDocument(frame.contentDocument, provider, data, changeQuery, getSettings().nightMode, dismiss, getSettings().dictionaryPopupGlass !== false || host.hasAttribute('data-background'));
       } catch (error) { status(provider, '词典显示失败：' + error.message, true); }
     };
     frame.addEventListener('load', render); panels[provider].replaceChildren(frame); render();
@@ -341,7 +368,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
       if (view.kind !== 'closed' && selected?.tokens === tokens && index >= selected.start && index <= selected.end) { close(); return; }
       const token = tokens[index];
       query.value = getSettings().dictionaryBaseForm && token.base && token.base !== '*' ? token.base : token.surface;
-      host.toggleAttribute('data-night', !!getSettings().nightMode);
+      refreshAppearance();
       applyMode(getSettings().dictionaryPopupMode);
       selected = { tokens, start: index, end: index, text };
       popupAnchor = anchorRect(anchor, doc, point);
@@ -361,7 +388,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
       selected = null; onRange(null); updateNext();
     },
     refresh() {
-      host.toggleAttribute('data-night', !!getSettings().nightMode); refreshAnki(); updateSearch(); switchTab(active);
+      refreshAppearance(); refreshAnki(); updateSearch(); switchTab(active);
       const enabled = providers(), added = enabled.filter(provider => !enabledProviders.includes(provider)); enabledProviders = enabled;
       if (host.hidden) return;
       position();

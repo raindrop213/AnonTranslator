@@ -103,8 +103,14 @@ export function serializeDictionaryContent(provider, data, doc = document) {
     styles: safeStyle(data.styles || '') + '\nhtml,body{margin:0;min-width:0!important;width:auto!important}body{padding:7px;font:14px/1.5 sans-serif;overflow-wrap:anywhere}#base{min-width:0!important;width:auto!important;margin:0!important}img{max-width:100%;height:auto}pre{white-space:pre-wrap}' };
 }
 
-export function renderDictionaryDocument(doc, provider, data, onLookup, night = false, onEscape = () => {}) {
+export function setDictionaryAppearance(doc, night = false, glass = false) {
+  doc.documentElement.toggleAttribute('data-at-night', night);
+  doc.documentElement.toggleAttribute('data-at-glass', glass);
+}
+
+export function renderDictionaryDocument(doc, provider, data, onLookup, night = false, onEscape = () => {}, glass = false) {
   doc.documentElement.lang = 'ja';
+  setDictionaryAppearance(doc, night, glass);
   doc.head.querySelectorAll('style[data-at-dictionary-style]').forEach(style => style.remove());
   const oldSheets = installedStyles.get(doc) || [];
   doc.adoptedStyleSheets = (doc.adoptedStyleSheets || []).filter(sheet => !oldSheets.includes(sheet));
@@ -114,8 +120,10 @@ export function renderDictionaryDocument(doc, provider, data, onLookup, night = 
     catch { const style = doc.createElement('style'); style.dataset.atDictionaryStyle = ''; style.textContent = safeStyle(text); doc.head.append(style); }
   };
   appendStyle(data.styles || '');
-  // Only sizing is adapted; source typography, tables, logos and illustrations survive.
+  // Adapt the page surface without changing source typography or illustrations.
   appendStyle(`html,body{margin:0!important;min-width:0!important;width:auto!important;background:#fff!important}body{padding:7px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}#base{min-width:0!important;width:auto!important;margin:0!important}.kijiWrp,.pbarT{max-width:100%;box-sizing:border-box}.at-dictionary-entry{margin-bottom:10px}.cloud-result{padding:0}.cloud-result .spell{margin-bottom:5px;font-size:18px}.cloud-result p{margin:3px 0}.cloud-result li{margin-bottom:4px}ol,ul{padding-left:23px}a[data-lookup]{cursor:pointer}img{max-width:100%;height:auto}pre{white-space:pre-wrap}${night ? 'html{color-scheme:light}' : ''}`);
+  appendStyle(`html[data-at-glass],html[data-at-glass] body{background:transparent!important;color:#242a32!important;color-scheme:light}html[data-at-glass] :is(#base,.kijiWrp,.pbarT,.cloud-result,.at-dictionary-entry){background-color:transparent!important;color:inherit!important}html[data-at-glass][data-at-night],html[data-at-glass][data-at-night] body{color:#e2e7ed!important;color-scheme:dark}html[data-at-glass][data-at-night] :where(#base *){background-color:transparent!important;color:inherit!important}html[data-at-glass][data-at-night] a{color:#e99c91!important}html[data-at-glass][data-at-night] .cloud-result .type{color:#b2bdca!important}`);
+  appendStyle(`*{scrollbar-color:rgba(118,118,118,.6) transparent!important;scrollbar-width:thin}::-webkit-scrollbar{width:9px;height:9px;background:transparent!important}::-webkit-scrollbar-track,::-webkit-scrollbar-track-piece,::-webkit-scrollbar-corner{background:transparent!important}::-webkit-scrollbar-thumb{background:rgba(118,118,118,.6);border:2px solid transparent;background-clip:padding-box;border-radius:8px}`);
   const base = doc.createElement('div'); base.id = 'base';
   base.append(provider === 'moji' ? renderMoji(doc, data) : renderWeblio(doc, data));
   if (data.styleWarnings?.length) { const warning = doc.createElement('p'); warning.textContent = '部分原站样式未加载。'; base.prepend(warning); }

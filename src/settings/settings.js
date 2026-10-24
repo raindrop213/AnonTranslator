@@ -6,7 +6,7 @@ import { aiDefaults, aiEndpoint, parseAIJSON, legacyAIPrompts } from '../service
 export const defaults = {
   "pluginSwitch": false,
   "settingsTab": "词典",
-  "panelTransparency": 86,
+  "panelTransparency": 82,
   "panelBlur": 6,
   "dockedIconOpacity": 20,
   "panelBackground": "",
@@ -70,6 +70,11 @@ export const defaults = {
   "dictionaryOrder": ["weblio", "moji"],
   "dictionarySearchURL": "https://www.google.com/search?q={word}",
   "dictionaryPopupMode": "page",
+  "dictionaryPopupGlass": true,
+  "dictionaryPopupTransparency": 82,
+  "dictionaryPopupBlur": 8,
+  "dictionaryPopupBackground": "",
+  "dictionaryPopupBackgroundFit": "cover",
   "dictionaryPopupWidth": 424,
   "dictionaryPopupHeight": 470,
   "dictionaryWindowLeft": "",
@@ -80,10 +85,7 @@ export const defaults = {
   "ankiModel": "anon-model",
   "ankiDecks": "anon::novel",
   "ankiTags": "外来语\n俗语\n方言",
-  "ankiWordAudio": false,
-  "ankiSentenceAudio": false,
-  "ankiTranslationService": "google",
-  "ankiTranslationServices": [],
+  "ankiTranslationServices": ["youdao"],
   "ankiWordAudioService": "none",
   "ankiSentenceAudioService": "none",
   "ankiBoldWord": true,
@@ -100,7 +102,12 @@ export const defaults = {
   "nightMode": false,
   "sentenceColor": "#dde49a",
   "nightSentenceColor": "#49522e",
-  "posOpacity": 70,
+  "posGlass": true,
+  "posUniformColor": false,
+  "posUniformColorValue": "#ededed",
+  "nightPosUniformColorValue": "#1f2729",
+  "posOpacity": 100,
+  "nightPosOpacity": 75,
   "posNounColor": "#e0aa52",
   "posVerbColor": "#b9799c",
   "posAdjectiveColor": "#d5815d",
@@ -194,10 +201,13 @@ export function shortcutAction(event, values) {
 
 const speechSwitches = ['useWindowsTTS', 'useVITS', 'useHuoshTTS'];
 const ankiAudioKeys = ['ankiWordAudio', 'ankiSentenceAudio'];
+// Read only while upgrading. These keys are never part of the current schema.
+export const retiredSettingKeys = [...ankiAudioKeys, 'ankiTranslationService'];
 const numericRules = {
   panelTransparency: [0, 100, true], panelBlur: [0, 20, true], dockedIconOpacity: [0, 100, true],
   readingInterval: [0, 60000, true],
-  posOpacity: [0, 100, true],
+  posOpacity: [0, 100, true], nightPosOpacity: [0, 100, true],
+  dictionaryPopupTransparency: [0, 100, true], dictionaryPopupBlur: [0, 20, true],
   dictionaryPopupWidth: [220, 1600], dictionaryPopupHeight: [160, 1600],
   ankiSplit: [0.2, 0.8],
   winVoice: [0, 10000, true], vitsVoice: [0, 100000, true],
@@ -206,10 +216,10 @@ const numericRules = {
 };
 const settingOptions = {
   panelBackgroundFit: ['cover', 'contain'],
+  dictionaryPopupBackgroundFit: ['cover', 'contain'],
   settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '键位', '帮助'],
   dictionaryPopupMode: ['page', 'independent'],
   ankiImageFormat: ['webp', 'png', 'jpeg'], ankiLayout: ['below', 'right'],
-  ankiTranslationService: ['google', 'youdao', 'ai', 'none'],
   aiProtocol: ['auto', 'openai', 'claude', 'gemini'],
   aiFrom: ['auto', 'zh-CN', 'zh-TW', 'ja', 'en'], aiTo: ['zh-CN', 'zh-TW', 'ja', 'en'],
   ankiWordAudioService: ['none', 'huosh', 'vits'], ankiSentenceAudioService: ['none', 'huosh', 'vits'],
@@ -264,7 +274,7 @@ function normalizeSetting(key, value) {
     if (text.length > 2048 || /[\r\n\u0000]/.test(text)) throw new Error('模型名称和 API Key 最多 2048 个字符，不能换行');
     return text.trim();
   }
-  if (key === 'panelBackground') {
+  if (key === 'panelBackground' || key === 'dictionaryPopupBackground') {
     if (!text) return '';
     if (text.length > 3 * 1024 * 1024 || !/^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(text)) throw new Error('请选择不超过 2 MB 的 PNG、JPEG、WebP 或 GIF 图片');
     return text;
@@ -319,7 +329,7 @@ function normalizeSetting(key, value) {
   }
   if (key.startsWith('shortcut')) return normalizeShortcut(text);
   if (settingOptions[key] && !settingOptions[key].includes(text)) throw new Error('请选择有效选项');
-  if (key.endsWith('Color') && !/^#[\da-f]{6}$/i.test(text)) throw new Error('请输入六位十六进制颜色');
+  if ((key.endsWith('Color') || key.endsWith('ColorValue')) && !/^#[\da-f]{6}$/i.test(text)) throw new Error('请输入六位十六进制颜色');
   if (key === 'symbolPairs' && text.split('/').some(pair => Array.from(pair).length !== 2)) throw new Error('符号对须为两个字符，用 / 分隔');
   if (key === 'sentenceDelimiters' && (!text || text.split('/').some(part => Array.from(part).length !== 1))) throw new Error('断句符号须为单个字符，用 / 分隔');
   return text;
@@ -333,9 +343,14 @@ function normalizeSettings(saved = {}) {
       result[key] = normalizeSetting(key, saved[key]);
     } catch { /* Invalid values use defaults. */ }
   }
+  // Older settings used one opacity for both themes, including a fully clear base.
+  if (saved.nightPosOpacity === undefined && saved.posOpacity !== undefined) {
+    try { result.nightPosOpacity = normalizeSetting('nightPosOpacity', saved.posOpacity); }
+    catch { /* Invalid legacy values keep the night default. */ }
+  }
   if (speechSwitches.filter(key => result[key]).length > 1) speechSwitches.forEach(key => { result[key] = false; });
   for (const key of ankiAudioKeys) {
-    if (saved[key + 'Service'] === undefined && result[key]) result[key + 'Service'] = result.useVITS ? 'vits' : result.useHuoshTTS ? 'huosh' : 'none';
+    if (saved[key + 'Service'] === undefined && (saved[key] === true || saved[key] === 'true')) result[key + 'Service'] = result.useVITS ? 'vits' : result.useHuoshTTS ? 'huosh' : 'none';
   }
   if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'ai', 'none'].includes(saved.ankiTranslationService)) result.ankiTranslationServices = saved.ankiTranslationService === 'none' ? [] : [saved.ankiTranslationService];
   result.ankiTranslationServices = result.translationOrder.filter(service => result.ankiTranslationServices.includes(service));
@@ -367,6 +382,11 @@ export const posGroups = [
 ];
 
 export function wordColorFor(settings, pos) {
+  if (pos === '記号') return 'transparent';
+  if (settings.posUniformColor) {
+    const key = settings.nightMode ? 'nightPosUniformColorValue' : 'posUniformColorValue';
+    return settings[key] || defaults[key];
+  }
   const key = posGroups.find(group => group.pos.includes(pos))?.key || 'posOtherColor';
   const paletteKey = settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key;
   return settings[paletteKey] || defaults[paletteKey];
@@ -416,13 +436,16 @@ export function createSettingsStore(platform, { siteURL = platform.siteURL ?? gl
       for (const patch of pending) publish(patch);
       // Persist migrated choices once so later reader voice changes cannot
       // change a user's independent Anki audio service on the next startup.
-      const migrated = Object.fromEntries(ankiAudioKeys.filter(key => saved[key + 'Service'] === undefined && values[key]).map(key => [key + 'Service', values[key + 'Service']]));
+      const migrated = Object.fromEntries(ankiAudioKeys.filter(key => saved[key + 'Service'] === undefined && saved[key] !== undefined).map(key => [key + 'Service', values[key + 'Service']]));
       for (const [key, previous] of Object.entries(legacyAnkiTemplates)) {
         if (previous.includes(saved[key]) && saved[key] !== values[key]) migrated[key] = values[key];
       }
       if (legacyAIPrompts.includes(saved.aiPrompt)) migrated.aiPrompt = values.aiPrompt;
       if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'ai', 'none'].includes(saved.ankiTranslationService)) migrated.ankiTranslationServices = values.ankiTranslationServices;
+      if (saved.nightPosOpacity === undefined && saved.posOpacity !== undefined) migrated.nightPosOpacity = values.nightPosOpacity;
       if (Object.keys(migrated).length) await platform.setSettings(migrated);
+      const retired = [...retiredSettingKeys, 'pluginSwitch'].filter(key => saved[key] !== undefined);
+      if (retired.length) await platform.removeSettings(retired);
       return values;
     },
     set(key, value) { return enqueue(async () => {
@@ -452,6 +475,7 @@ export function createSettingsStore(platform, { siteURL = platform.siteURL ?? gl
       const patch = { ...defaults };
       delete patch.pluginSwitch;
       await platform.setSettings(patch);
+      await platform.removeSettings([...retiredSettingKeys, 'pluginSwitch']);
       publish(patch);
     }); },
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },

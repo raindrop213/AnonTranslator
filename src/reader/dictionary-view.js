@@ -1,3 +1,5 @@
+import { raiseSettingsLayer } from '../platform/ui-layers.js';
+
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
 // The lookup session keeps its DOM. This controller only owns where it lives:
@@ -36,7 +38,10 @@ export function createDictionaryView(platform, getSettings, host, { show = () =>
       if (target === 'window') host.removeAttribute('popover');
       else {
         host.setAttribute('popover', 'manual');
-        try { if (host.hidden) host.hidePopover(); else host.showPopover(); } catch { /* Fixed-position fallback. */ }
+        try {
+          if (host.hidden) host.hidePopover();
+          else { host.showPopover(); raiseSettingsLayer(doc); }
+        } catch { /* Fixed-position fallback. */ }
       }
     }
     if (wasOpen && target === 'closed') onClose();
