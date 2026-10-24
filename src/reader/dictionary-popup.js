@@ -8,6 +8,7 @@ import { createSpeaker } from '../services/speech.js';
 import { createAnkiWorkspace, ankiWorkspaceCSS } from './anki-workspace.js';
 import { captureRegion } from './screenshot-region.js';
 import { serviceOrder } from '../settings/settings.js';
+import { aiSettings } from '../services/ai.js';
 
 const names = { weblio: 'Weblio', moji: 'MOJi' };
 const popupCSS = `
@@ -90,7 +91,11 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   tabRow.append(source); workspace.dictionaryPane.append(row, tabRow, ...Object.values(panels));
   popup.append(workspace.element, resize); root.append(popup); doc.documentElement.append(host);
   let active = serviceOrder(getSettings(), 'dictionaryOrder')[0], tabOrder = '', generation = 0, timer = null, composing = false, selected = null, destroyed = false, utterance = null;
-  let drag = null, placement = null, popupAnchor = null, writingMode = 'horizontal-tb', sizeOverride = null, currentWord = '', ankiContext = null, ankiVisible = false;
+  let drag = null, placement = null, popupAnchor = null, writingMode = 'horizontal-tb', sizeOverride = null, currentWord = '', ankiContext = null, ankiVisible = false, ankiContextAIConfiguration = '';
+  const aiConfiguration = () => {
+    const settings = getSettings();
+    return JSON.stringify([aiSettings(settings), settings.aiFrom, settings.aiTo]);
+  };
   const view = createDictionaryView(platform, getSettings, host, {
     show, onClose: endSession, onEscape: keydown,
     onMove() {
@@ -100,6 +105,12 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
     }
   });
   function refreshAnki(restore = true) {
+    const config = aiConfiguration();
+    if (ankiContext && config !== ankiContextAIConfiguration) {
+      const { ai, ...translationSources } = ankiContext.translationSources || {};
+      ankiContext = { ...ankiContext, translationSources };
+    }
+    ankiContextAIConfiguration = config;
     const enabled = !!getSettings().ankiEnabled;
     sentenceVoice.disabled = !enabled && !ankiContext?.sentence?.trim(); workspace.refresh();
     if (restore && enabled && !ankiVisible && !host.hidden && ankiContext) {
@@ -337,6 +348,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
       writingMode = anchor.ownerDocument.defaultView.getComputedStyle(anchor).writingMode;
       placement = null;
       ankiContext = { sentence: text, selectedText: token.surface, sentenceRange: [token.start, token.end], sentenceOffset: 0, ...context };
+      ankiContextAIConfiguration = aiConfiguration();
       refreshAnki(false);
       if (getSettings().ankiEnabled && ankiVisible) workspace.open({ ...ankiContext, word: query.value });
       updateNext(); onRange([index, index]); switchTab(active); position(); void lookup(query.value);

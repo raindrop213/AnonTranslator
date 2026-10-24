@@ -1,7 +1,7 @@
 export function createAppearanceTabs(ctx) {
   const e = ctx.escape;
   const colorGroups = [
-    ['sentenceColor', '例句底色'], ['googleColor', 'Google 译文'], ['youdaoColor', '有道译文']
+    ['sentenceColor', '例句底色'], ['googleColor', 'Google 译文'], ['youdaoColor', '有道译文'], ['aiColor', 'AI 译文']
   ];
   const posGroups = [['posNounColor', '名词'], ['posVerbColor', '动词'], ['posAdjectiveColor', '形容词'], ['posAdverbColor', '副词 / 连体词'], ['posParticleColor', '助词'], ['posAuxiliaryColor', '助动词'], ['posOtherColor', '其他']];
   const nightKey = key => 'night' + key[0].toUpperCase() + key.slice(1);

@@ -1,8 +1,10 @@
 import { defaults, normalizeSetting } from '../settings/settings.js';
+import { aiEndpoint } from '../services/ai.js';
 
 export const chromeServices = {
   google: { name: 'Google', section: '翻译', origins: ['https://translate-pa.googleapis.com/*'] },
   youdao: { name: '有道', section: '翻译', origins: ['https://m.youdao.com/*'] },
+  ai: { name: 'AI 翻译', section: '翻译', origins: [] },
   weblio: { name: 'Weblio', section: '词典', origins: ['https://www.weblio.jp/*', 'https://weblio.jp/*', 'https://cdn.weblio.jp/*', 'https://c.weblio.jp/*'] },
   moji: { name: 'MOJi', section: '词典', origins: ['https://api.mojidict.com/*'] },
   tokenizer: { name: '分词数据下载', section: '词典', origins: ['https://cdn.jsdelivr.net/*'] },
@@ -17,6 +19,10 @@ export function servicePermissionError(service, origin) {
   return error;
 }
 export function serviceOrigins(id, settings = defaults) {
+  if (id === 'ai') {
+    const address = new URL(aiEndpoint({ ...settings, aiModel: settings.aiModel || 'model' }));
+    return [`${address.protocol}//${address.hostname}/*`];
+  }
   if (id === 'anki') {
     const address = new URL(settings.ankiURL || defaults.ankiURL);
     return [`${address.protocol}//${address.hostname}/*`];
@@ -65,11 +71,24 @@ export const createChromePlatform = () => ({
     chrome.storage.onChanged.addListener(onChanged);
     return () => chrome.storage.onChanged.removeListener(onChanged);
   },
-  async send(message) {
-    const response = await chrome.runtime.sendMessage(message);
-    if (!response) throw new Error('后台未响应，请重新加载扩展和页面');
-    if (response.error && !response.state) throw new Error(response.error);
-    return response;
+  async send(message, onUpdate) {
+    let progress;
+    if (message.action === 'translate' && typeof onUpdate === 'function') {
+      const progressId = crypto.randomUUID();
+      message = { ...message, progressId };
+      progress = update => {
+        if (update.action === 'translation_progress' && update.progressId === progressId && typeof update.translatedText === 'string') {
+          onUpdate(update.translatedText);
+        }
+      };
+      chrome.runtime.onMessage.addListener(progress);
+    }
+    try {
+      const response = await chrome.runtime.sendMessage(message);
+      if (!response) throw new Error('后台未响应，请重新加载扩展和页面');
+      if (response.error && !response.state) throw new Error(response.error);
+      return response;
+    } finally { if (progress) chrome.runtime.onMessage.removeListener(progress); }
   },
   playAudio(response, rate, scope) {
     return this.send({ action: 'play_audio', ...response, rate, scope });

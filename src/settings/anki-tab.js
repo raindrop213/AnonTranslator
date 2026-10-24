@@ -83,7 +83,7 @@ export function createAnkiTabs(ctx, env, platform) {
 
       <div class="group-heading"><h3>制卡服务</h3></div>
       <div class="settings-group glass">
-        <div class="setting-row anki-translation-row"><div class="setting-copy"><span>例句翻译</span></div><div class="anki-choice-list">${[['google', 'Google'], ['youdao', '有道']].map(([value, name]) => `<label class="pill-button"><input type="checkbox" data-pref="ankiTranslationServices" data-pref-array value="${value}" aria-label="${name} 例句翻译"><span>${name}</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg></label>`).join('')}</div></div>
+        <div class="setting-row anki-translation-row"><div class="setting-copy"><span>例句翻译</span></div><div class="anki-choice-list">${[['google', 'Google'], ['youdao', '有道'], ['ai', 'AI']].map(([value, name]) => `<label class="pill-button"><input type="checkbox" data-pref="ankiTranslationServices" data-pref-array value="${value}" aria-label="${name} 例句翻译"><span>${name}</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg></label>`).join('')}</div></div>
         ${selectRow('ankiWordAudioService', '单词音频', [['none', '不添加'], ['huosh', '火山语音'], ['vits', 'VITS']])}
         ${selectRow('ankiSentenceAudioService', '例句音频', [['none', '不添加'], ['huosh', '火山语音'], ['vits', 'VITS']])}
       </div>

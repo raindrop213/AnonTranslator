@@ -41,11 +41,11 @@ const platform = {
     const ids = keys.map(key => GM_addValueChangeListener(key, (_key, _old, value) => listener({ [key]: value })));
     return () => ids.forEach(id => GM_removeValueChangeListener(id));
   },
-  async send(message) {
+  async send(message, onUpdate) {
     switch (message.action) {
       case 'check_update': return checkLatestVersion(gmRequest);
       case 'cancel_translation': return cancelTranslation(message.scope);
-      case 'translate': return cachedTranslation(message, gmRequest);
+      case 'translate': return cachedTranslation({ ...message, onUpdate }, gmRequest);
       case 'tokenize': return tokenizerData.tokenize(message.text);
       case 'tokenizer_data_status': return tokenizerData.status();
       case 'tokenizer_data_install': return tokenizerData.install();

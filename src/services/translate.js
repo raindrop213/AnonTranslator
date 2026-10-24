@@ -1,7 +1,8 @@
 import { fetchRequest } from './request.js';
+import { aiSettings, translateAI } from './ai.js';
 
 // Providers run independently; Youdao starts first and occupies the first row.
-export const providerNames = ['youdao', 'google'];
+export const providerNames = ['youdao', 'google', 'ai'];
 
 function unescapeHtml(text) {
   return text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity, code) => {
@@ -87,6 +88,7 @@ async function translateText(message, request) {
   if (!providerNames.includes(translator)) throw new Error('不支持的翻译器');
   if (typeof text !== 'string' || !text.trim()) throw new Error('没有提供翻译文本');
   if (typeof from !== 'string' || typeof to !== 'string') throw new Error('缺少翻译语言');
+  if (translator === 'ai') return translateAI(message, request);
   // Preserve source line breaks without inserting breaks at Youdao boundaries.
   const lines = translator === 'youdao' ? text.split(/\r\n|[\n\r]/) : [text];
   const result = [];
@@ -108,7 +110,8 @@ let googleCooldownUntil = 0, nextTranslationRequest = 0;
 
 const cacheKey = (message, request) => {
   if (!translationRequests.has(request)) translationRequests.set(request, ++nextTranslationRequest);
-  return JSON.stringify([translationRequests.get(request), message.translator, message.from, message.to, message.text]);
+  return JSON.stringify([translationRequests.get(request), message.translator, message.from, message.to, message.text,
+    message.translator === 'ai' ? aiSettings(message.settings) : null]);
 };
 const isCached = entry => entry && entry.expires > Date.now();
 const cooldownError = () => new Error('Google 请求受限，请稍后再试（HTTP 429）');
@@ -145,7 +148,7 @@ function latestTranslation(message, request) {
   const key = cacheKey(message, request);
   const lane = JSON.stringify([message.scope, message.translator, translationRequests.get(request)]);
   const previous = readerJobs.get(lane);
-  if (previous?.key === key && !previous.controller.signal.aborted) return previous.promise;
+  if (!message.refresh && previous?.key === key && !previous.controller.signal.aborted) return previous.promise;
   previous?.controller.abort();
   const cached = translationCache.get(key);
   if (isCached(cached)) return cached.promise;
@@ -170,15 +173,16 @@ function latestTranslation(message, request) {
 
 // Reuse identical requests; the reader cancels work when its selection changes.
 export function cachedTranslation(message, request = fetchRequest) {
+  if (message.refresh) translationCache.delete(cacheKey(message, request));
   if (message.scope) return latestTranslation(message, request);
   const key = cacheKey(message, request);
   const cached = translationCache.get(key);
   if (isCached(cached)) return cached.promise;
-  const active = [...readerJobs.values()].find(job => job.key === key && !job.controller.signal.aborted);
-  // Export can join an already-running reader translation. If its reading
-  // selection is replaced, retry independently instead of cancelling the card.
+  const active = !message.refresh && [...readerJobs.values()].find(job => job.key === key && !job.controller.signal.aborted);
+  // Export can share reading work. Keep cancelled AI requests cancelled rather
+  // than silently issuing another billable request for an old configuration.
   const pending = active ? active.promise.catch(error => {
-    if (active.controller.signal.aborted) return translateResult(message, request);
+    if (active.controller.signal.aborted && message.translator !== 'ai') return translateResult(message, request);
     throw error;
   }) : translateResult(message, request);
   const promise = pending.then(result => {

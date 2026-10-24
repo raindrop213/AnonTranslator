@@ -1,12 +1,13 @@
 import { defaultAnkiFront, defaultAnkiBack, defaultAnkiCSS } from '../services/anki-model.js';
 import { legacyAnkiTemplates } from './legacy-anki-templates.js';
 import { siteIdentity } from './site-access.js';
+import { aiDefaults, aiEndpoint, parseAIJSON, legacyAIPrompts } from '../services/ai.js';
 
 export const defaults = {
   "pluginSwitch": false,
   "settingsTab": "词典",
   "panelTransparency": 86,
-  "panelBlur": 7,
+  "panelBlur": 6,
   "dockedIconOpacity": 20,
   "panelBackground": "",
   "panelBackgroundFit": "cover",
@@ -45,7 +46,7 @@ export const defaults = {
   "max": 50,
   "readingInterval": 120,
   "google": false,
-  "translationOrder": ["youdao", "google"],
+  "translationOrder": ["youdao", "google", "ai"],
   "googleFrom": "auto",
   "googleTo": "zh-CN",
   "googleColor": "#a6d22d",
@@ -55,6 +56,12 @@ export const defaults = {
   "youdaoTo": "zh-CHS",
   "youdaoColor": "#D4B102",
   "nightYoudaoColor": "#F1CE78",
+  "ai": false,
+  ...aiDefaults,
+  "aiFrom": "auto",
+  "aiTo": "zh-CN",
+  "aiColor": "#8570b2",
+  "nightAiColor": "#c5aedb",
   "dictionaryEnabled": false,
   "dictionaryFurigana": true,
   "dictionaryBaseForm": true,
@@ -76,7 +83,7 @@ export const defaults = {
   "ankiWordAudio": false,
   "ankiSentenceAudio": false,
   "ankiTranslationService": "google",
-  "ankiTranslationServices": ["google", "youdao"],
+  "ankiTranslationServices": [],
   "ankiWordAudioService": "none",
   "ankiSentenceAudioService": "none",
   "ankiBoldWord": true,
@@ -202,7 +209,9 @@ const settingOptions = {
   settingsTab: ['复制', '语音', '翻译', '词典', 'Anki', '外观', '键位', '帮助'],
   dictionaryPopupMode: ['page', 'independent'],
   ankiImageFormat: ['webp', 'png', 'jpeg'], ankiLayout: ['below', 'right'],
-  ankiTranslationService: ['google', 'youdao', 'none'],
+  ankiTranslationService: ['google', 'youdao', 'ai', 'none'],
+  aiProtocol: ['auto', 'openai', 'claude', 'gemini'],
+  aiFrom: ['auto', 'zh-CN', 'zh-TW', 'ja', 'en'], aiTo: ['zh-CN', 'zh-TW', 'ja', 'en'],
   ankiWordAudioService: ['none', 'huosh', 'vits'], ankiSentenceAudioService: ['none', 'huosh', 'vits'],
   huoshVoice: huoshanVoices.map(voice => voice.id),
   vitsLang: ['auto', 'ja', 'zh'],
@@ -225,7 +234,7 @@ function normalizeSetting(key, value) {
     return serviceOrder({ [key]: value }, key);
   }
   if (key === 'ankiTranslationServices') {
-    if (!Array.isArray(value) || value.some(service => !['google', 'youdao'].includes(service))) throw new Error('翻译服务只能选择 Google、有道，或全部不选');
+    if (!Array.isArray(value) || value.some(service => !defaults.translationOrder.includes(service))) throw new Error('请选择有效的翻译服务，或全部不选');
     return [...new Set(value)];
   }
   if (typeof fallback === 'boolean') return value === true || value === 'true';
@@ -238,6 +247,23 @@ function normalizeSetting(key, value) {
     return number;
   }
   const text = String(value);
+  if (key === 'aiURL') {
+    const template = text.trim();
+    aiEndpoint({ ...aiDefaults, aiURL: template, aiModel: 'model' });
+    return template;
+  }
+  if (key === 'aiHeaders' || key === 'aiBody') {
+    parseAIJSON(text, key === 'aiHeaders' ? '自定义请求头' : '自定义参数');
+    return text.trim() || '{}';
+  }
+  if (key === 'aiPrompt') {
+    if (!text.trim() || text.length > 30000 || !text.includes('{{text}}')) throw new Error('提示词须包含 {{text}}，最多 30000 个字符');
+    return text;
+  }
+  if (key === 'aiModel' || key === 'aiAPIKey') {
+    if (text.length > 2048 || /[\r\n\u0000]/.test(text)) throw new Error('模型名称和 API Key 最多 2048 个字符，不能换行');
+    return text.trim();
+  }
   if (key === 'panelBackground') {
     if (!text) return '';
     if (text.length > 3 * 1024 * 1024 || !/^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(text)) throw new Error('请选择不超过 2 MB 的 PNG、JPEG、WebP 或 GIF 图片');
@@ -311,11 +337,12 @@ function normalizeSettings(saved = {}) {
   for (const key of ankiAudioKeys) {
     if (saved[key + 'Service'] === undefined && result[key]) result[key + 'Service'] = result.useVITS ? 'vits' : result.useHuoshTTS ? 'huosh' : 'none';
   }
-  if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'none'].includes(saved.ankiTranslationService)) result.ankiTranslationServices = saved.ankiTranslationService === 'none' ? [] : [saved.ankiTranslationService];
+  if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'ai', 'none'].includes(saved.ankiTranslationService)) result.ankiTranslationServices = saved.ankiTranslationService === 'none' ? [] : [saved.ankiTranslationService];
   result.ankiTranslationServices = result.translationOrder.filter(service => result.ankiTranslationServices.includes(service));
   for (const [key, previous] of Object.entries(legacyAnkiTemplates)) {
     if (previous.includes(saved[key])) result[key] = defaults[key];
   }
+  if (legacyAIPrompts.includes(saved.aiPrompt)) result.aiPrompt = defaults.aiPrompt;
   return result;
 }
 
@@ -327,7 +354,7 @@ export function serviceOrder(settings, key) {
 }
 
 // Keep existing setting keys as the day palette for storage compatibility.
-export const colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
+export const colorsFor = settings => Object.fromEntries(['googleColor', 'youdaoColor', 'aiColor', 'sentenceColor'].map(key => [key, settings[settings.nightMode ? 'night' + key[0].toUpperCase() + key.slice(1) : key]]));
 
 export const posGroups = [
   { key: 'posNounColor', label: '名词', pos: ['名詞', '代名詞'] },
@@ -393,7 +420,8 @@ export function createSettingsStore(platform, { siteURL = platform.siteURL ?? gl
       for (const [key, previous] of Object.entries(legacyAnkiTemplates)) {
         if (previous.includes(saved[key]) && saved[key] !== values[key]) migrated[key] = values[key];
       }
-      if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'none'].includes(saved.ankiTranslationService)) migrated.ankiTranslationServices = values.ankiTranslationServices;
+      if (legacyAIPrompts.includes(saved.aiPrompt)) migrated.aiPrompt = values.aiPrompt;
+      if (saved.ankiTranslationServices === undefined && ['google', 'youdao', 'ai', 'none'].includes(saved.ankiTranslationService)) migrated.ankiTranslationServices = values.ankiTranslationServices;
       if (Object.keys(migrated).length) await platform.setSettings(migrated);
       return values;
     },
@@ -424,9 +452,6 @@ export function createSettingsStore(platform, { siteURL = platform.siteURL ?? gl
       const patch = { ...defaults };
       delete patch.pluginSwitch;
       await platform.setSettings(patch);
-      const revision = siteRevision;
-      if (site.key) await platform.removeSettings([site.key]);
-      if (site.key && revision === siteRevision) patch[site.key] = undefined;
       publish(patch);
     }); },
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },

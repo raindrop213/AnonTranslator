@@ -9,6 +9,365 @@ import { createAnkiService } from '../src/services/anki.js';
 import { buildDictionarySearchURL, placeDictionaryPopup } from '../src/reader/dictionary-layout.js';
 import { hiragana, readingParts } from '../src/reader/word-reading.js';
 import { cachedTranslation, cancelTranslation } from '../src/services/translate.js';
+import { aiDefaults, aiSettings, aiEndpoint, validateAISettings, resolveAIProtocol, legacyAIPrompts } from '../src/services/ai.js';
+import { serviceOrigins, createChromePlatform } from '../src/platform/chrome.js';
+import { fetchRequest, gmRequest } from '../src/services/request.js';
+
+const sseEvent = (data, event = '') => `${event ? `event: ${event}\r\n` : ''}data: ${typeof data === 'string' ? data : JSON.stringify(data)}\r\n\r\n`;
+const streamSettings = protocol => ({ ...aiDefaults, aiProtocol: protocol, aiStream: true,
+  aiURL: protocol === 'gemini' ? 'https://ai.example/v1beta/models/{model}:generateContent' : `https://ai.example/${protocol}`,
+  aiModel: 'test-model' });
+const streamMessage = protocol => ({ translator: 'ai', text: '猫がいる。', from: 'ja', to: 'zh-CN', settings: streamSettings(protocol) });
+
+test('AI streaming parses split SSE for all three protocols and emits only cumulative translation text', async () => {
+  const fixtures = {
+    openai: sseEvent({ choices: [{ delta: { reasoning_content: 'hidden' } }] })
+      + sseEvent({ choices: [{ delta: { content: '猫' } }] })
+      + sseEvent({ choices: [{ delta: { content: '在这里。' }, finish_reason: 'stop' }] }) + sseEvent('[DONE]'),
+    claude: sseEvent({ type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: 'hidden' } }, 'content_block_delta')
+      + sseEvent({ type: 'content_block_delta', delta: { type: 'text_delta', text: '猫' } }, 'content_block_delta')
+      + sseEvent({ type: 'content_block_delta', delta: { type: 'text_delta', text: '在这里。' } }, 'content_block_delta')
+      + sseEvent({ type: 'message_delta', delta: { stop_reason: 'end_turn' } }, 'message_delta')
+      + sseEvent({ type: 'message_stop' }, 'message_stop'),
+    gemini: sseEvent({ candidates: [{ content: { parts: [{ thought: true, text: 'hidden' }, { text: '猫' }] } }] })
+      + sseEvent({ candidates: [{ content: { parts: [{ text: '在这里。' }] }, finishReason: 'STOP' }] })
+  };
+  for (const protocol of Object.keys(fixtures)) {
+    const updates = [];
+    const request = async (url, options) => {
+      assert.equal(typeof options.onChunk, 'function');
+      const body = JSON.parse(options.body);
+      if (protocol === 'gemini') {
+        assert.equal(new URL(url).pathname, '/v1beta/models/test-model:streamGenerateContent');
+        assert.equal(new URL(url).searchParams.get('alt'), 'sse');
+        assert(!Object.hasOwn(body, 'stream'));
+      } else assert.equal(body.stream, true);
+      const data = ': heartbeat\r\n\r\n' + fixtures[protocol];
+      // A network chunk can end inside any field, CRLF separator or JSON string.
+      for (let i = 0; i < data.length; i += 3) options.onChunk(data.slice(i, i + 3));
+      return { text: async () => data, json: async () => assert.fail('SSE is not a complete JSON document') };
+    };
+    const result = await cachedTranslation({ ...streamMessage(protocol), onUpdate: value => updates.push(value) }, request);
+    assert.equal(result.translatedText, '猫在这里。');
+    assert(updates.length >= 2, `${protocol} must update before completion`);
+    assert.equal(updates[0], '猫');
+    assert.equal(updates.at(-1), result.translatedText);
+    assert(updates.every(value => !value.includes('hidden')));
+    const count = updates.length;
+    assert.equal((await cachedTranslation({ ...streamMessage(protocol), onUpdate: value => updates.push(value) }, request)).translatedText, result.translatedText);
+    assert(updates.length <= count + 1, 'A cached result cannot replay old stream fragments');
+  }
+  const qwenUpdates = [];
+  const qwenRequest = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    assert.equal(body.messages[0].content, '猫がいる。');
+    assert.deepEqual(body.translation_options, { source_lang: 'Japanese', target_lang: 'Chinese' });
+    options.onChunk(sseEvent({ choices: [{ delta: { content: '有' } }] })
+      + sseEvent({ choices: [{ delta: { content: '有一只' } }] })
+      + sseEvent({ choices: [{ delta: { content: '有一只猫。' }, finish_reason: 'stop' }] }));
+    return {};
+  };
+  const message = streamMessage('openai');
+  message.settings.aiModel = 'qwen-mt-turbo';
+  assert.equal((await cachedTranslation({ ...message, onUpdate: value => qwenUpdates.push(value) }, qwenRequest)).translatedText, '有一只猫。');
+  assert.deepEqual(qwenUpdates, ['有', '有一只', '有一只猫。']);
+  for (const model of ['qwen-mt-flash', 'qwen-mt-lite']) {
+    const request = async (_url, options) => {
+      options.onChunk(sseEvent({ choices: [{ delta: { content: '有' } }] })
+        + sseEvent({ choices: [{ delta: { content: '猫。' }, finish_reason: 'stop' }] }));
+      return {};
+    };
+    assert.equal((await cachedTranslation({ ...message, settings: { ...message.settings, aiModel: model } }, request)).translatedText, '有猫。');
+  }
+});
+
+test('AI streaming rejects interrupted, failed and truncated results without caching partial text, and accepts complete JSON fallback', async () => {
+  const partial = sseEvent({ choices: [{ delta: { content: '部分' } }] });
+  const failures = [partial, partial + sseEvent({ error: { message: 'provider error' } }, 'error'),
+    partial + sseEvent({ choices: [{ delta: {}, finish_reason: 'length' }] }) + sseEvent('[DONE]')];
+  for (const failure of failures) {
+    let calls = 0;
+    const request = async (_url, options) => {
+      calls++;
+      const text = calls === 1 ? failure : sseEvent({ choices: [{ delta: { content: '完整' }, finish_reason: 'stop' }] }) + sseEvent('[DONE]');
+      options.onChunk(text);
+      return { text: async () => text };
+    };
+    await assert.rejects(cachedTranslation(streamMessage('openai'), request));
+    assert.equal((await cachedTranslation(streamMessage('openai'), request)).translatedText, '完整');
+    assert.equal(calls, 2);
+  }
+  for (const protocol of ['openai', 'claude', 'gemini']) {
+    const fixtures = { openai: { choices: [{ message: { content: '完整译文' }, finish_reason: 'stop' }] },
+      claude: { content: [{ type: 'text', text: '完整译文' }], stop_reason: 'end_turn' },
+      gemini: { candidates: [{ content: { parts: [{ text: '完整译文' }] }, finishReason: 'STOP' }] } };
+    const request = async (_url, options) => {
+      const text = JSON.stringify(fixtures[protocol]);
+      for (let i = 0; i < text.length; i += 2) options.onChunk(text.slice(i, i + 2));
+      return { text: async () => text, json: async () => fixtures[protocol] };
+    };
+    assert.equal((await cachedTranslation(streamMessage(protocol), request)).translatedText, '完整译文');
+  }
+  const settings = { ...streamSettings('openai'), aiBody: '{"stream":false}' };
+  const request = async (_url, options) => {
+    assert.equal(JSON.parse(options.body).stream, false, 'An explicit custom stream field overrides the switch');
+    assert.equal(options.onChunk, undefined);
+    return { json: async () => ({ choices: [{ message: { content: '普通响应' } }] }) };
+  };
+  assert.equal((await cachedTranslation({ ...streamMessage('openai'), settings }, request)).translatedText, '普通响应');
+});
+
+test('Chrome fetch and userscript transport preserve UTF-8 and stream progress without repeating final text', async () => {
+  const previousFetch = globalThis.fetch, previousGM = globalThis.GM_xmlhttpRequest, previousChrome = globalThis.chrome;
+  const text = 'data: {"text":"猫🐈在这里。"}\r\n\r\n', bytes = new TextEncoder().encode(text);
+  try {
+    globalThis.fetch = async (_url, options) => {
+      assert(!Object.hasOwn(options, 'onChunk'), 'Transport callbacks must not be passed as fetch init fields');
+      return new Response(new ReadableStream({
+        start(controller) {
+          for (let i = 0; i < bytes.length; i++) controller.enqueue(bytes.slice(i, i + 1));
+          controller.close();
+        }
+      }), { headers: { 'content-type': 'text/event-stream' } });
+    };
+    const chunks = [];
+    const response = await fetchRequest('https://ai.example/stream', { onChunk: value => chunks.push(value) });
+    assert.equal(chunks.join(''), text);
+    assert(!chunks.join('').includes('\uFFFD'));
+    assert.equal(await response.text(), text);
+
+    let status = 200;
+    globalThis.GM_xmlhttpRequest = options => {
+      queueMicrotask(() => {
+        options.onprogress({ status, responseText: text.slice(0, 7) });
+        options.onprogress({ status, responseText: text.slice(0, 12) });
+        options.onload({ status, responseText: text, responseHeaders: 'Content-Type: text/event-stream\r\n' });
+      });
+      return { abort() { options.onabort?.(); } };
+    };
+    const progress = [];
+    const gmResponse = await gmRequest('https://ai.example/stream', { onChunk: value => progress.push(value) });
+    assert.equal(progress.join(''), text);
+    assert.equal(await gmResponse.text(), text);
+    assert(progress.length >= 2);
+    status = 401;
+    const failedProgress = [];
+    await assert.rejects(gmRequest('https://ai.example/stream', { onChunk: value => failedProgress.push(value) }), error => error.status === 401);
+    assert.deepEqual(failedProgress, [], 'HTTP error bodies must not appear as translation progress');
+
+    let aborted = 0;
+    globalThis.GM_xmlhttpRequest = options => ({ abort() { aborted++; options.onabort?.(); } });
+    const controller = new AbortController();
+    const pending = gmRequest('https://ai.example/stream', { signal: controller.signal, onChunk() {} });
+    controller.abort();
+    await assert.rejects(pending, { name: 'AbortError' });
+    assert.equal(aborted, 1);
+
+    const listeners = new Set(), updates = [];
+    let rejectMessage = false;
+    globalThis.chrome = { runtime: {
+      getURL: path => `chrome-extension://test/${path}`,
+      onMessage: { addListener: listener => listeners.add(listener), removeListener: listener => listeners.delete(listener) },
+      async sendMessage(message) {
+        for (const listener of listeners) {
+          listener({ action: 'translation_progress', progressId: 'other-request', translatedText: 'stale' });
+          listener({ action: 'translation_progress', progressId: message.progressId, translatedText: '当前' });
+        }
+        if (rejectMessage) throw new Error('background disconnected');
+        return { translatedText: '当前译文' };
+      }
+    } };
+    const platform = createChromePlatform();
+    assert.deepEqual(await platform.send({ action: 'translate', translator: 'ai' }, text => updates.push(text)), { translatedText: '当前译文' });
+    assert.deepEqual(updates, ['当前']);
+    assert.equal(listeners.size, 0, 'A completed request releases its progress listener');
+    rejectMessage = true;
+    await assert.rejects(platform.send({ action: 'translate', translator: 'ai' }, () => {}), /disconnected/);
+    assert.equal(listeners.size, 0, 'A failed request also releases its progress listener');
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousGM === undefined) delete globalThis.GM_xmlhttpRequest;
+    else globalThis.GM_xmlhttpRequest = previousGM;
+    if (previousChrome === undefined) delete globalThis.chrome;
+    else globalThis.chrome = previousChrome;
+  }
+});
+
+test('AI translation uses each native protocol, literal prompt substitutions and custom JSON fields', async () => {
+  const text = '猫は{{to}}と言った。\n次の行。', calls = [];
+  const fixtures = {
+    openai: { choices: [{ message: { content: '猫说了。\n下一行。' } }] },
+    claude: { content: [{ type: 'thinking', thinking: 'hidden' }, { type: 'text', text: '猫说了。\n下一行。' }] },
+    gemini: { candidates: [{ content: { parts: [{ thought: true, text: 'hidden' }, { text: '猫说了。\n下一行。' }] } }] }
+  };
+  for (const protocol of ['openai', 'claude', 'gemini']) {
+    const config = { ...aiDefaults, aiProtocol: protocol, aiURL: protocol === 'gemini'
+      ? 'https://ai.example/v1/models/{model}:generateContent' : 'https://ai.example/' + protocol,
+      aiModel: 'test-model', aiAPIKey: 'test-only-key', aiPrompt: '{{from}} → {{to}}\n{{text}}',
+      aiBody: JSON.stringify(protocol === 'gemini' ? { generationConfig: { temperature: 0.3 }, safetySettings: [] } : { temperature: 0.3 }),
+      aiHeaders: '{"X-Custom":"yes"}' };
+    const request = async (url, options) => {
+      calls.push({ url, options });
+      return { json: async () => fixtures[protocol] };
+    };
+    const result = await cachedTranslation({ translator: 'ai', text, from: 'ja', to: 'zh-CN', settings: config }, request);
+    assert.equal(result.translatedText, '猫说了。\n下一行。');
+    const { url, options } = calls.at(-1), body = JSON.parse(options.body);
+    assert.equal(options.method, 'POST');
+    assert.equal(options.aiBase, url);
+    assert.equal(options.headers['X-Custom'] ?? options.headers['x-custom'], 'yes');
+    assert.equal(options.headers['Content-Type'] ?? options.headers['content-type'], 'application/json');
+    assert(!JSON.stringify(body).includes('test-only-key'));
+    const prompt = protocol === 'gemini' ? body.contents[0].parts[0].text : body.messages[0].content;
+    assert(prompt.includes(text), 'Original text must remain literal and be sent in one request');
+    if (protocol === 'gemini') {
+      assert.equal(url, 'https://ai.example/v1/models/test-model:generateContent');
+      assert.equal(options.headers['x-goog-api-key'], 'test-only-key');
+      assert.equal(body.generationConfig.temperature, 0.3);
+    } else {
+      assert.equal(body.model, 'test-model');
+      assert.equal(body.stream, false);
+      assert.equal(body.temperature, 0.3);
+      if (protocol === 'claude') {
+        assert(body.max_tokens > 0);
+        assert.equal(options.headers['x-api-key'], 'test-only-key');
+      } else assert.equal(options.headers.Authorization ?? options.headers.authorization, 'Bearer test-only-key');
+    }
+  }
+  assert.equal(calls.length, 3);
+  await cachedTranslation({ translator: 'ai', text, from: 'ja', to: 'zh-CN',
+    settings: { ...aiDefaults, aiURL: 'https://test.openai.azure.com', aiModel: 'deployment-name', aiAPIKey: 'test-only-azure-key' } },
+  async (url, options) => {
+    assert.equal(url, 'https://test.openai.azure.com/openai/v1/chat/completions');
+    assert.equal(options.headers['api-key'], 'test-only-azure-key');
+    assert.equal(options.headers.Authorization, undefined);
+    return { json: async () => fixtures.openai };
+  });
+});
+
+test('AI settings validate custom endpoints and JSON, and preserve service choices during migration', () => {
+  assert.equal(defaults.aiProtocol, 'auto');
+  assert.equal(normalizeSetting('aiProtocol', 'auto'), 'auto');
+  for (const [url, protocol] of [
+    ['https://api.deepseek.com', 'openai'], ['http://localhost:1234/v1', 'openai'],
+    ['https://api.anthropic.com', 'claude'], ['https://proxy.example/custom/v1/messages', 'claude'],
+    ['https://generativelanguage.googleapis.com', 'gemini'], ['https://proxy.example/v1beta/models/', 'gemini'],
+    ['https://proxy.example/models/test:streamGenerateContent?alt=sse', 'gemini']
+  ]) assert.equal(resolveAIProtocol({ aiURL: url }), protocol);
+  assert.equal(resolveAIProtocol({ aiProtocol: 'openai', aiURL: 'https://proxy.example/v1/messages' }), 'openai');
+  assert.equal(resolveAIProtocol({ aiProtocol: 'claude', aiURL: 'https://proxy.example/custom-api' }), 'claude');
+  assert.equal(aiEndpoint({ aiURL: 'https://proxy.example/v1beta', aiModel: 'test-model', aiStream: true }),
+    'https://proxy.example/v1beta/models/test-model:streamGenerateContent?alt=sse');
+  // Background validation receives an already resolved endpoint, not settings.
+  assert.equal(aiEndpoint({ aiProtocol: 'openai', aiURL: 'https://proxy.example/v1beta/models/test-model:streamGenerateContent?alt=sse' }),
+    'https://proxy.example/v1beta/models/test-model:streamGenerateContent?alt=sse');
+  for (const prompt of legacyAIPrompts) assert.equal(normalizeSettings({ aiPrompt: prompt }).aiPrompt, defaults.aiPrompt);
+  const customPrompt = 'My own translator: {{from}} -> {{to}}\n{{text}}';
+  assert.equal(normalizeSettings({ aiPrompt: customPrompt }).aiPrompt, customPrompt);
+  assert.equal(aiEndpoint({ aiURL: 'https://api.deepseek.com' }), 'https://api.deepseek.com/chat/completions');
+  assert.equal(aiEndpoint({ aiURL: 'https://api.deepseek.com/v1/' }), 'https://api.deepseek.com/v1/chat/completions');
+  assert.equal(aiEndpoint({ aiURL: 'https://api.openai.com' }), 'https://api.openai.com/v1/chat/completions');
+  assert.equal(aiEndpoint({ aiURL: 'https://api.mistral.ai' }), 'https://api.mistral.ai/v1/chat/completions');
+  assert.equal(aiEndpoint({ aiURL: 'https://api.cohere.com' }), 'https://api.cohere.com/compatibility/v1/chat/completions');
+  assert.equal(aiEndpoint({ aiURL: 'https://example.openai.azure.com' }), 'https://example.openai.azure.com/openai/v1/chat/completions');
+  for (const base of ['https://dashscope.aliyuncs.com/compatible-mode/v1', 'https://open.bigmodel.cn/api/paas/v4', 'https://proxy.example/v2/']) {
+    assert.equal(aiEndpoint({ aiURL: base }), base.replace(/\/$/, '') + '/chat/completions');
+  }
+  for (const path of ['', '/v1', '/v1/']) {
+    assert.equal(aiEndpoint({ aiProtocol: 'claude', aiURL: 'https://api.anthropic.com' + path }), 'https://api.anthropic.com/v1/messages');
+  }
+  for (const path of ['', '/v1beta', '/v1beta/', '/v1beta/models', '/v1beta/models/']) {
+    assert.equal(aiEndpoint({ aiProtocol: 'gemini', aiURL: 'https://generativelanguage.googleapis.com' + path, aiModel: 'gemini-test' }),
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent');
+  }
+  assert.equal(aiEndpoint({ aiProtocol: 'claude', aiURL: 'https://proxy.example/custom/messages?version=1' }), 'https://proxy.example/custom/messages?version=1');
+  assert.equal(defaults.ai, false);
+  assert.equal(defaults.aiStream, false);
+  assert.equal(normalizeSetting('aiStream', true), true);
+  assert.throws(() => validateAISettings({ ...aiDefaults, aiModel: 'model', aiBody: '{"stream":"yes"}' }), /布尔/);
+  assert.deepEqual(normalizeSettings({ translationOrder: ['google', 'youdao'], ankiTranslationServices: [] }).translationOrder,
+    ['google', 'youdao', 'ai']);
+  assert.deepEqual(normalizeSettings({ ankiTranslationServices: [] }).ankiTranslationServices, []);
+  assert.deepEqual(normalizeSetting('ankiTranslationServices', ['ai']), ['ai']);
+  assert(!defaults.ankiTranslationServices.includes('ai'));
+  assert.deepEqual(serviceOrigins('ai', { aiURL: 'http://localhost:1234/v1/chat/completions' }), ['http://localhost/*']);
+  assert.deepEqual(serviceOrigins('ai', { aiURL: 'https://ai.example/v1/models/{model}:generateContent' }), ['https://ai.example/*']);
+  for (const url of ['javascript:alert(1)', '//ai.example/path', 'https://user:secret@ai.example/api', 'https://ai.example/api#fragment']) {
+    assert.throws(() => normalizeSetting('aiURL', url));
+  }
+  assert.equal(normalizeSetting('aiURL', ' https://ai.example/api?api-version=1 '), 'https://ai.example/api?api-version=1');
+  for (const value of ['[]', 'null', '{bad', '{"__proto__":{"polluted":true}}']) assert.throws(() => normalizeSetting('aiBody', value));
+  assert.throws(() => normalizeSetting('aiPrompt', 'Missing source placeholder'));
+  assert.equal(normalizeSetting('aiAPIKey', ''), '');
+  assert.throws(() => validateAISettings(aiDefaults), /模型/);
+  assert.equal(aiEndpoint({ ...aiDefaults, aiURL: 'https://ai.example/models/{model}:generateContent', aiModel: 'models/a b' }),
+    'https://ai.example/models/a%20b:generateContent');
+});
+
+test('AI auto mode sends the matching request format and uses English source language instructions', async () => {
+  const text = '猫は{{from}}と{{text}}を見た。';
+  const cases = [
+    ['https://api.deepseek.com', 'openai', { choices: [{ message: { content: '译文' } }] }],
+    ['https://api.anthropic.com', 'claude', { content: [{ type: 'text', text: '译文' }] }],
+    ['https://proxy.example/v1beta', 'gemini', { candidates: [{ content: { parts: [{ text: '译文' }] } }] }]
+  ];
+  for (const [aiURL, protocol, response] of cases) {
+    const request = async (_url, options) => {
+      const body = JSON.parse(options.body);
+      const prompt = protocol === 'gemini' ? body.contents[0].parts[0].text : body.messages[0].content;
+      assert(prompt.includes('Source language: auto-detect.'));
+      assert(prompt.includes('Simplified Chinese'));
+      assert(!/[\u3400-\u9fff]/u.test(prompt.slice(0, prompt.indexOf(text))), 'Default instructions should be entirely English');
+      assert(prompt.includes(text), 'Placeholders in source text must remain literal');
+      if (protocol === 'claude') assert(body.max_tokens > 0);
+      return { json: async () => response };
+    };
+    assert.equal((await cachedTranslation({ translator: 'ai', text, from: 'auto', to: 'zh-CN',
+      settings: { ...aiDefaults, aiURL, aiModel: 'test-model' } }, request)).translatedText, '译文');
+  }
+  for (const [from, aiPrompt, expected] of [
+    ['ja', aiDefaults.aiPrompt, 'Source language: Japanese.'],
+    ['auto', '{{from}} -> {{to}}\n{{text}}', 'auto-detect -> Simplified Chinese']
+  ]) {
+    await cachedTranslation({ translator: 'ai', text, from, to: 'zh-CN', settings: { ...aiDefaults, aiModel: 'test-model', aiPrompt } },
+      async (_url, options) => {
+        const prompt = JSON.parse(options.body).messages[0].content;
+        assert(prompt.includes(expected));
+        assert(prompt.includes(text));
+        assert(!prompt.includes('自动识别语言'));
+        return { json: async () => ({ choices: [{ message: { content: '译文' } }] }) };
+      });
+  }
+});
+
+test('AI cache follows configuration changes, failed calls retry and explicit refresh bypasses cached results', async () => {
+  const settings = { ...aiDefaults, aiURL: 'https://ai.example/chat/completions', aiModel: 'test-model' };
+  let calls = 0, fail = false;
+  const request = async () => {
+    calls++;
+    if (fail) { const error = new Error('HTTP 401'); error.status = 401; throw error; }
+    return { json: async () => ({ choices: [{ message: { content: String(calls) } }] }) };
+  };
+  const message = { translator: 'ai', text: '今日は晴れ。', from: 'ja', to: 'zh-CN', settings };
+  assert.equal((await cachedTranslation(message, request)).translatedText, '1');
+  assert.equal((await cachedTranslation(message, request)).translatedText, '1');
+  for (const [key, value] of Object.entries({ aiModel: 'another-model', aiPrompt: '{{text}} 请翻译', aiURL: 'https://other.example/api',
+    aiHeaders: '{"X-Test":"1"}', aiBody: '{"temperature":0.7}', aiAPIKey: 'changed-test-key' })) {
+    settings[key] = value;
+    const before = calls;
+    await cachedTranslation({ ...message, settings: aiSettings(settings) }, request);
+    assert.equal(calls, before + 1, `${key} must invalidate old translations`);
+  }
+  const before = calls;
+  await cachedTranslation({ ...message, refresh: true }, request);
+  assert.equal(calls, before + 1);
+  fail = true;
+  const failure = { ...message, text: '失敗。' };
+  await assert.rejects(cachedTranslation(failure, request), /401/);
+  fail = false;
+  await cachedTranslation(failure, request);
+  assert.equal(calls, before + 3, 'Failed requests must not remain cached');
+});
 
 test('numeric preferences accept their boundaries and preserve a fully hidden docked icon', () => {
   for (const key of ['dockedIconOpacity', 'panelTransparency', 'posOpacity']) {
@@ -269,4 +628,23 @@ test('Anki duplicate prompts do not write, confirmed adds preserve draft fields 
   assert.deepEqual(calls.filter(call => call.action === 'deleteNotes').map(call => call.params), [{ notes: [200] }]);
   assert.deepEqual([...notes.keys()], [100]);
   assert.equal((await service.undoInfo(settings)).undoAvailable, false);
+});
+
+test('Anki joining a cancelled AI reading request cannot trigger an independent paid retry', async () => {
+  let calls = 0, begin;
+  const started = new Promise(resolve => { begin = resolve; });
+  const request = async (_url, options) => {
+    calls++;
+    if (!options.signal) return { json: async () => ({ choices: [{ message: { content: 'Unexpected retry' } }] }) };
+    begin();
+    return new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true }));
+  };
+  const message = { translator: 'ai', text: '古い設定。', from: 'ja', to: 'zh-CN',
+    settings: { ...aiDefaults, aiURL: 'https://ai.example/cancel-test', aiModel: 'test-model' } };
+  const reading = cachedTranslation({ ...message, scope: 'ai-configuration-change' }, request);
+  await started;
+  const card = cachedTranslation(message, request);
+  cancelTranslation('ai-configuration-change');
+  await Promise.all([assert.rejects(reading, { name: 'AbortError' }), assert.rejects(card, { name: 'AbortError' })]);
+  assert.equal(calls, 1, 'Cancelling old AI work must not issue a new request');
 });

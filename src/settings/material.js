@@ -1,10 +1,13 @@
+import { defaults } from './settings.js';
+
 export function mountMaterial(env) {
   const { document, localStorage } = env;
   const root = document.documentElement;
   root.dataset.readerMode = 'true';
   const shell = document.querySelector('.settings-shell');
   const storageKey = 'anon-glass-material-v3';
-  let state = { transparency: 86, blur: 2 };
+  const initialState = () => ({ transparency: defaults.panelTransparency, blur: defaults.panelBlur });
+  let state = initialState();
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
     if (Number.isFinite(saved?.transparency)) state.transparency = Math.max(0, Math.min(100, saved.transparency));
@@ -36,7 +39,7 @@ export function mountMaterial(env) {
     apply();
   });
   document.addEventListener('glass:reset', () => {
-    state = { transparency: 86, blur: 2 };
+    state = initialState();
     apply();
   });
   apply(false);

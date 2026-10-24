@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSettingsStore } from '../src/settings/settings.js';
+import { createSettingsStore, defaults, normalizeSettings } from '../src/settings/settings.js';
 import { createSiteUI } from '../src/platform/site-ui.js';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -97,6 +97,36 @@ test('closing removes the website record and floating UI, and refresh remains of
   await refresh.ui.open();
   assert.equal(refresh.widgets[0].opened, 1);
   assert.equal(storage.saved['at-site:novel.example'], true);
+});
+
+test('reset restores preferences without closing the current settings panel or enabling a closed site', async t => {
+  const storage = memory(), page = await visit(t, storage);
+  await page.ui.open();
+  for (const [key, value] of Object.entries({ panelBlur: 13, panelTransparency: 25, google: true, useVITS: true,
+    ai: true, aiAPIKey: 'test-only-key', aiPrompt: 'Translate {{text}}', aiStream: true,
+    ankiEnabled: true, ankiFront: '<b>{{Word}}</b>', ankiTranslationServices: [],
+    sentenceColor: '#123456', shortcutStop: 'Ctrl+KeyK', translationOrder: ['ai', 'google', 'youdao'] })) {
+    await page.store.set(key, value);
+  }
+  await page.store.reset();
+  await settle();
+  assert.equal(page.store.values.panelBlur, 7);
+  assert.equal(page.store.values.google, false);
+  const expected = normalizeSettings(defaults);
+  for (const key of Object.keys(defaults)) if (key !== 'pluginSwitch') {
+    assert.deepEqual(storage.saved[key], defaults[key], `saved ${key}`);
+    assert.deepEqual(page.store.values[key], expected[key], `active ${key}`);
+  }
+  assert.equal(storage.saved['at-site:novel.example'], true);
+  assert.equal(page.store.values.pluginSwitch, true);
+  assert.equal(page.widgets[0].opened, 1);
+  assert.equal(page.widgets[0].dismissed, 0);
+  assert.equal(page.widgets[0].destroyed, 0);
+
+  const closed = await visit(t, storage, 'https://closed.example');
+  await closed.store.reset();
+  assert.equal(closed.store.values.pluginSwitch, false);
+  assert.equal(closed.widgets.length, 0);
 });
 
 test('same-site tabs synchronize opening and closing while another remembered website stays enabled', async t => {

@@ -319,7 +319,7 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 [data-theme="dark"] dialog, [data-theme="dark"] .toast { background: rgba(62,43,59,.97); }
 @media (max-width: 500px) { .theme-mini { height: 48px; } .color-pair { gap: 13px; } }
 
-[data-glass-root] { --surface-alpha: .14; --surface-card-alpha: .05; --surface-input-alpha: .07; --surface-tint-alpha: .063; --surface-shine-alpha: .055; --surface-blur: 2px; }
+[data-glass-root] { --surface-alpha: .14; --surface-card-alpha: .05; --surface-input-alpha: .07; --surface-tint-alpha: .063; --surface-shine-alpha: .055; --surface-blur: 7px; }
 [data-reader-mode="true"] body { overflow: hidden; min-height: 100dvh; }
 [data-reader-mode="true"] .preview-header, [data-reader-mode="true"] .design-note, [data-reader-mode="true"] .preview-footer { display: none; }
 [data-reader-mode="true"] .stage { display: contents; }

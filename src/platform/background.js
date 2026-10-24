@@ -2,6 +2,7 @@ import { chromeServices, serviceOrigins, servicePermissionError } from './chrome
 import { normalizeSetting } from '../settings/settings.js';
 import { fetchRequest } from '../services/request.js';
 import { cachedTranslation, cancelTranslation } from '../services/translate.js';
+import { aiEndpoint } from '../services/ai.js';
 import { vitsSpeakers, vitsAudio, huoshanAudio, configureAudioCacheStorage } from '../services/speech.js';
 import { createPersistentAudioCache } from './audio-cache.js';
 import { checkLatestVersion } from '../services/update.js';
@@ -36,6 +37,12 @@ async function request(url, options) {
     const base = normalizeAnkiURL(options.ankiBase);
     if (address.href !== base) throw new Error('不支持的 AnkiConnect 接口地址');
     entry = { service: chromeServices.anki, origin: serviceOrigins('anki', { ankiURL: base })[0] };
+  }
+  if (options?.aiBase) {
+    // aiBase is already resolved; keep Gemini's streaming endpoint unchanged.
+    const base = aiEndpoint({ aiProtocol: 'openai', aiURL: options.aiBase, aiModel: 'model' });
+    if (address.href !== base) throw new Error('不支持的 AI 接口地址');
+    entry = { service: chromeServices.ai, origin: serviceOrigins('ai', { aiURL: base })[0] };
   }
   if (!entry) throw new Error('不支持的接口地址');
   const { service, origin } = entry;
@@ -76,7 +83,18 @@ function service(message, sender) {
     }
     case 'check_update': return checkLatestVersion(request);
     case 'cancel_translation': return cancelTranslation(message.scope);
-    case 'translate': return cachedTranslation(message, request);
+    case 'translate': {
+      const onUpdate = message.progressId ? translatedText => {
+        const update = { action: 'translation_progress', progressId: message.progressId, translatedText };
+        try {
+          const sent = sender.tab?.id != null
+            ? chrome.tabs.sendMessage(sender.tab.id, update, { frameId: sender.frameId ?? 0 })
+            : chrome.runtime.sendMessage(update);
+          void Promise.resolve(sent).catch(() => {});
+        } catch { /* The reading page may have closed while translation finished. */ }
+      } : undefined;
+      return cachedTranslation({ ...message, onUpdate }, request);
+    }
     case 'tokenize': return tokenizerData.tokenize(message.text);
     case 'tokenizer_data_status': return tokenizerData.status();
     case 'tokenizer_data_install': return tokenizerData.install();

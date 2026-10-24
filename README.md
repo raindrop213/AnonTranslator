@@ -101,6 +101,26 @@
 
 模板通过 `{{Word}}` 等字段占位符引用内容。使用已有模型时，首字段须为 `Word`，且包含上述全部字段；若提示模型字段不兼容，可换一个模型名称，由插件自动创建。
 
+## AI 翻译
+
+在“翻译 → AI 翻译”中填写接口地址、模型名称和 API Key，接口格式默认根据地址自动识别。Chrome 首次访问自定义接口需要点击“授权接口”；油猴由脚本管理器处理跨域授权。打开 AI 翻译开关后，选中文字即可显示译文，也可以在“Anki → 例句翻译”中单独选用 AI。
+
+| 接口格式 | 完整地址示例 |
+| --- | --- |
+| OpenAI 兼容（GPT、DeepSeek 等） | `https://api.openai.com/v1/chat/completions` / `https://api.deepseek.com/chat/completions` |
+| Claude | `https://api.anthropic.com/v1/messages` |
+| Gemini | `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` |
+
+三种格式均支持服务根地址：OpenAI 兼容接口补全 /chat/completions（OpenAI 官方根地址补全 /v1/chat/completions），Claude 补全 /v1/messages，Gemini 补全 /v1beta/models/模型名:generateContent。也支持 /v1 或 Gemini 的 /v1beta 基础地址；完整路径保持原样；Gemini 地址中的 `{model}` 会使用填写的模型名称替换。转发服务或本地模型也可填写自己的完整地址，不需要密钥的接口可将 API Key 留空。特殊中转地址无法识别时，可在“高级设置”中手动指定接口格式；这不会修改地址。
+
+“高级设置”支持自定义英文提示词、请求头和请求参数。`{{text}}` 是原文，`{{from}}` / `{{to}}` 是源语言和目标语言的英文名称；自动识别时 `{{from}}` 为 `auto-detect`。旧版默认提示词会更新，自定义提示词会保留。
+
+请求头与参数使用 JSON 对象，例如 `{"temperature":0.3}`、`{"reasoning_effort":"low"}`；嵌套对象会合并，数组或其他值会替换同名默认字段。显式填写的 `stream: true` 或 `stream: false` 优先于流式开关。
+
+其他服务的 OpenAI 兼容接口也共用这一格式。基础地址以 `/v1`、`/v2`、`/v3` 等版本路径结尾时会补全 `/chat/completions`，包括 `/compatible-mode/v1`、`/api/paas/v4` 这样的路径。Mistral、Cohere 的官方根地址会补全各自的兼容路径。Azure 官方 `*.openai.azure.com` 地址自动使用 `api-key` 鉴权，支持完整部署地址及 `api-version` 查询参数；代理的特殊鉴权仍可在请求头中指定。
+
+使用 Qwen MT 模型时，会按其接口要求发送原文，并根据所选语言生成 `translation_options`，也可在自定义参数中添加术语等选项。不同模型的流式模式按服务格式解析；这不包含 DashScope 原生接口、千帆 AK/SK 签名交换或 OCR 接口。
+
 ## 项目结构
 
 ```text

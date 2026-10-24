@@ -1,8 +1,10 @@
+import { aiProtocols } from '../services/ai.js';
+
 export function createCoreTabs(ctx, { window, document }) {
   const e = ctx.escape;
   const paths = {
     chevron: '<path d="m8 10 4 4 4-4"/>', up: '<path d="m7 14 5-5 5 5"/>', down: '<path d="m7 10 5 5 5-5"/>',
-    play: '<path d="m9 5 10 7-10 7z"/>', check: '<path d="m5 12 4 4L19 6"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
     grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>',
     arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', link: '<path d="M14 3h7v7m-1-6L10 14"/><path d="M10 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-5"/>',
     copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
@@ -14,6 +16,7 @@ export function createCoreTabs(ctx, { window, document }) {
   const label = (key, name, description) => `<div class="setting-copy"><label for="core-${key}">${name}</label>${hint(description)}</div>`;
   const toggle = (key, name, description = '') => `<div class="setting-row">${label(key, name, description)}<label class="switch"><input id="core-${key}" data-pref="${key}" type="checkbox" role="switch" aria-label="${name}"><span class="switch-track"></span></label></div>`;
   const input = (key, name, description = '', attrs = '') => `<div class="setting-row core-field">${label(key, name, description)}<input class="core-input" id="core-${key}" data-pref="${key}" ${attrs || 'type="text"'} spellcheck="false"></div>`;
+  const textarea = (key, name, description, placeholder, rows = 4) => `<div class="setting-row core-field">${label(key, name, description)}<textarea class="core-textarea" id="core-${key}" data-pref="${key}" rows="${rows}" placeholder="${e(placeholder)}" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>`;
   const select = (key, name, options, description = '') => `<div class="setting-row core-select-row">${label(key, name, description)}<div class="select-wrap"><select id="core-${key}" data-pref="${key}">${options.map(item => { const [value, text] = Array.isArray(item) ? item : [item, item]; return `<option value="${e(value)}">${e(text)}</option>`; }).join('')}</select>${svg('chevron')}</div></div>`;
   const range = (key, name, min, max, step, description = '', unit = '') => `<div class="setting-row core-range-row">${label(key, name, description)}<output data-output="${key}" class="core-value"></output>${unit ? `<span class="core-unit">${unit}</span>` : ''}<input id="core-${key}" data-pref="${key}" aria-label="${name}" type="range" min="${min}" max="${max}" step="${step}"></div>`;
   const group = (title, description, content, attrs = '') => `<div class="group-heading"><h3>${title}</h3>${hint(description)}</div><div class="settings-group glass" ${attrs}>${content}</div>`;
@@ -27,9 +30,11 @@ export function createCoreTabs(ctx, { window, document }) {
     .core-field .setting-copy { margin-bottom: 10px; }
     .setting-row.core-symbol-pairs { border-top: 0; padding-top: 0; }
     .core-input, .core-textarea { width: 100%; min-width: 0; border: 1px solid var(--line); background: rgba(255,255,255,.19); box-shadow: inset 0 1px 3px rgba(var(--shadow),.035), 0 1px 0 var(--highlight); border-radius: 11px; padding: 10px 11px; font: inherit; font-size: 11px; color: var(--ink); }
-    .core-input::placeholder { color: var(--faint); }
+    .core-input::placeholder, .core-textarea::placeholder { color: var(--faint); }
     .core-input:focus, .core-textarea:focus { border-color: var(--muted); }
     .core-input[type=number] { font-variant-numeric: tabular-nums; }
+    .core-textarea { display: block; resize: vertical; min-height: 76px; line-height: 1.7; }
+    .core-ai-json { font-family: Consolas, 'SFMono-Regular', monospace; }
     .core-note { font-size: 10px; color: var(--muted); line-height: 1.8; margin: 12px 4px 0; }
     .core-note a { color: var(--ink); text-decoration-color: var(--line); text-underline-offset: 3px; }
     .core-select-row { flex-wrap: wrap; gap: 9px; padding: 12px 0; }
@@ -109,7 +114,7 @@ export function createCoreTabs(ctx, { window, document }) {
     .core-help-link > span { flex: 1; min-width: 0; font-size: 11px; }
     .core-help-link small { display: block; color: var(--muted); font-size: 9px; margin-top: 4px; overflow-wrap: anywhere; }
     .core-help-link > svg:last-child { width: 12px; height: 12px; }
-    [data-theme=dark] .core-input { background: rgba(0,0,0,.08); }
+    [data-theme=dark] .core-input, [data-theme=dark] .core-textarea { background: rgba(0,0,0,.08); }
   `;
 
   const copy = {
@@ -191,7 +196,7 @@ export function createCoreTabs(ctx, { window, document }) {
     }
   };
 
-  function translationCard(id, name, logo, description) {
+  function translationCard(id, name, logo, description, fields = '') {
     return `<section class="core-translation-card glass" data-translation-service="${id}">
       <div class="core-translation-top">
         <button type="button" class="drag-handle" draggable="true" aria-label="拖动排序 ${name}">${svg('grip')}</button>
@@ -201,15 +206,31 @@ export function createCoreTabs(ctx, { window, document }) {
       </div>
       ${select(`${id}From`, '源语言', languages(`${id}From`))}
       ${select(`${id}To`, '目标语言', languages(`${id}To`))}
+      ${fields}
       ${permission(id, name)}
     </section>`;
   }
+  const aiFields = `
+    ${input('aiURL', '接口地址', '默认按地址识别接口，支持根地址或完整路径。', `type="url" placeholder="${e(aiProtocols.openai.url)}" autocomplete="off"`)}
+    ${input('aiModel', '模型名称', '', 'type="text" placeholder="填写服务商提供的模型名称" autocomplete="off"')}
+    ${input('aiAPIKey', 'API Key', '密钥保存在此设备。本地免密接口可留空。', 'type="password" placeholder="填写接口密钥" autocomplete="off"')}
+    ${toggle('aiStream', '流式输出', '边生成边显示译文；不支持流式的接口可关闭。')}
+    <details class="core-details" data-ai-advanced><summary>高级设置 ${svg('chevron')}</summary>
+      ${select('aiProtocol', '接口格式', [['auto', '自动识别'], ...Object.entries(aiProtocols).map(([id, protocol]) => [id, protocol.label])], '默认自动识别，特殊中转服务可手动指定。')}
+      ${textarea('aiPrompt', '翻译提示词', '{{text}} 原文，{{from}} 源语言，{{to}} 目标语言。', ctx.defaults.aiPrompt, 4)}
+      ${textarea('aiBody', '请求字段（JSON）', '与默认请求体合并；stream 字段可覆盖流式开关。', '{"temperature":0.3}', 3)}
+      ${textarea('aiHeaders', '请求头（JSON）', '可自定义鉴权等请求头；留空使用当前格式的默认请求头。', '{"Authorization":"Bearer …"}', 3)}
+    </details>
+  `;
   const translation = {
     id: 'translation', name: '翻译', icon: 'translation',
     html: `
-      <div class="core-translation-order">${translationCard('youdao', '有道', '有', '中日英互译')}${translationCard('google', 'Google', 'G', '多语言翻译')}</div>
+      <div class="core-translation-order">${translationCard('youdao', '有道', '有', '中日英互译')}${translationCard('google', 'Google', 'G', '多语言翻译')}${translationCard('ai', 'AI 翻译', 'AI', '自定义模型接口', aiFields)}</div>
     `,
     init(root) {
+      const aiCard = root.querySelector('[data-translation-service="ai"]');
+      aiCard.querySelector('[data-pref="aiProtocol"]').closest('.setting-row').classList.add('core-wide-select');
+      aiCard.querySelectorAll('[data-pref="aiHeaders"],[data-pref="aiBody"]').forEach(control => control.classList.add('core-ai-json'));
       const ordering = root.querySelector('.core-translation-order');
       const move = (id, offset) => {
         const order = [...ctx.get('translationOrder')];

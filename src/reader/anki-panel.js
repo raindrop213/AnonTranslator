@@ -1,6 +1,8 @@
 import { serializeDictionaryContent } from './dictionary-content.js';
 import { serviceOrder } from '../settings/settings.js';
 import { escapeHTML, plainText } from '../services/anki-fields.js';
+import { providerNames } from '../services/translate.js';
+import { aiSettings } from '../services/ai.js';
 const panelCSS = `
 :host{display:block;min-width:0;min-height:0;height:100%;--at-anki-accent:#a33b35;color:var(--at-anki-color,#29313b);font:13px/1.35 system-ui,"Microsoft YaHei",sans-serif;writing-mode:horizontal-tb;direction:ltr;color-scheme:light}
 *{box-sizing:border-box}.editor{display:flex;flex-direction:column;gap:0;min-height:0;height:100%;padding:0;overflow:hidden;background:var(--at-anki-bg,#fff)}
@@ -23,8 +25,9 @@ const translationServices = settings => {
   const selected = Array.isArray(settings.ankiTranslationServices) ? settings.ankiTranslationServices : [settings.ankiTranslationService];
   return serviceOrder(settings, 'translationOrder').filter(provider => selected.includes(provider));
 };
-const translationConfig = settings => JSON.stringify(translationServices(settings).map(provider => [provider, settings[provider + 'From'], settings[provider + 'To']]));
-const translationKey = (settings, provider, text) => JSON.stringify([text, settings[provider + 'From'], settings[provider + 'To']]);
+const providerConfig = (settings, provider) => [provider, settings[provider + 'From'], settings[provider + 'To'], ...(provider === 'ai' ? [aiSettings(settings)] : [])];
+const translationConfig = settings => JSON.stringify(translationServices(settings).map(provider => providerConfig(settings, provider)));
+const translationKey = (settings, provider, text) => JSON.stringify([text, ...providerConfig(settings, provider)]);
 export const toHiragana = value => String(value || '').replace(/[\u30a1-\u30f6]/g, character => String.fromCharCode(character.charCodeAt(0) - 0x60));
 
 // Format the source once; the editable textarea is the card's Sentence field.
@@ -119,6 +122,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
   let deck = '', selectedTags = new Set(), configuredDecks = [], configuredTags = [];
   let clipboardPending = null;
   let translationAttempt = '', lastTranslationService = translationConfig(getSettings()), sentenceTouched = false, lastBoldWord = getSettings().ankiBoldWord;
+  let lastAIConfiguration = JSON.stringify(providerConfig(getSettings(), 'ai'));
   const translationParts = new Map();
   let undoInfo = { undoAvailable: false, reason: '暂无可撤回的新建卡片' }, undoBusy = false, undoRevision = 0;
   let undoEndpoint = `${getSettings().ankiURL}:${getSettings().ankiModel}`;
@@ -212,20 +216,30 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     const attempt = JSON.stringify([run, config, text]);
     if (translationAttempt === attempt) return;
     translationAttempt = attempt;
-    const merge = () => { translation.value = providers.map(saved).filter(Boolean).join('\n'); };
+    const merge = () => {
+      const currentSettings = getSettings();
+      translation.value = translationServices(currentSettings).map(provider => {
+        const part = translationParts.get(provider);
+        return part?.key === translationKey(currentSettings, provider, text) ? part.text : '';
+      }).filter(Boolean).join('\n');
+    };
     merge();
     const pending = providers.filter(provider => !saved(provider));
+    const pendingKeys = new Map(pending.map(provider => [provider, translationKey(settings, provider, text)]));
     const results = await Promise.allSettled(pending.map(async translator => {
-      const result = await platform.send({ action: 'translate', translator, text, from: settings[translator + 'From'], to: settings[translator + 'To'] });
+      const result = await platform.send({ action: 'translate', translator, text, from: settings[translator + 'From'], to: settings[translator + 'To'], ...(translator === 'ai' ? { settings: aiSettings(settings) } : {}) });
       if (typeof result?.translatedText !== 'string' || !result.translatedText.trim()) throw new Error('翻译为空');
       return escapeHTML(result.translatedText);
     }));
-    if (destroyed || !opened || run !== revision || translationTouched || plainText(sentence.value) !== text || translationConfig(getSettings()) !== config) return;
+    if (destroyed || !opened || run !== revision || translationTouched || plainText(sentence.value) !== text) return;
+    const currentSettings = getSettings(), currentProviders = translationServices(currentSettings);
+    const isCurrent = provider => currentProviders.includes(provider) && pendingKeys.get(provider) === translationKey(currentSettings, provider, text);
     results.forEach((result, index) => {
-      if (result.status === 'fulfilled') translationParts.set(pending[index], { text: result.value, key: translationKey(settings, pending[index], text) });
+      const provider = pending[index];
+      if (result.status === 'fulfilled' && isCurrent(provider)) translationParts.set(provider, { text: result.value, key: pendingKeys.get(provider) });
     });
     merge();
-    if (results.some(result => result.status === 'rejected') && !busy && !mediaBusy) setStatus(translation.value.trim() ? '部分例句翻译未取得，可手动补充' : '例句翻译未取得，可直接手动填写');
+    if (results.some((result, index) => result.status === 'rejected' && isCurrent(pending[index])) && !busy && !mediaBusy) setStatus(translation.value.trim() ? '部分例句翻译未取得，可手动补充' : '例句翻译未取得，可直接手动填写');
   }
   const playWord = () => onPlayWord(word.textContent);
   const playSentence = () => onPlaySentence(plainText(sentence.value));
@@ -424,7 +438,17 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     const endpoint = `${getSettings().ankiURL}:${getSettings().ankiModel}`;
     if (endpoint !== undoEndpoint) { undoEndpoint = endpoint; undoRevision++; undoInfo = { undoAvailable: false, reason: 'Anki 连接或模型已变更' }; updateControls(); if (opened) void refreshUndo(); }
     const translationService = translationConfig(getSettings());
-    if (opened && translationService !== lastTranslationService) void fetchTranslation();
+    const aiConfiguration = JSON.stringify(providerConfig(getSettings(), 'ai')), aiConfigChanged = aiConfiguration !== lastAIConfiguration;
+    if (aiConfigChanged) {
+      translationParts.delete('ai');
+      if (opened && !translationTouched) translation.value = translationServices(getSettings()).map(provider => {
+        const part = translationParts.get(provider);
+        return part?.key === translationKey(getSettings(), provider, plainText(sentence.value)) ? part.text : '';
+      }).filter(Boolean).join('\n');
+    }
+    // Editing credentials or prompts should never start a paid request.
+    if (opened && translationService !== lastTranslationService && !aiConfigChanged) void fetchTranslation();
+    lastAIConfiguration = aiConfiguration;
     lastTranslationService = translationService;
     prepareAudio();
 
@@ -436,7 +460,7 @@ export function createAnkiPanel(platform, getSettings, doc = document, { show = 
     open(value = {}) {
       nextDraft(); opened = true; tags.open = false; context = { ...value }; word.textContent = String(value.word || ''); reading.value = toHiragana(value.reading || ''); readingTouched = sentenceTouched = false; sentence.value = sentenceMarkup(context, getSettings().ankiBoldWord !== false); translation.value = String(value.translation || '');
       translationParts.clear();
-      for (const [provider, text] of Object.entries(value.translationSources || {})) if (['google', 'youdao'].includes(provider) && typeof text === 'string' && text.trim()) translationParts.set(provider, { text: escapeHTML(text), key: translationKey(getSettings(), provider, plainText(sentence.value)) });
+      for (const [provider, text] of Object.entries(value.translationSources || {})) if (providerNames.includes(provider) && typeof text === 'string' && text.trim()) translationParts.set(provider, { text: escapeHTML(text), key: translationKey(getSettings(), provider, plainText(sentence.value)) });
       translationTouched = !!translation.value.trim() && !translationParts.size;
       deck = value.deck || lines(getSettings().ankiDecks)[0] || ''; selectedTags = new Set(Array.isArray(value.tags) ? value.tags : []); dictionaries.clear(); image = imageCanvas = imageFormat = null; closeViewer(); updateThumbnail(); refresh();
       platform.getAnkiPreviewDraft = getPreviewDraft;

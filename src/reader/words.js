@@ -1,6 +1,7 @@
 import { wordColorFor } from '../settings/settings.js';
 import { createDictionaryPopup } from './dictionary-popup.js';
 import { sentenceGroups } from './text.js';
+import { providerNames } from '../services/translate.js';
 
 import { hiragana, readingParts } from './word-reading.js';
 export { hiragana, readingParts } from './word-reading.js';
@@ -134,8 +135,8 @@ export function createWordReader(platform, getSettings, doc = document, { show =
       }
       const translated = group?.fragments.at(-1)?.nextElementSibling;
       const translationBox = translated?.matches('.at-sentence-translation') ? translated : groups.length === 1 ? current.paragraph.querySelector('.at-paragraph-translation') : null;
-      const translationRows = [...(translationBox?.querySelectorAll('.at-translation-row') || [])].filter(row => row.textContent.trim() && !/翻译中|^(?:google|youdao):/i.test(row.textContent));
-      const translationSources = Object.fromEntries(translationRows.filter(row => ['google', 'youdao'].includes(row.dataset.provider)).map(row => [row.dataset.provider, row.textContent]));
+      const translationRows = [...(translationBox?.querySelectorAll('.at-translation-row[data-translated="true"]') || [])].filter(row => row.textContent.trim());
+      const translationSources = Object.fromEntries(translationRows.filter(row => providerNames.includes(row.dataset.provider)).map(row => [row.dataset.provider, row.textContent]));
       popup.open(current.tokens, index, current.text, span, { x: event.clientX, y: event.clientY }, {
         word: token.surface, reading: token.reading === '*' ? '' : hiragana(token.reading), sentence,
         translationSources, selectedText: token.surface, sentenceRange, sentenceOffset: offset, sourceURL: doc.location.href, sourceTitle: doc.title

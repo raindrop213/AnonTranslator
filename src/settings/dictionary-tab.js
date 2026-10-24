@@ -70,7 +70,7 @@ export function mountDictionaryTab(env, store, platform, ctx) {
     $('#dictionary-enabled').disabled = !ctx.get('pluginSwitch') || !installed || Boolean(busy);
   }
 
-  function render() {
+  function render(force = false) {
     if (!mounted) return;
     const plugin = Boolean(ctx.get('pluginSwitch')), dictionary = Boolean(ctx.get('dictionaryEnabled'));
     $$('[data-setting]').forEach(control => {
@@ -85,7 +85,7 @@ export function mountDictionaryTab(env, store, platform, ctx) {
     $$('.dependent').forEach(row => row.classList.toggle('is-disabled', !plugin || !dictionary));
     search.disabled = !plugin || !dictionary;
     const value = String(ctx.get('dictionarySearchURL') || '');
-    if (doc.activeElement !== search) {
+    if (force === true || doc.activeElement !== search) {
       search.value = value; search.removeAttribute('aria-invalid');
       searchHelp.innerHTML = '填写完整网址，用 <code>{word}</code> 代替查询词。';
     }

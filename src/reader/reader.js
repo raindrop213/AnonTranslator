@@ -3,6 +3,7 @@ import { cleanParagraph, wrapSentences, unwrapSentences, sentenceGroups, sentenc
 import { colorsFor, speechSwitches, shortcutAction, serviceOrder } from '../settings/settings.js';
 import { createSpeaker } from '../services/speech.js';
 import { providerNames } from '../services/translate.js';
+import { aiSettings } from '../services/ai.js';
 import { createWordReader } from './words.js';
 const noticeReferences = new WeakMap();
 function createReadingNotice(doc) {
@@ -115,7 +116,14 @@ function createReader(platform, store, doc = document) {
     });
   };
   const translationScope = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-  const cancelTranslation = () => platform.send({ action: 'cancel_translation', scope: translationScope }).catch(() => {});
+  const aiScope = `${translationScope}:ai`;
+  const cancelAITranslation = () => platform.send({ action: 'cancel_translation', scope: aiScope }).catch(() => {});
+  const cancelTranslation = () => {
+    void platform.send({ action: 'cancel_translation', scope: translationScope }).catch(() => {});
+    void cancelAITranslation();
+  };
+  const aiConfiguration = s => JSON.stringify([aiSettings(s), s.aiFrom, s.aiTo]);
+  let lastAIConfiguration = aiConfiguration(store.values);
   const speaker = createSpeaker(platform);
   const notice = createReadingNotice(doc);
   const settings = () => store.values;
@@ -182,10 +190,10 @@ function createReader(platform, store, doc = document) {
     try { await Promise.all([copying, speak()]); }
     finally { if (run === generation) clearSpeechMark(); }
   };
-  const translate = () => {
+  const translate = (includeAI = true) => {
     removeTranslation();
     cancelTranslation();
-    const s = settings(), providers = serviceOrder(s, 'translationOrder').filter(name => s[name]);
+    const s = settings(), providers = serviceOrder(s, 'translationOrder').filter(name => s[name] && (name !== 'ai' || includeAI));
     if (!providers.length || !valid(paragraph)) return;
     const text = cleanParagraph(targetElement(), s);
     const container = doc.createElement('span');
@@ -197,11 +205,16 @@ function createReader(platform, store, doc = document) {
     for (const name of providers) {
       const row = doc.createElement('span');
       row.className = 'at-translation-row'; row.dataset.provider = name; row.style.color = colorsFor(s)[`${name}Color`];
-      row.textContent = `${name}: 翻译中…`; container.append(row);
-      platform.send({ action: 'translate', scope: translationScope, translator: name, text: text.text, from: s[`${name}From`], to: s[`${name}To`] }).then(response => {
+      const label = name === 'ai' ? 'AI' : name;
+      row.textContent = `${label}: 翻译中…`; container.append(row);
+      const showTranslation = translatedText => {
+        if (row.isConnected && settings().pluginSwitch) row.textContent = text.space + (text.pair ? text.pair[0] + translatedText + text.pair[1] : translatedText);
+      };
+      platform.send({ action: 'translate', scope: name === 'ai' ? aiScope : translationScope, translator: name, text: text.text, from: s[`${name}From`], to: s[`${name}To`], ...(name === 'ai' ? { settings: aiSettings(s) } : {}) }, name === 'ai' ? showTranslation : undefined).then(response => {
         if (!container.isConnected || !settings().pluginSwitch) return;
-        row.textContent = text.space + (text.pair ? text.pair[0] + response.translatedText + text.pair[1] : response.translatedText);
-      }).catch(error => { if (container.isConnected) row.textContent = `${name}: ${error.message}`; });
+        row.dataset.translated = 'true';
+        showTranslation(response.translatedText);
+      }).catch(error => { if (container.isConnected) row.textContent = `${label}: ${error.message}`; });
     }
   };
   const scroll = (element, group = null) => {
@@ -346,6 +359,13 @@ function createReader(platform, store, doc = document) {
     }
   });
   const applySettings = (s, patch = {}) => {
+    const aiConfig = aiConfiguration(s), aiConfigChanged = aiConfig !== lastAIConfiguration;
+    lastAIConfiguration = aiConfig;
+    if (aiConfigChanged) {
+      void cancelAITranslation();
+      translation?.querySelector('[data-provider="ai"]')?.remove();
+      if (translation && !translation.children.length) removeTranslation();
+    }
     if ('targetTags' in patch) {
       resetSelection(); paragraphSelector = s.targetTags;
     }
@@ -384,8 +404,8 @@ function createReader(platform, store, doc = document) {
       if (s.dictionaryEnabled && paragraph) void words.render(paragraph, mode === 'sentence' ? selectedSentence : null).catch(error => show(`分词失败：${error.message}`));
       else words.clear();
     }
-    else if (Object.keys(patch).some(key => key.startsWith('dictionary') || key.startsWith('anki') || /^(night)?[Pp]os.*Color$/.test(key) || key === 'nightMode' || key === 'translationOrder')) words.refresh();
-    if (paragraph && Object.keys(patch).some(key => providerNames.some(name => [name, `${name}From`, `${name}To`].includes(key)) || ['symbolPairs', 'ignoreSymbolPairs'].includes(key))) translate();
+    else if (aiConfigChanged || Object.keys(patch).some(key => key.startsWith('dictionary') || key.startsWith('anki') || /^(night)?[Pp]os.*Color$/.test(key) || key === 'nightMode' || key === 'translationOrder')) words.refresh();
+    if (paragraph && Object.keys(patch).some(key => providerNames.some(name => (name === 'ai' ? [name] : [name, `${name}From`, `${name}To`]).includes(key)) || ['symbolPairs', 'ignoreSymbolPairs'].includes(key))) translate(!aiConfigChanged);
   };
   const unsubscribe = store.subscribe(applySettings);
   applySettings(settings());

@@ -13,7 +13,7 @@ export function mountSettingsPanel(env, store, platform) {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   let values = { ...store.values }, definitions = [], dictionary, toastTimer, dialogAction, disposed = false;
   let writes = Promise.resolve();
-  let backgroundRevision = 0;
+  let backgroundRevision = 0, serviceRevision = 0;
   const pending = new Map();
   const pendingValues = () => Object.fromEntries([...pending].map(([key, draft]) => [key, draft.value]));
   const controls = () => $$('[data-pref]');
@@ -25,7 +25,7 @@ export function mountSettingsPanel(env, store, platform) {
     $('#dialog-title').textContent = title; $('#dialog-description').textContent = description;
     $('#dialog-confirm').textContent = confirmText; dialogAction = action; $('#dialog').showModal();
   }
-  function refresh() {
+  function refresh(force = false) {
     if (disposed) return;
     document.documentElement.dataset.theme = values.nightMode ? 'dark' : 'light';
     document.documentElement.style.setProperty('--at-docked-icon-opacity', String(values.dockedIconOpacity / 100));
@@ -33,13 +33,18 @@ export function mountSettingsPanel(env, store, platform) {
     $('#theme-icon').setAttribute('href', values.nightMode ? '#i-moon' : '#i-sun');
     controls().forEach(control => {
       const value = values[control.dataset.pref];
+      if (['winVoice', 'vitsVoice'].includes(control.dataset.pref) && ![...control.options].some(option => option.value === String(value))) {
+        const option = document.createElement('option'); option.value = value;
+        option.textContent = `${value} · ${control.dataset.pref === 'vitsVoice' ? '点击刷新声音列表' : '当前配置（此设备暂无对应声音）'}`;
+        control.prepend(option);
+      }
       if (control.hasAttribute('data-pref-array')) control.checked = Array.isArray(value) && value.includes(control.value);
       else if (control.type === 'checkbox') control.checked = Boolean(value);
-      else if (document.activeElement !== control && value !== undefined) control.value = String(value);
+      else if ((force || document.activeElement !== control) && value !== undefined) control.value = String(value);
     });
     $$('[data-output]').forEach(output => { output.textContent = String(values[output.dataset.output] ?? '') + (output.dataset.suffix || ''); });
     definitions.forEach(definition => definition.refresh?.(definition.root));
-    dictionary?.render?.(); env.selects?.refresh?.();
+    dictionary?.render?.(force); env.selects?.refresh?.();
   }
   function set(key, value, message) {
     const normalized = normalizeSetting(key, value);
@@ -167,9 +172,15 @@ export function mountSettingsPanel(env, store, platform) {
   });
   $('#theme-button').addEventListener('click', () => set('nightMode', !values.nightMode));
   $('#reset-button').title = '重置设置'; $('#reset-button').setAttribute('aria-label', '重置设置');
-  $('#reset-button').addEventListener('click', () => dialog('恢复默认设置？', '设置会恢复为默认值，并关闭当前网站的阅读工具。', '恢复默认', async () => {
+  $('#reset-button').addEventListener('click', () => dialog('恢复默认设置？', '参数会恢复为默认值，设置面板将保持打开。', '恢复默认', async () => {
+    serviceRevision++;
     await writes.catch(() => {}); await store.reset();
-    document.dispatchEvent(new CustomEvent('glass:reset')); refresh(); notify('已恢复默认设置');
+    $$('input, select, textarea').forEach(control => { control.setCustomValidity(''); control.removeAttribute('aria-invalid'); });
+    $$('[data-refresh-vits], [data-anki-connect]').forEach(control => { control.disabled = false; });
+    $('[data-anki-connection-status]').textContent = '';
+    document.dispatchEvent(new CustomEvent('glass:reset')); refresh(true);
+    definitions.forEach(definition => { definition.scrollTop = 0; });
+    selectTab(values.settingsTab, false); notify('已恢复默认设置');
   }));
   $('#close-button').addEventListener('click', async () => {
     try {
@@ -194,34 +205,48 @@ export function mountSettingsPanel(env, store, platform) {
       try { request = platform.requestServiceAccess(id, values); } catch (error) { notify(error.message); return; }
       control.disabled = true;
       Promise.resolve(request).then(granted => {
-        notify(granted ? '接口已授权' : '未授予接口权限'); return refreshPermissions();
-      }, error => notify(error.message)).finally(() => { control.disabled = false; });
+        notify(granted ? '接口已授权' : '未授予接口权限');
+      }, error => notify(error.message)).finally(() => { control.disabled = false; void refreshPermissions(); });
     } else if (control.hasAttribute('data-refresh-vits')) {
+      const revision = serviceRevision;
       control.disabled = true;
       void ctx.flush().then(() => platform.send({ action: 'vits_speakers', settings: store.values })).then(response => {
+        if (disposed || revision !== serviceRevision) return;
         const select = $('[data-pref="vitsVoice"]'), voices = response.voices || [];
         select.replaceChildren(...voices.map(voice => { const option = document.createElement('option'); option.value = voice.id; option.textContent = `${voice.id} · ${voice.name || '未命名'} · ${(voice.lang || []).join('/')}`; return option; }));
         if (voices.length) { const current = voices.some(voice => Number(voice.id) === values.vitsVoice) ? values.vitsVoice : Number(voices[0].id); set('vitsVoice', current); }
-        env.selects?.refresh?.(); notify(voices.length ? '声音列表已刷新' : '服务没有返回声音');
-      }).catch(error => notify(error.message)).finally(() => { control.disabled = false; });
+        refresh(); notify(voices.length ? '声音列表已刷新' : '服务没有返回声音');
+      }).catch(error => { if (!disposed && revision === serviceRevision) notify(error.message); })
+        .finally(() => { if (!disposed && revision === serviceRevision) control.disabled = false; });
     } else {
+      const revision = serviceRevision;
       const status = $('[data-anki-connection-status]'); status.textContent = '正在连接 Anki…'; control.disabled = true;
       void ctx.flush().then(() => platform.send({ action: 'anki_info', settings: store.values })).then(response => {
+        if (disposed || revision !== serviceRevision) return;
         if (response.error) throw new Error(response.error);
         status.textContent = `已连接 AnkiConnect ${response.version || ''}；${(response.decks || []).length} 个卡组。`;
-      }).catch(error => { status.textContent = '连接失败：' + error.message; }).finally(() => { control.disabled = false; });
+      }).catch(error => { if (!disposed && revision === serviceRevision) status.textContent = '连接失败：' + error.message; })
+        .finally(() => { if (!disposed && revision === serviceRevision) control.disabled = false; });
     }
   }, true);
+  let permissionRevision = 0;
   async function refreshPermissions() {
+    if (disposed) return;
+    const revision = ++permissionRevision;
     await Promise.all($$('[data-service-auth]').map(async button => {
       const id = button.dataset.serviceAuth, status = $(`[data-permission-status="${id}"]`);
       if (!platform.hasServiceAccess) { status.textContent = '由脚本管理器授权'; button.hidden = true; return; }
       try {
         const allowed = await platform.hasServiceAccess(id, values);
-        if (disposed) return;
+        if (disposed || revision !== permissionRevision) return;
         status.textContent = allowed ? '接口已授权' : '接口未授权'; status.classList.toggle('is-authorized', allowed);
         button.textContent = allowed ? '已授权' : '授权接口'; button.disabled = allowed;
-      } catch (error) { status.textContent = error.message; }
+      } catch (error) {
+        if (!disposed && revision === permissionRevision) {
+          status.textContent = error.message; status.classList.remove('is-authorized');
+          button.textContent = '授权接口'; button.disabled = false;
+        }
+      }
     }));
   }
   env.background = {
@@ -256,7 +281,10 @@ export function mountSettingsPanel(env, store, platform) {
       } finally { URL.revokeObjectURL(url); }
     }
   };
-  const unsubscribe = store.subscribe(next => { values = { ...next, ...pendingValues() }; refresh(); });
+  const unsubscribe = store.subscribe((next, patch) => {
+    values = { ...next, ...pendingValues() }; refresh();
+    if (['aiURL', 'aiProtocol', 'aiModel', 'ankiURL', 'vitsAPI', 'vitsCustomAPI'].some(key => Object.hasOwn(patch, key))) void refreshPermissions();
+  });
   env.initialize();
   refresh(); selectTab(values.settingsTab, false);
   if (values.settingsTab === '词典') void dictionary.refresh();

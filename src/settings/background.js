@@ -1,10 +1,12 @@
+import { defaults } from './settings.js';
+
 export function mountBackground(env) {
   const { document, localStorage, URL, Blob, Image } = env;
   const root = document.documentElement;
   const appearance = document.querySelector('#pane-appearance');
   const preferenceKey = 'anon-glass-background-options-v1';
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/bmp']);
-  let preferences = { fit: 'cover' };
+  let preferences = { fit: defaults.panelBackgroundFit };
   try {
     const saved = JSON.parse(localStorage.getItem(preferenceKey) || 'null');
     if (['cover', 'contain'].includes(saved?.fit)) preferences.fit = saved.fit;
@@ -43,7 +45,7 @@ export function mountBackground(env) {
     env.selects?.refresh?.();
   }
   function updateResetButton() {
-    resetButton.disabled = !currentURL && preferences.fit === 'cover';
+    resetButton.disabled = !currentURL && preferences.fit === defaults.panelBackgroundFit;
   }
   function showImage(record, url = '') {
     const previousURL = currentURL;
@@ -101,7 +103,7 @@ export function mountBackground(env) {
   async function resetBackground() {
     const token = ++revision;
     chooseButton.disabled = false;
-    preferences = { fit: 'cover' };
+    preferences = { fit: defaults.panelBackgroundFit };
     applyPreferences(true);
     showImage(null);
     status.textContent = '正在清除背景图片…';
