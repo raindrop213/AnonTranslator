@@ -1,4 +1,4 @@
-import { raiseSettingsLayer } from '../platform/ui-layers.js';
+import { attachUILayer, detachUILayer } from '../platform/ui-layers.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
@@ -17,7 +17,7 @@ export function createDictionaryView(platform, getSettings, host, { show = () =>
       sheets.push([shadow, shadow.adoptedStyleSheets.map(sheet => [...sheet.cssRules].map(rule => rule.cssText).join('\n'))]);
       for (const child of shadow.querySelectorAll('*')) if (child.shadowRoot) collect(child);
     };
-    collect(host); target.documentElement.append(host);
+    collect(host); detachUILayer(host); target.documentElement.append(host);
     // Constructed stylesheets belong to their document; inline fallback styles
     // travel with the DOM if another window cannot construct a stylesheet.
     for (const [shadow, sources] of sheets) {
@@ -34,16 +34,7 @@ export function createDictionaryView(platform, getSettings, host, { show = () =>
     kind = target; host.hidden = target === 'closed';
     host.toggleAttribute('data-window', target === 'window');
     host.toggleAttribute('data-sheet', target === 'sheet');
-    if (typeof host.showPopover === 'function') {
-      if (target === 'window') host.removeAttribute('popover');
-      else {
-        host.setAttribute('popover', 'manual');
-        try {
-          if (host.hidden) host.hidePopover();
-          else { host.showPopover(); raiseSettingsLayer(doc); }
-        } catch { /* Fixed-position fallback. */ }
-      }
-    }
+    if (target === 'page' || target === 'sheet') attachUILayer(host);
     if (wasOpen && target === 'closed') onClose();
   }
   function remember(other) {
@@ -88,8 +79,7 @@ export function createDictionaryView(platform, getSettings, host, { show = () =>
       const other = win.open('', '_blank', `popup,width=${Math.round(width)},height=${Math.round(height)},left=${Math.round(left)},top=${Math.round(top)}`);
       if (!other) { show('窗口未能打开，请允许当前网站弹出窗口后重试'); return false; }
       const entry = { window: other, closed: () => windowClosed(entry) }; native = entry;
-      try { host.hidePopover?.(); } catch { /* Fixed-position fallback. */ }
-      host.removeAttribute('popover'); other.document.documentElement.setAttribute('data-at-ui', '');
+      other.document.documentElement.setAttribute('data-at-ui', '');
       move(other.document); bind(entry, true); return true;
     } catch (error) {
       if (release()) display(kind);

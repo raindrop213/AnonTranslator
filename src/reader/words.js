@@ -5,8 +5,9 @@ import { providerNames } from '../services/translate.js';
 
 import { hiragana, readingParts } from './word-reading.js';
 export { hiragana, readingParts } from './word-reading.js';
+const wordBackground = 'color-mix(in srgb,var(--at-word-color,transparent) var(--at-word-opacity,100%),transparent)';
 const wordCSS = `
-  .at-word[data-at-word]{display:inline!important;background-color:color-mix(in srgb,var(--at-word-color,transparent) var(--at-word-opacity,100%),transparent)!important;background-image:none!important;cursor:pointer!important;filter:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-box-decoration-break:clone;box-decoration-break:clone;border-radius:3px;padding:0!important;margin:0!important;line-height:inherit!important;font-size:inherit!important;color:inherit!important}
+  .at-word[data-at-word]{display:inline!important;background-color:${wordBackground}!important;background-image:none!important;cursor:pointer!important;filter:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-box-decoration-break:clone;box-decoration-break:clone;border-radius:3px;padding:0!important;margin:0!important;line-height:inherit!important;font-size:inherit!important;color:inherit!important}
   .at-word.at-word-glass[data-at-word]{border:0 solid #30343b!important;border-radius:0!important;background-image:linear-gradient(140deg,rgba(255,255,255,.75),rgba(181,181,181,.25) 50%,rgba(181,181,181,.25) 50%,rgba(255,255,255,.25))!important;box-shadow:inset 1px 1px 1px rgba(255,255,255,.25),inset -1px -1px 1px rgba(55,55,55,.22),0 1px 2px rgba(35,35,35,.1)!important}
   .at-word.at-word-night[data-at-word]{border:0 solid #e2e7ed!important;border-radius:0!important}
   .at-word.at-word-glass.at-word-night[data-at-word]{background-image:linear-gradient(140deg,rgba(255,255,255,.25),rgba(255,255,255,0) 50%,rgba(255,255,255,0) 50%,rgba(255,255,255,.07))!important;box-shadow:inset 1px 1px 1px rgba(255,255,255,.26),inset -1px -1px 1px rgba(0,0,0,.22),1px 1px 2px rgba(0,0,0,.10)!important}
@@ -105,6 +106,9 @@ export function createWordReader(platform, getSettings, doc = document, { show =
         span.classList.toggle('at-word-glass', settings.posGlass !== false && token.pos !== '記号');
         span.classList.toggle('at-word-night', Boolean(settings.nightMode));
         span.style.setProperty('--at-word-color', token.pos === '記号' ? 'transparent' : wordColorFor(settings, token.pos));
+        // EPUB night themes may force transparent backgrounds with ID-scoped
+        // !important rules. Keep the base protected while its variables update.
+        span.style.setProperty('background-color', wordBackground, 'important');
         span.title = [token.pos, token.reading, token.base && token.base !== '*' && token.base !== token.surface ? `基本形：${token.base}` : ''].filter(Boolean).join(' · ');
         if (token.pos !== '記号') { span.setAttribute('role', 'button'); span.setAttribute('aria-label', token.surface); span.tabIndex = 0; }
         appendTextWithReading(doc, span, token, left - token.start, right - token.start, settings.dictionaryFurigana && !entry.ruby);

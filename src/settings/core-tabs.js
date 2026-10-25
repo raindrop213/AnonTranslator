@@ -361,6 +361,7 @@ export function createCoreTabs(ctx, { window, document }) {
       ${group('常见问题', '', `
         <div class="core-help-list">
           <details class="core-details"><summary><span>为什么提示接口未授权？</span>${svg('chevron')}</summary><p>扩展限制为「在特定网站上」运行时，在线服务需要单独授权。点击对应服务的「授权接口」，添加服务地址即可。</p></details>
+          <details class="core-details"><summary><span>AI 翻译怎么用？</span>${svg('chevron')}</summary><p>在「翻译 → AI 翻译」填写服务商提供的<strong>接口地址、模型名称和 API Key</strong>，授权后打开开关即可使用。支持 OpenAI 兼容、Claude 和 Gemini；中转服务建议填写完整地址，识别不正确时在「高级设置」中选择接口格式。翻译失败时检查配置、授权和网络；流式输出异常可关闭后重试。</p></details>
           <details class="core-details"><summary><span>插件如何记住网站开关？</span>${svg('chevron')}</summary><p>安装后默认关闭。通过 Chrome 工具栏图标或油猴菜单手动开启，会记住当前网站，以后进入自动启用。点击面板右上角 ×，会关闭插件并删除本站记录，刷新后仍保持关闭，直到你再次手动开启。点击头像仅收起面板，不会关闭插件。</p></details>
         </div>
       `)}

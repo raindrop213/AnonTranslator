@@ -4,6 +4,7 @@ import { defaults, normalizeSetting, normalizeSettings, wordColorFor } from '../
 import { ankiDraftFields, plainText } from '../src/services/anki-fields.js';
 import { ankiFields } from '../src/services/anki-model.js';
 import { ankiPreviewFields, ankiPreviewDocument, ankiPreviewSpeech } from '../src/settings/anki-preview.js';
+import { createAnkiTabs } from '../src/settings/anki-tab.js';
 import { createSpeaker } from '../src/services/speech.js';
 import { createAnkiService } from '../src/services/anki.js';
 import { buildDictionarySearchURL, placeDictionaryPopup } from '../src/reader/dictionary-layout.js';
@@ -18,6 +19,35 @@ const streamSettings = protocol => ({ ...aiDefaults, aiProtocol: protocol, aiStr
   aiURL: protocol === 'gemini' ? 'https://ai.example/v1beta/models/{model}:generateContent' : `https://ai.example/${protocol}`,
   aiModel: 'test-model' });
 const streamMessage = protocol => ({ translator: 'ai', text: '猫がいる。', from: 'ja', to: 'zh-CN', settings: streamSettings(protocol) });
+
+test('LAN HTTP pages can construct settings and stream translations without crypto.randomUUID', async () => {
+  const uuidDescriptor = Object.getOwnPropertyDescriptor(crypto, 'randomUUID'), previousChrome = globalThis.chrome;
+  const listeners = new Set(), progressIds = [], updates = [];
+  Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: undefined });
+  globalThis.chrome = { runtime: {
+    getURL: path => `chrome-extension://test/${path}`,
+    onMessage: { addListener: listener => listeners.add(listener), removeListener: listener => listeners.delete(listener) },
+    async sendMessage(message) {
+      progressIds.push(message.progressId);
+      for (const listener of listeners) listener({ action: 'translation_progress', progressId: message.progressId, translatedText: '译文' });
+      return { translatedText: '译文' };
+    }
+  } };
+  try {
+    const tabs = createAnkiTabs({ defaults, get: key => defaults[key], escape: String }, {}, {});
+    assert.equal(tabs[0].id, 'anki', 'A preview playback token must not prevent the entire settings panel from mounting');
+    const platform = createChromePlatform();
+    for (let i = 0; i < 2; i++) await platform.send({ action: 'translate', translator: 'ai' }, text => updates.push(text));
+    assert(progressIds.every(id => typeof id === 'string' && id.length >= 32));
+    assert.notEqual(progressIds[0], progressIds[1]);
+    assert.deepEqual(updates, ['译文', '译文']);
+    assert.equal(listeners.size, 0);
+  } finally {
+    if (uuidDescriptor) Object.defineProperty(crypto, 'randomUUID', uuidDescriptor);
+    else delete crypto.randomUUID;
+    globalThis.chrome = previousChrome;
+  }
+});
 
 test('AI streaming parses split SSE for all three protocols and emits only cumulative translation text', async () => {
   const fixtures = {

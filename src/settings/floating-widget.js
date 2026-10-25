@@ -80,9 +80,7 @@ export function mountFloatingWidget(env) {
   }
   document.body.insertBefore(orb, panel);
 
-  const style = document.createElement('style');
-  style.id = 'glass-floating-position';
-  style.textContent = `
+  env.addStyle(`
     #floating-settings { position:fixed; margin:0; transform-origin:0 0; }
     #floating-settings.is-resizing { min-width:0; min-height:0; max-width:none; }
     #floating-settings.is-resizing > * { position:absolute; left:var(--motion-left); top:var(--motion-top);
@@ -113,8 +111,7 @@ export function mountFloatingWidget(env) {
     body.is-dragging, body.is-dragging * { user-select:none !important; -webkit-user-select:none !important; }
     #floating-settings[hidden], #settings-orb[hidden] { display:none !important; }
     @media (prefers-reduced-motion:reduce) { #settings-orb { transition:none; } }
-  `;
-  document.head.append(style);
+  `);
 
   function save() {
     try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (_) {}
@@ -400,6 +397,7 @@ export function mountFloatingWidget(env) {
     if (kind === 'panel' && !fromIcon && event.target.closest('button, input, select, textarea, a, label, summary, [role="button"], [contenteditable="true"]')) return;
     const element = kind === 'panel' ? panel : orb;
     const rect = element.getBoundingClientRect();
+    event.stopPropagation();
     suppressClickUntil = 0;
     const captureHandle = fromIcon ? orb : event.currentTarget;
     drag = { kind, element, handle: captureHandle, pointerId: event.pointerId,
@@ -413,6 +411,7 @@ export function mountFloatingWidget(env) {
 
   function moveDrag(event) {
     if (!drag || event.pointerId !== drag.pointerId) return;
+    event.stopPropagation();
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
     drag.dx = dx;
@@ -502,16 +501,18 @@ export function mountFloatingWidget(env) {
 
   handle.addEventListener('pointerdown', event => startDrag(event, 'panel'));
   orb.addEventListener('pointerdown', event => startDrag(event, state.mode === 'open' ? 'panel' : 'orb'));
-  [handle, orb].forEach(element => element.addEventListener('lostpointercapture', finishDrag));
-  window.addEventListener('pointerdown', () => { if (!drag) suppressClickUntil = 0; }, true);
-  window.addEventListener('pointermove', moveDrag, { passive: false });
-  window.addEventListener('pointerup', finishDrag);
-  window.addEventListener('pointercancel', finishDrag);
+  // Run before a reader's HTML capture listener can swallow pointermove.
+  // Pointer capture still keeps the gesture attached across EPUB iframes.
+  window.addEventListener('pointermove', moveDrag, { capture: true, passive: false });
+  // Let pointerup continue so the page can clear its own pointerdown state.
+  for (const type of ['pointerup', 'pointercancel']) window.addEventListener(type, finishDrag, true);
+  for (const element of [handle, orb]) element.addEventListener('lostpointercapture', finishDrag);
   [panel, orb].forEach(element => element.addEventListener('click', event => {
     if (phase || (event.detail > 0 && performance.now() < suppressClickUntil)) {
       event.preventDefault(); event.stopImmediatePropagation();
     }
   }, true));
+  panel.addEventListener('pointerdown', () => { suppressClickUntil = 0; }, true);
   orb.addEventListener('click', event => {
     if (state.mode === 'open') collapse({ focus: event.detail === 0 });
     else open();

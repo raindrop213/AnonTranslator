@@ -113,7 +113,7 @@ export function mountSettingsPanel(env, store, platform) {
     intro.className = 'section-intro';
     intro.innerHTML = `<div><h2>${escape(definition.name)}</h2><p>${escape(introductions[definition.id])}</p></div><div class="section-emblem glass" aria-hidden="true"><svg viewBox="0 0 24 24">${introIcons[definition.id]}</svg></div>`;
     definition.root.prepend(intro);
-    if (definition.css) { const style = document.createElement('style'); style.textContent = definition.css; document.head.append(style); }
+    if (definition.css) env.addStyle(definition.css);
   });
   const iconSettings = document.createElement('section');
   iconSettings.className = 'panel-icon-settings';

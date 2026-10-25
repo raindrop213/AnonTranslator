@@ -6,7 +6,9 @@
 
 首次安装点击 Chrome 工具栏图标或油猴菜单打开阅读工具。点击关闭 “×” 则关闭插件，使用时请保持Anon的“存活”，可移到窗边最小化。界面背景均自定义。
 
-![玻璃设置窗](assets/preview.png)
+![浅色模式](assets/preview_w.png)
+![深色模式](assets/preview_b.png)
+
 
 ## 使用场景
 
@@ -103,7 +105,11 @@
 
 ## AI 翻译
 
-在“翻译 → AI 翻译”中填写接口地址、模型名称和 API Key，接口格式默认根据地址自动识别。Chrome 首次访问自定义接口需要点击“授权接口”；油猴由脚本管理器处理跨域授权。打开 AI 翻译开关后，选中文字即可显示译文，也可以在“Anki → 例句翻译”中单独选用 AI。
+1. 在“翻译 → AI 翻译”中填写服务商提供的接口地址、模型名称和 API Key；本地免密接口可留空密钥。
+2. Chrome 点击“授权接口”；油猴按脚本管理器提示允许访问。
+3. 选择源语言和目标语言，打开 AI 翻译开关，点击句子或段落即可翻译。开启“流式输出”可边生成边显示译文。
+
+支持 OpenAI 兼容、Claude 和 Gemini 格式，默认根据地址自动识别。可填服务根地址或完整接口地址，常见路径会自动补全：
 
 | 接口格式 | 完整地址示例 |
 | --- | --- |
@@ -111,15 +117,9 @@
 | Claude | `https://api.anthropic.com/v1/messages` |
 | Gemini | `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` |
 
-三种格式均支持服务根地址：OpenAI 兼容接口补全 /chat/completions（OpenAI 官方根地址补全 /v1/chat/completions），Claude 补全 /v1/messages，Gemini 补全 /v1beta/models/模型名:generateContent。也支持 /v1 或 Gemini 的 /v1beta 基础地址；完整路径保持原样；Gemini 地址中的 `{model}` 会使用填写的模型名称替换。转发服务或本地模型也可填写自己的完整地址，不需要密钥的接口可将 API Key 留空。特殊中转地址无法识别时，可在“高级设置”中手动指定接口格式；这不会修改地址。
+中转服务请优先使用服务商给出的完整地址；识别不正确时，可在“高级设置”中手动选择接口格式。Gemini 地址中的 `{model}` 会替换为填写的模型名称。
 
-“高级设置”支持自定义英文提示词、请求头和请求参数。`{{text}}` 是原文，`{{from}}` / `{{to}}` 是源语言和目标语言的英文名称；自动识别时 `{{from}}` 为 `auto-detect`。旧版默认提示词会更新，自定义提示词会保留。
-
-请求头与参数使用 JSON 对象，例如 `{"temperature":0.3}`、`{"reasoning_effort":"low"}`；嵌套对象会合并，数组或其他值会替换同名默认字段。显式填写的 `stream: true` 或 `stream: false` 优先于流式开关。
-
-其他服务的 OpenAI 兼容接口也共用这一格式。基础地址以 `/v1`、`/v2`、`/v3` 等版本路径结尾时会补全 `/chat/completions`，包括 `/compatible-mode/v1`、`/api/paas/v4` 这样的路径。Mistral、Cohere 的官方根地址会补全各自的兼容路径。Azure 官方 `*.openai.azure.com` 地址自动使用 `api-key` 鉴权，支持完整部署地址及 `api-version` 查询参数；代理的特殊鉴权仍可在请求头中指定。
-
-使用 Qwen MT 模型时，会按其接口要求发送原文，并根据所选语言生成 `translation_options`，也可在自定义参数中添加术语等选项。不同模型的流式模式按服务格式解析；这不包含 DashScope 原生接口、千帆 AK/SK 签名交换或 OCR 接口。
+“高级设置”还可自定义提示词、请求字段和请求头，通常保留默认设置即可。Anki 制卡可在“Anki → 例句翻译”中单独选用 AI，共用这里的接口配置。
 
 ## 项目结构
 
@@ -160,3 +160,7 @@ npm test
 测试集中在 3 个文件：`site.test.mjs` 验证网站开关与生命周期；`core.test.mjs` 验证关键数据处理和服务行为；`build.test.mjs` 实际构建并检查双平台安装产物。不需要浏览器或在线服务。
 
 界面预览只保留一页：运行 `npm run dev`（自动构建），打开 `http://127.0.0.1:8788/`，点击“载入本地版本”。页面运行实际 Chrome 内容脚本或油猴构建产物，以本地适配器代替浏览器/GM API。在线翻译、词典、语音及本地 Anki/VITS 需要安装后配置相应服务。
+
+分词配色回归检测：启动预览服务后，打开 `http://127.0.0.1:8788/word-colors.html`，点击“运行检测”，检查日夜配色、统一底色、不透明度及阅读器夜间样式兼容性。检测使用本地模拟数据，不访问在线服务或修改已保存的插件设置。
+
+设置栏显示与层级检测：打开 `http://127.0.0.1:8788/widget-layers.html`，检查局域网 HTTP、严格样式策略下的设置栏，以及查词窗重叠、页面捕获事件时的拖动和滚轮隔离。

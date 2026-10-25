@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN" data-at-ui>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设置栏可见性与层级检测</title>
+<style>
+  :root{font:14px/1.6 system-ui,"Microsoft YaHei",sans-serif;color:#29313b;background:#f3f5f7}
+  body{max-width:1100px;margin:28px auto;padding:0 20px}h1{font-size:23px;margin:0 0 8px}h2{font-size:17px;margin:25px 0 8px}
+  p{color:#657080;margin:0 0 16px}button{font:inherit;border:0;border-radius:8px;background:#315fc3;color:#fff;padding:8px 16px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
+  #status{font-weight:600;margin-left:12px}iframe{display:block;width:100%;height:650px;border:1px solid #cfd7e2;border-radius:10px;background:white}
+  ol{padding-left:26px}li{padding:4px 0;border-bottom:1px solid #dfe4eb}.pass{color:#237043}.fail{color:#a33131}small{display:block;color:#657080;white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+<h1>设置栏可见性与层级检测</h1>
+<p>使用真实组件，检查共享顶层、查词重叠、页面捕获事件时的拖动和滚轮隔离，以及严格 CSP 和局域网 HTTP 兼容性。检测不访问在线服务，也不修改已保存的插件设置。</p>
+<div data-at-ui><button id="run" type="button">运行检测</button><span id="status" role="status">尚未运行</span></div>
+<ol id="results" aria-label="检测结果"></ol>
+<h2>普通页面</h2><iframe id="normal" data-at-ui title="普通阅读器检测" sandbox="allow-same-origin"></iframe>
+<h2>严格 CSP 页面（style-src 'none'）</h2><iframe id="strict" data-at-ui title="严格 CSP 阅读器检测" sandbox="allow-same-origin"></iframe>
+<h2>局域网 HTTP 环境（缺少 crypto.randomUUID）</h2><iframe id="insecure" data-at-ui title="局域网 HTTP 阅读器检测" sandbox="allow-same-origin"></iframe>
+<script src="/widget-layers.js"></script>
+</html>

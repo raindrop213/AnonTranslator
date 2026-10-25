@@ -1,4 +1,5 @@
 import { topDocument, anchorRect, viewportRect } from './geometry.js';
+import { detachUILayer } from '../platform/ui-layers.js';
 import { buildDictionarySearchURL, placeDictionaryPopup } from './dictionary-layout.js';
 import { createDictionaryView } from './dictionary-view.js';
 export { buildDictionarySearchURL, placeDictionaryPopup } from './dictionary-layout.js';
@@ -45,7 +46,6 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
   const doc = topDocument(sourceDoc), win = doc.defaultView;
   const wordSpeaker = createSpeaker(platform);
   const host = doc.createElement('div'); host.setAttribute('data-at-ui', ''); host.setAttribute('data-at-dictionary-popup', ''); host.hidden = true;
-  if (typeof host.showPopover === 'function') host.setAttribute('popover', 'manual');
   const root = host.attachShadow({ mode: 'open' });
   // Constructed stylesheets also work on books that disallow inline styles.
   try { const style = new win.CSSStyleSheet(); style.replaceSync(popupCSS); root.adoptedStyleSheets = [style]; }
@@ -401,7 +401,7 @@ export function createDictionaryPopup(platform, getSettings, sourceDoc, { show =
     destroy() {
       if (destroyed) return true;
       if (!view.destroy()) return false;
-      destroyed = true; workspace.destroy(); wordSpeaker.destroy(); host.remove();
+      destroyed = true; workspace.destroy(); wordSpeaker.destroy(); detachUILayer(host);
       doc.removeEventListener('keydown', keydown, true);
       doc.removeEventListener('click', outsideClick, true);
       if (sourceDoc !== doc) { sourceDoc.removeEventListener('keydown', keydown, true); sourceDoc.removeEventListener('click', outsideClick, true); }

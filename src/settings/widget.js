@@ -7,7 +7,7 @@ import { mountBackground, mountPopupBackground } from './background.js';
 import { mountSelects } from './selects.js';
 import { mountFloatingWidget } from './floating-widget.js';
 import { mountScrollFeather } from './scroll-feather.js';
-import { raiseSettingsLayer } from '../platform/ui-layers.js';
+import { attachUILayer, detachUILayer } from '../platform/ui-layers.js';
 
 // Keep the panel's styles and controls isolated from the reading website.
 const isolationCSS = `
@@ -34,14 +34,27 @@ export async function mountSettingsWidget(store, platform, doc = document) {
   root.dataset.theme = store.values.nightMode ? 'dark' : 'light'; root.dataset.backdrop = 'aurora';
   const head = doc.createElement('div'); head.hidden = true;
   const body = doc.createElement('body'); body.innerHTML = panelHTML;
-  const style = doc.createElement('style'); style.textContent = panelCSS + '\n' + isolationCSS;
-  root.append(head, body); shadow.append(style, root); doc.documentElement.append(host);
+  const addStyle = css => {
+    try {
+      const sheet = new view.CSSStyleSheet(); sheet.replaceSync(css);
+      shadow.adoptedStyleSheets = [...shadow.adoptedStyleSheets, sheet];
+    } catch {
+      const style = doc.createElement('style'); style.textContent = css; shadow.append(style);
+    }
+  };
+  root.append(head, body); shadow.append(root); attachUILayer(host);
+  addStyle(panelCSS + '\n' + isolationCSS);
 
   const listen = (target, name, callback, options) => {
     target.addEventListener(name, callback, options);
     const remove = () => target.removeEventListener(name, callback, options);
     cleanups.push(remove); return remove;
   };
+  // Readers can turn document-level wheel events into page navigation.
+  // Keep settings scrolling native, but stop it before it reaches the page.
+  listen(view, 'wheel', event => {
+    if (event.composedPath().includes(host)) event.stopPropagation();
+  }, { capture: true, passive: true });
   const frame = callback => {
     const id = view.requestAnimationFrame(time => { frames.delete(id); if (!disposed) callback(time); });
     frames.add(id); return id;
@@ -138,7 +151,7 @@ export async function mountSettingsWidget(store, platform, doc = document) {
     mountScrollFeather(env);
     return controller;
   };
-  const env = { ...scope, window: windowFacade, document: documentFacade, localStorage, icon, root, body, shadow, host, initialize };
+  const env = { ...scope, window: windowFacade, document: documentFacade, localStorage, icon, root, body, shadow, host, initialize, addStyle };
   const unsubscribe = store.subscribe(values => { root.dataset.theme = values.nightMode ? 'dark' : 'light'; });
   cleanups.push(unsubscribe);
   try {
@@ -146,9 +159,8 @@ export async function mountSettingsWidget(store, platform, doc = document) {
     unmount = await mountSettingsPanel(env, store, platform);
     if (!initialized) initialize();
     if (store.values.pluginSwitch) root.style.removeProperty('visibility');
-    raiseSettingsLayer(doc);
   } catch (error) {
-    disposed = true; cleanups.forEach(remove => remove()); observers.forEach(observer => observer.disconnect()); host.remove(); throw error;
+    disposed = true; cleanups.forEach(remove => remove()); observers.forEach(observer => observer.disconnect()); detachUILayer(host); throw error;
   }
   const settled = () => new Promise(resolve => {
     const done = () => { motionWaiters.delete(done); resolve(); };
@@ -163,10 +175,8 @@ export async function mountSettingsWidget(store, platform, doc = document) {
     await settled();
     if (disposed || !store.values.pluginSwitch) return;
     host.inert = false; root.style.removeProperty('visibility');
-    raiseSettingsLayer(doc);
     return controller?.open({ reveal: true, focus: false });
   };
-  listen(doc, 'fullscreenchange', () => raiseSettingsLayer(doc));
   return {
     open,
     async dismiss() {
@@ -185,7 +195,7 @@ export async function mountSettingsWidget(store, platform, doc = document) {
       frames.forEach(id => view.cancelAnimationFrame(id)); timers.forEach(id => view.clearTimeout(id));
       objectURLs.forEach(url => view.URL.revokeObjectURL(url));
       body.querySelectorAll('*').forEach(element => element.getAnimations?.().forEach(animation => animation.cancel()));
-      host.remove();
+      detachUILayer(host);
     }
   };
 }

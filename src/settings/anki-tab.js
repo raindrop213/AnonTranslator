@@ -1,5 +1,6 @@
 import { ankiPreviewDocument, ankiPreviewFields, ankiPreviewSpeech } from './anki-preview.js';
 import { createSpeaker } from '../services/speech.js';
+import { createSessionId } from '../services/session-id.js';
 
 export function createAnkiTabs(ctx, env, platform) {
   const valueOf = key => ctx.get(key) ?? ctx.defaults[key];
@@ -9,7 +10,7 @@ export function createAnkiTabs(ctx, env, platform) {
   const fields = [['Word', '单词'], ['Reading', '读音'], ['Sentence', '原句'], ['Translation', '例句翻译'], ['WordAudio', '单词音频'], ['SentenceAudio', '例句音频'], ['Image', '图片'], ['DictionaryData', '词典数据'], ['SourceURL', '来源网址'], ['SourceTitle', '来源标题']];
   let activeTemplate = 'ankiFront';
   let previewSide = 'ankiFront', previewRoot, previewHTML = '', previewLoaded = false, previewTimer;
-  const speaker = createSpeaker(platform), playbackToken = crypto.randomUUID();
+  const speaker = createSpeaker(platform), playbackToken = createSessionId();
   let previewFields;
   function playPreview(event) {
     const message = event.data, frame = previewRoot?.querySelector('[data-anki-preview]');

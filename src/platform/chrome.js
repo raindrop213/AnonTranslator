@@ -1,5 +1,6 @@
 import { defaults, normalizeSetting } from '../settings/settings.js';
 import { aiEndpoint } from '../services/ai.js';
+import { createSessionId } from '../services/session-id.js';
 
 export const chromeServices = {
   google: { name: 'Google', section: '翻译', origins: ['https://translate-pa.googleapis.com/*'] },
@@ -74,7 +75,7 @@ export const createChromePlatform = () => ({
   async send(message, onUpdate) {
     let progress;
     if (message.action === 'translate' && typeof onUpdate === 'function') {
-      const progressId = crypto.randomUUID();
+      const progressId = createSessionId();
       message = { ...message, progressId };
       progress = update => {
         if (update.action === 'translation_progress' && update.progressId === progressId && typeof update.translatedText === 'string') {
