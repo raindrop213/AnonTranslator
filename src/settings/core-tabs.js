@@ -348,7 +348,7 @@ export function createCoreTabs(ctx, { window, document }) {
       <div class="core-help-brand glass">
         <span class="core-help-brand-icon glass">${ctx.icon ? `<img src="${e(ctx.icon)}" alt="" draggable="false">` : svg('book')}</span>
         <div class="core-help-brand-copy"><strong>AnonTranslator</strong><p>构建最灵活通用的学习环境</p></div>
-        <span class="core-help-version">v2.0.0</span>
+        <span class="core-help-version">v2.0.1</span>
       </div>
       ${group('快速开始', '四步熟悉阅读工具', `
         <div class="core-help-list">
